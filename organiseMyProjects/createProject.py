@@ -36,8 +36,7 @@ def main():
     logger.info("...starting main script")
     print("Main script running.")
 
-def main():
-
+if __name__ == "__main__":
     main()
 """)
 

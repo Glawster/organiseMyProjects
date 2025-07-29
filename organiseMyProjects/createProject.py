@@ -76,7 +76,7 @@ def setupLogging(title: str) -> logging.Logger:
     hooks:
       - id: gui-naming-linter
         name: GUI Naming Linter
-        entry: python guiNamingLinter.py src/
+        entry: runLinter src/
         language: system
         types: [python]
 """)

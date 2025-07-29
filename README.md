@@ -39,7 +39,7 @@ myNewProject/
 
 ### Run the GUI naming linter
 ```bash
-runLinter src/
+runLinter <file_or_dir>
 ```
 
 Checks for violations of variable/class naming and logging message style.

@@ -20,7 +20,7 @@ def setupLogging(title: str) -> logging.Logger:
     title = title.replace(" ", "")
     logger = logging.getLogger(title)
     if not logger.handlers:
-        logDir = os.getcwd()
+        logDir = os.path.join(os.getcwd(), "logs")
         os.makedirs(logDir, exist_ok=True)
         logDate = datetime.datetime.now().strftime("%Y%m%d")
         logFilePath = os.path.join(logDir, f"{title}.{logDate}.log")

@@ -13,12 +13,12 @@ This tool checks Python GUI code for compliance with common readability and cons
 ### CLI
 Run this from the command line:
 ```bash
-python runLinter.py path/to/your_script.py
+runLinter path/to/your_script.py
 ```
 
 ### Programmatic
 ```python
-from guiNamingLinter import lint_file
+from organiseMyProjects.guiNamingLinter import lint_file
 lint_file("your_script.py")
 ```
 

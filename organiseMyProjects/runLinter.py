@@ -1,23 +1,28 @@
 """
 runLinter.py - Entry point for GUI Naming Linter
 
-This script allows you to run guiNamingLinter.py via the command line.
+This script exposes the GUI naming linter as a command line tool.
 
 Usage:
-    python runLinter.py my_script.py
+    runLinter <file_or_dir>
 """
 
+import os
 import sys
-from organiseMyProjects.guiNamingLinter import lint_file
+from organiseMyProjects.guiNamingLinter import lint_file, lintGuiNaming
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python runLinter.py <path-to-python-file>")
+        print("Usage: runLinter <file_or_dir>")
         return
 
-    filepath = sys.argv[1]
-    print(f"Linting: {filepath}")
-    lint_file(filepath)
+    target = sys.argv[1]
+    print(f"Linting: {target}")
+
+    if os.path.isdir(target):
+        lintGuiNaming(target)
+    else:
+        lint_file(target)
 
 if __name__ == "__main__":
     main()

@@ -29,6 +29,7 @@ myNewProject/
 │   ├── main.py
 │   └── logUtils.py
 ├── ui/
+│   ├── mainMenu.py
 │   └── styleUtils.py
 ├── tests/
 │   ├── runLinter.py

@@ -18,6 +18,10 @@ def createProject(projectName):
     (basePath / "tests").mkdir()
     (basePath / "logs").mkdir()
 
+    # Make directories importable packages
+    (basePath / "src" / "__init__.py").touch()
+    (basePath / "ui" / "__init__.py").touch()
+
     # Create core files
     (basePath / ".gitignore").write_text("__pycache__/\nlogs/\n*.log\n*.pyc\n")
     (basePath / "requirements.txt").write_text("pywin32\n")
@@ -29,21 +33,15 @@ def createProject(projectName):
     if srcGuidelines.exists():
         shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
 
-    # Copy helper modules into the new project
-    shutil.copy(TEMPLATE_DIR / "logUtils.py", basePath / "src" / "logUtils.py")
-    shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
-    shutil.copy(TEMPLATE_DIR / "runLinter.py", basePath / "tests" / "runLinter.py")
-    shutil.copy(TEMPLATE_DIR / "guiNamingLinter.py", basePath / "tests" / "guiNamingLinter.py")
-
     # Create main.py starter
     mainPath = basePath / "src" / "main.py"
-    mainPath.write_text("""from logUtils import setupLogging
+    mainPath.write_text("""from setupLogging import setupLogging
 
 logger = setupLogging("main")
 
 def main():
     logger.info("...starting main script")
-    print("Main script running.")
+    mainMenu()
 
 if __name__ == "__main__":
     main()

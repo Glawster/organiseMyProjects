@@ -4,6 +4,8 @@ import subprocess
 
 from pathlib import Path
 
+TEMPLATE_DIR = Path(__file__).resolve().parent
+
 def createProject(projectName):
     basePath = Path(projectName)
     if basePath.exists():
@@ -12,8 +14,13 @@ def createProject(projectName):
 
     # Create folders
     (basePath / "src").mkdir(parents=True)
+    (basePath / "ui").mkdir()
     (basePath / "tests").mkdir()
     (basePath / "logs").mkdir()
+
+    # Make directories importable packages
+    (basePath / "src" / "__init__.py").touch()
+    (basePath / "ui" / "__init__.py").touch()
 
     # Create core files
     (basePath / ".gitignore").write_text("__pycache__/\nlogs/\n*.log\n*.pyc\n")
@@ -26,43 +33,31 @@ def createProject(projectName):
     if srcGuidelines.exists():
         shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
 
+    # Copy helper modules into the new project
+    shutil.copy(TEMPLATE_DIR / "logUtils.py", basePath / "src" / "logUtils.py")
+    shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
+    shutil.copy(TEMPLATE_DIR / "mainMenu.py", basePath / "ui" / "mainMenu.py")
+    shutil.copy(TEMPLATE_DIR / "runLinter.py", basePath / "tests" / "runLinter.py")
+    shutil.copy(TEMPLATE_DIR / "guiNamingLinter.py", basePath / "tests" / "guiNamingLinter.py")
+
     # Create main.py starter
     mainPath = basePath / "src" / "main.py"
-    mainPath.write_text("""from setupLogging import setupLogging
+    mainPath.write_text("""from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from logUtils import setupLogging
+from ui.mainMenu import mainMenu
 
 logger = setupLogging("main")
 
 def main():
     logger.info("...starting main script")
-    print("Main script running.")
+    mainMenu()
 
 if __name__ == "__main__":
     main()
-""")
-
-    # Create setupLogging.py
-    loggingPath = basePath / "src" / "setupLogging.py"
-    loggingPath.write_text("""import os
-import logging
-import datetime
-
-def setupLogging(title: str) -> logging.Logger:
-    title = title.replace(" ", "")
-    logger = logging.getLogger(title)
-    if not logger.handlers:
-        logDir = os.path.join(os.getcwd(), "logs")
-        os.makedirs(logDir, exist_ok=True)
-        logDate = datetime.datetime.now().strftime("%Y%m%d")
-        logFilePath = os.path.join(logDir, f"{title}.{logDate}.log")
-
-        handler = logging.FileHandler(logFilePath)
-        formatter = logging.Formatter('%(asctime)s [%(module)s] %(levelname)s %(message)s')
-        handler.setFormatter(formatter)
-
-        logger.setLevel(logging.INFO)
-        logger.addHandler(handler)
-
-    return logger
 """)
 
     # Create .pre-commit-config.yaml

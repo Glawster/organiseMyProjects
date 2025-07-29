@@ -27,8 +27,12 @@ Creates:
 myNewProject/
 ├── src/
 │   ├── main.py
-│   └── setupLogging.py
+│   └── logUtils.py
+├── ui/
+│   └── styleUtils.py
 ├── tests/
+│   ├── runLinter.py
+│   └── guiNamingLinter.py
 ├── logs/
 ├── requirements.txt
 ├── dev-requirements.txt

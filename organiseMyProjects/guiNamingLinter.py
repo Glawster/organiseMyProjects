@@ -63,7 +63,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
         self.generic_visit(node)
 
-    def visitFunctionDef(self, node):
+    def visit_FunctionDef(self, node):
         # Rule: If function body has >4 statements, expect a blank line after def
         if len(node.body) > 4:
             next_line = getattr(node.body[0], 'lineno', None)
@@ -71,7 +71,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
                 self.violations.append((node.name, 'Function spacing (no blank line after def)', node.lineno))
         self.generic_visit(node)
 
-    def visitClassDef(self, node):
+    def visit_ClassDef(self, node):
         isExplicitlyAllowed = node.name in classNameExceptions
         isPatternAllowed = any(re.match(pat, node.name) for pat in classNamePatterns)
         if not (isExplicitlyAllowed or isPatternAllowed):
@@ -79,7 +79,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
                 self.violations.append((node.name, 'Class', node.lineno))
         self.generic_visit(node)
 
-    def visitExpr(self, node):
+    def visit_Expr(self, node):
         if isinstance(node.value, ast.Call):
             func = node.value.func
             if isinstance(func, ast.Attribute):

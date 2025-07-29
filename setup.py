@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="organiseMyProjects",
-    version="0.1.0",
+    version="0.1",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -17,7 +17,7 @@ setup(
             "runLinter=organiseMyProjects.runLinter:main"
         ]
     },
-    author="Your Name",
+    author="Andy Wilson (andyw@glawster.com)",
     description="A project scaffolding and GUI linter toolkit for Python projects.",
     classifiers=[
         "Programming Language :: Python :: 3",

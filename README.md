@@ -56,4 +56,4 @@ Checks for violations of variable/class naming and logging message style.
 
 ## License
 
-MIT
+This project is licensed under the [MIT License](LICENSE).

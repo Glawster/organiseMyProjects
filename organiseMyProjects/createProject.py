@@ -33,22 +33,9 @@ def createProject(projectName):
     if srcGuidelines.exists():
         shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
 
-    # Copy helper modules into the new project
-    shutil.copy(TEMPLATE_DIR / "logUtils.py", basePath / "src" / "logUtils.py")
-    shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
-    shutil.copy(TEMPLATE_DIR / "mainMenu.py", basePath / "ui" / "mainMenu.py")
-    shutil.copy(TEMPLATE_DIR / "runLinter.py", basePath / "tests" / "runLinter.py")
-    shutil.copy(TEMPLATE_DIR / "guiNamingLinter.py", basePath / "tests" / "guiNamingLinter.py")
-
     # Create main.py starter
     mainPath = basePath / "src" / "main.py"
-    mainPath.write_text("""from pathlib import Path
-import sys
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
-from logUtils import setupLogging
-from ui.mainMenu import mainMenu
+    mainPath.write_text("""from setupLogging import setupLogging
 
 logger = setupLogging("main")
 

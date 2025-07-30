@@ -52,6 +52,14 @@ runLinter <file_or_dir>
 
 Checks for violations of variable/class naming and logging message style.
 
+### Launch the generated application
+After creating a project, install its dependencies and run the starter script:
+```bash
+cd myNewProject
+pip install -r requirements.txt
+python src/main.py
+```
+
 ## Requirements
 
 - Python 3.7+

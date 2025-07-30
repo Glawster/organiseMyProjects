@@ -30,6 +30,7 @@ myNewProject/
 │   └── logUtils.py
 ├── ui/
 │   ├── mainMenu.py
+│   ├── frameTemplate.py
 │   └── styleUtils.py
 ├── tests/
 │   ├── runLinter.py

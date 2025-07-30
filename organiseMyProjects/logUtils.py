@@ -12,7 +12,7 @@ from pathlib import Path
 # ERROR messages should be in Sentence Case.
 
 # Usage:
-# from organiseMyUtils.logUtils import getLogger
+# from organiseMyProjects.logUtils import getLogger
 # 
 # logger = getLogger("program name")
 # logger.info("...message")

@@ -57,7 +57,7 @@ After creating a project, install its dependencies and run the starter script:
 ```bash
 cd myNewProject
 pip install -r requirements.txt
-python src/main.py
+python main.py
 ```
 
 ## Requirements

@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from ui.baseFrame import BaseFrame
-from logic.logUtils import logger
+from src.logUtils import logger
 
 from globalVars import PAD_X, PAD_Y, PAD_Y_TOP, PAD_X_LEFT
 

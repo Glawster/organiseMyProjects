@@ -136,7 +136,7 @@ def lintGuiNaming(directory):
                         print(f"  Line {lineno}: '{name}' should follow naming rule for {ruleType}.")
                 else:
                     print(f"{filename}: OK")
-def lint_file(filepath):
+def lintFile(filepath):
     print(f"\nLinting: {filepath}\n" + "-"*50)
     violations = checkFile(filepath)
     if violations:
@@ -145,12 +145,9 @@ def lint_file(filepath):
     else:
         print("  OK")
 
-# Backwards compatibility
-lintFile = lint_file
-
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
-        lint_file(sys.argv[1])
+        lintFile(sys.argv[1])
     else:
         print("Usage: python guiNamingLinter.py <script.py>")

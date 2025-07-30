@@ -18,8 +18,8 @@ runLinter path/to/your_script.py
 
 ### Programmatic
 ```python
-from organiseMyProjects.guiNamingLinter import lint_file
-lint_file("your_script.py")
+from organiseMyProjects.guiNamingLinter import lintFile
+lintFile("your_script.py")
 ```
 
 ## 📋 Output

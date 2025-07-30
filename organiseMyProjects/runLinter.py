@@ -9,7 +9,7 @@ Usage:
 
 import os
 import sys
-from organiseMyProjects.guiNamingLinter import lint_file, lintGuiNaming
+from organiseMyProjects.guiNamingLinter import lintFile, lintGuiNaming
 
 def main():
     if len(sys.argv) < 2:
@@ -22,7 +22,7 @@ def main():
     if os.path.isdir(target):
         lintGuiNaming(target)
     else:
-        lint_file(target)
+        lintFile(target)
 
 if __name__ == "__main__":
     main()

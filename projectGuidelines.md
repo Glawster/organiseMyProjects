@@ -87,8 +87,8 @@ To install the linter and guidelines package:
 
 Or import and use it programmatically:
 ```python
-from guiNamingLinter import lint_file
-lint_file("example.py")
+from guiNamingLinter import lintFile
+lintFile("example.py")
 ```
 
 ### 📘 Help

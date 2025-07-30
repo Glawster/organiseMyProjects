@@ -44,13 +44,8 @@ def createProject(projectName):
     shutil.copy(TEMPLATE_DIR / "guiNamingLinter.py", basePath / "tests" / "guiNamingLinter.py")
 
     # Create main.py starter
-    mainPath = basePath / "src" / "main.py"
-    mainPath.write_text("""from pathlib import Path
-import sys
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
-from logUtils import setupLogging
+    mainPath = basePath / "main.py"
+    mainPath.write_text("""from src.logUtils import setupLogging
 from ui.mainMenu import mainMenu
 
 logger = setupLogging("main")

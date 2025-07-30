@@ -26,8 +26,8 @@ Creates:
 ```
 myNewProject/
 ├── src/
-│   ├── main.py
 │   └── logUtils.py
+├── main.py
 ├── ui/
 │   ├── mainMenu.py
 │   ├── baseFrame.py

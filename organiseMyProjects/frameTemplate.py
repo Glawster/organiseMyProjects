@@ -26,7 +26,7 @@ class FrameTemplate(BaseFrame):
 import tkinter as tk
 from tkinter import ttk
 
-from styleUtils import configureButtonStyle
+from .styleUtils import configureButtonStyle
 
 
 class ExampleFrame(ttk.Frame):

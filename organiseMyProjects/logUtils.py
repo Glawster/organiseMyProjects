@@ -1,6 +1,7 @@
 import os
 import datetime
 import logging
+from pathlib import Path
 
 # logging guidelines:
 # Logging format guide:
@@ -20,10 +21,10 @@ def setupLogging(title: str) -> logging.Logger:
     title = title.replace(" ", "")
     logger = logging.getLogger(title)
     if not logger.handlers:
-        logDir = os.path.join(os.getcwd(), "logs")
-        os.makedirs(logDir, exist_ok=True)
+        logDir = Path(__file__).resolve().parent.parent / "logs"
+        logDir.mkdir(parents=True, exist_ok=True)
         logDate = datetime.datetime.now().strftime("%Y%m%d")
-        logFilePath = os.path.join(logDir, f"{title}.{logDate}.log")
+        logFilePath = logDir / f"{title}.{logDate}.log"
 
         handler = logging.FileHandler(logFilePath)
         formatter = logging.Formatter('%(asctime)s [%(module)s] %(levelname)s %(message)s')

@@ -5,14 +5,10 @@ A Python toolkit to scaffold new projects with predefined structure, logging, GU
 ## Features
 
 - 📁 Create a full Python project scaffold using `createProject`
-<<<<<<< HEAD
 - 🔄 Update an existing scaffold with `createProject <name> --update` or run
   `createProject --update` inside the project directory
-=======
-- 🔄 Update an existing scaffold with `createProject <name> --update`
->>>>>>> main
 - 🧪 Automatically include logging setup, dev tools, and layout
-- 🧼 Run a custom GUI naming linter with `runLinter`
+- 🧼 Run a custom GUI naming linter with `runLinter` (default scans the current project)
 - 🧰 Includes pre-commit support and code style guidelines
 
 ## Installation
@@ -65,6 +61,10 @@ createProject --update
 
 ### Run the GUI naming linter
 ```bash
+# lint the whole project from its root
+runLinter
+
+# or specify a file or directory
 runLinter <file_or_dir>
 ```
 

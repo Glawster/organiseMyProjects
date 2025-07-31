@@ -28,7 +28,6 @@ from tkinter import ttk
 
 from .styleUtils import configureButtonStyle
 
-
 class ExampleFrame(ttk.Frame):
     """Example frame to base new frames on."""
 
@@ -46,14 +45,13 @@ class ExampleFrame(ttk.Frame):
             style="primaryButton.TButton",
         ).grid(row=1, column=0, pady=10)
 
-
 def main():
+
     root = tk.Tk()
     root.title("Frame Template")
     frame = ExampleFrame(root)
     frame.pack(padx=20, pady=20)
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()

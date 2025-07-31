@@ -7,6 +7,7 @@ from .styleUtils import configureButtonStyle
 
 
 def mainMenu():
+    
     root = tk.Tk()
     root.title("Main Menu")
     configureButtonStyle()

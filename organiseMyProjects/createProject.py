@@ -39,6 +39,7 @@ PRECOMMIT_CONTENT = """repos:
 TEMPLATE_DIR = Path(__file__).resolve().parent
 
 def createProject(projectName):
+
     basePath = Path(projectName)
     if basePath.exists():
         print(f"Project '{projectName}' already exists.")
@@ -104,6 +105,7 @@ def createProject(projectName):
 
 
 def _copy_if_newer(src: Path, dest: Path):
+
     """Copy src to dest if dest doesn't exist or src is newer."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
@@ -112,6 +114,7 @@ def _copy_if_newer(src: Path, dest: Path):
 
 
 def _update_text_file(dest: Path, content: str):
+
     """Write *content* to *dest* if the file is missing or differs.
 
     Uses binary comparison to avoid encoding issues on Windows where
@@ -131,6 +134,7 @@ def _update_text_file(dest: Path, content: str):
 
 
 def updateProject(projectName):
+
     basePath = Path(projectName)
     if not basePath.exists():
         print(f"Project '{projectName}' does not exist.")
@@ -178,6 +182,7 @@ def updateProject(projectName):
     print(f"Project '{projectName}' updated.")
 
 def main():
+    
     parser = argparse.ArgumentParser(
         description="Create or update a project scaffold"
     )

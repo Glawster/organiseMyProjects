@@ -16,6 +16,7 @@ def _lint_target(target: str) -> None:
 
 
 def main() -> None:
+    
     parser = argparse.ArgumentParser(
         description="Run the GUI naming linter on files or directories"
     )

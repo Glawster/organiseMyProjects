@@ -18,6 +18,7 @@ from pathlib import Path
 # logger.info("...message")
 
 def setupLogging(title: str) -> logging.Logger:
+    
     title = title.replace(" ", "")
     logger = logging.getLogger(title)
     if not logger.handlers:

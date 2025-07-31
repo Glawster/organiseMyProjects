@@ -11,6 +11,7 @@ from src.editSettings import Settings
 class BaseFrame(tk.Toplevel):
 
     def __init__(self, parent, title="base frame", actionButtonText="Action"):
+
         logger.info(f"creating frame template: {self.__class__.__name__.lower()}...")
         super().__init__(parent)
         self.master = parent
@@ -45,6 +46,7 @@ class BaseFrame(tk.Toplevel):
         self.frmMain.pack(pady=PAD_Y, padx=PAD_X)
 
     def createFolderFrame(self):
+
         ttk.Label(self, text="Select a folder to...:").pack(anchor="w", padx=PAD_X, pady=PAD_Y_TOP)
 
         frmFolder = ttk.Frame(self)
@@ -60,6 +62,7 @@ class BaseFrame(tk.Toplevel):
         ttk.Button(frmFolder, text="Browse", style="compactButton.TButton", command=self.onBrowseFolder).pack(side=tk.LEFT)
 
     def createButtonFrame(self):
+
         frmButtons = ttk.Frame(self)
         frmButtons.pack(pady=PAD_Y)
 
@@ -75,6 +78,7 @@ class BaseFrame(tk.Toplevel):
         return self.entryFolder.get()
 
     def onBrowseFolder(self):
+
         logger.info("...launching folder picker")
         selected = filedialog.askdirectory(initialdir=self.entryFolder.get())
         if selected:

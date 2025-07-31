@@ -120,6 +120,7 @@ def annotateParents(tree):
             child.parent = node
 
 def checkFile(filepath):
+
     with open(filepath, 'r', encoding='utf-8') as file:
         text = file.read()
 
@@ -133,6 +134,7 @@ def checkFile(filepath):
     return visitor.violations
 
 def lintGuiNaming(directory):
+
     print(f"\nChecking GUI naming in: {directory}\n" + "-"*50)
     for root, _, files in os.walk(directory):
         for filename in files:
@@ -145,7 +147,9 @@ def lintGuiNaming(directory):
                         print(f"  Line {lineno}: '{name}' should follow naming rule for {ruleType}.")
                 else:
                     print(f"{filename}: OK")
+                    
 def lintFile(filepath):
+
     print(f"\nLinting: {filepath}\n" + "-"*50)
     violations = checkFile(filepath)
     if violations:

@@ -10,8 +10,8 @@ Centralized configuration and constants for the Organise My ... application.
 """
 
 # Application Info
-application = "Organise My ..."
-version = "1.0.0"
+APPLICATION = "Organise My ..."
+VERSION = "1.0"
 
 # File Paths
 CREDENTIALS_FILE = ".icloud_credentials.json"
@@ -36,7 +36,7 @@ PAD_X_LEFT = (0, 5)
 
 def getAppTitle(subtitle: str = None) -> str:
     """Generate consistent window title text."""
-    return f"{application}... {subtitle}" if subtitle else application
+    return f"{APPLICATION}... {subtitle}" if subtitle else APPLICATION
 
 def getCredentialPaths() -> tuple:
     """Return paths for the credentials and key file."""

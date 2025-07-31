@@ -36,7 +36,8 @@ classNamePatterns = [r'^iCloud[A-Z]\w*']
 widgetClasses = set(namingRules.keys()) - {'Handler', 'Constant', 'Class'}
 
 class GuiNamingVisitor(ast.NodeVisitor):
-    def __init__(self):
+    def __init__(self, lines: list[str]):
+        self.lines = lines
         self.violations = []
         self.packCalls = 0
         self.gridCalls = 0
@@ -64,11 +65,16 @@ class GuiNamingVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node):
-        # Rule: If function body has >4 statements, expect a blank line after def
-        if len(node.body) > 4:
-            next_line = getattr(node.body[0], 'lineno', None)
-            if next_line and next_line == node.lineno + 1:
-                self.violations.append((node.name, 'Function spacing (no blank line after def)', node.lineno))
+        """Check for a blank line immediately after the ``def`` line."""
+
+        if len(node.body) > 4 and node.lineno < len(self.lines):
+            # ``lineno`` is 1-indexed; check the next line in the file
+            line_after_def = self.lines[node.lineno].strip()
+            if line_after_def:
+                self.violations.append(
+                    (node.name, 'Function spacing (no blank line after def)', node.lineno)
+                )
+
         self.generic_visit(node)
 
     def visit_ClassDef(self, node):
@@ -115,13 +121,16 @@ def annotateParents(tree):
 
 def checkFile(filepath):
     with open(filepath, 'r', encoding='utf-8') as file:
-        tree = ast.parse(file.read(), filename=filepath)
-        annotateParents(tree)
-        visitor = GuiNamingVisitor()
-        visitor.visit(tree)
-        if visitor.gridCalls > 0 and visitor.packCalls == 0:
-            visitor.violations.append(("layout", "Use 'pack()' instead of 'grid()'", 0))
-        return visitor.violations
+        text = file.read()
+
+    lines = text.splitlines()
+    tree = ast.parse(text, filename=filepath)
+    annotateParents(tree)
+    visitor = GuiNamingVisitor(lines)
+    visitor.visit(tree)
+    if visitor.gridCalls > 0 and visitor.packCalls == 0:
+        visitor.violations.append(("layout", "Use 'pack()' instead of 'grid()'", 0))
+    return visitor.violations
 
 def lintGuiNaming(directory):
     print(f"\nChecking GUI naming in: {directory}\n" + "-"*50)

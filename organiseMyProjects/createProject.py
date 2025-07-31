@@ -112,9 +112,21 @@ def _copy_if_newer(src: Path, dest: Path):
 
 
 def _update_text_file(dest: Path, content: str):
+    """Write *content* to *dest* if the file is missing or differs.
+
+    Uses binary comparison to avoid encoding issues on Windows where
+    the default text encoding may not be UTF-8.
+    """
+
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if not dest.exists() or dest.read_text() != content:
-        dest.write_text(content)
+    new_bytes = content.encode("utf-8")
+    try:
+        current = dest.read_bytes() if dest.exists() else None
+    except OSError:
+        current = None
+
+    if current != new_bytes:
+        dest.write_bytes(new_bytes)
         print(f"Updated {dest}")
 
 
@@ -180,7 +192,8 @@ def main():
     args = parser.parse_args()
 
     if args.update:
-        updateProject(args.project)
+        project_path = args.project or Path.cwd()
+        updateProject(project_path)
     else:
         createProject(args.project)
 

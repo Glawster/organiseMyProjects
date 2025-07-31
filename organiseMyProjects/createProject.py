@@ -181,7 +181,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Create or update a project scaffold"
     )
-    parser.add_argument("project", help="Name of the project directory")
+    parser.add_argument(
+        "project",
+        nargs="?",
+        help="Name of the project directory (omit with --update to use CWD)",
+    )
     parser.add_argument(
         "-u",
         "--update",
@@ -192,8 +196,11 @@ def main():
     args = parser.parse_args()
 
     if args.update:
-        updateProject(args.project)
+        project_path = args.project or Path.cwd()
+        updateProject(project_path)
     else:
+        if args.project is None:
+            parser.error("the following arguments are required: project")
         createProject(args.project)
 
 

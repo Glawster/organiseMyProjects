@@ -2,6 +2,15 @@
 
 This tool checks Python GUI code for compliance with common readability and consistency standards.
 
+# Coding Standards
+
+- **camelCase** for variables and functions (except `photos.py` which uses snake_case for pyicloud compatibility)
+- File names use **camelCase** (e.g., `displayContactSheet.py`, `mainFrame.py`)
+- GUI element prefixes:
+  - `btnSubmit`, `lblStatus`, `entryFolder`, `frmContainer`, etc.
+- Handler naming uses the `on` prefix (e.g., `onSaveClick`)
+- Log messages lowercase except ERRORs (Sentence Case)
+
 ## ✅ What It Checks
 
 - **Function formatting**: functions with >4 logical lines must have a blank line after the def line.
@@ -14,12 +23,6 @@ This tool checks Python GUI code for compliance with common readability and cons
 Run this from the command line:
 ```bash
 runLinter path/to/your_script.py
-```
-
-### Programmatic
-```python
-from organiseMyProjects.guiNamingLinter import lintFile
-lintFile("your_script.py")
 ```
 
 ## 📋 Output

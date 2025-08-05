@@ -1,6 +1,8 @@
 import os
 import datetime
 import logging
+
+from logging import getLogger
 from pathlib import Path
 
 # logging guidelines:
@@ -20,7 +22,7 @@ from pathlib import Path
 def setupLogging(title: str) -> logging.Logger:
     
     title = title.replace(" ", "")
-    logger = logging.getLogger(title)
+    logger = getLogger(title)
     if not logger.handlers:
         logDir = Path(__file__).resolve().parent.parent / "logs"
         logDir.mkdir(parents=True, exist_ok=True)
@@ -37,6 +39,4 @@ def setupLogging(title: str) -> logging.Logger:
     return logger
 
 # Global logger instance initialized at import time
-def getLogger(name: str = "OrganiseMyProject") -> logging.Logger:
-    """Returns the global logger, using setupLogging if not already initialized."""
-    return setupLogging(name)
+logger = setupLogging("title")

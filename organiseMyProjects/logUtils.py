@@ -6,18 +6,17 @@ from logging import getLogger
 from pathlib import Path
 
 # logging guidelines:
-# Logging format guide:
 # all messages in lowercase
-# "...message" - general update, doing this
-# "message..." - done something
+# "doing something..." - major action being taken
+# "...something done" - above action completed
+# "...message" - general update, doing this, transitory information
 # "...message: value" - display some information
 # ERROR messages should be in Sentence Case.
 
 # Usage:
-# from organiseMyProjects.logUtils import getLogger
-# 
-# logger = getLogger("program name")
+# from src.logUtils import logger
 # logger.info("...message")
+
 
 def setupLogging(title: str) -> logging.Logger:
     

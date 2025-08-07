@@ -32,7 +32,7 @@ PRECOMMIT_CONTENT = """repos:
     hooks:
       - id: gui-naming-linter
         name: GUI Naming Linter
-        entry: python runLinter.py
+        entry: python tests/runLinter.py
         language: system
         types: [python]
 """

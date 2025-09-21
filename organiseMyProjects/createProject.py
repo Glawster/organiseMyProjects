@@ -55,6 +55,7 @@ def createProject(projectName):
     (basePath / "ui").mkdir()
     (basePath / "tests").mkdir()
     (basePath / "logs").mkdir()
+    (basePath / ".github").mkdir()
 
     # Make directories importable packages
     (basePath / "src" / "__init__.py").touch()
@@ -71,10 +72,16 @@ def createProject(projectName):
     )
 
     # Copy the guidelines file
-    srcGuidelines = Path("projectGuidelines.md")
+    srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
     if srcGuidelines.exists():
         print("Copying project guidelines...")
         shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
+
+    # Copy the copilot instructions file
+    srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+    if srcCopilotInstructions.exists():
+        print("Copying copilot instructions...")
+        shutil.copy(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
 
     # Copy helper modules into the new project
     print("Copying template modules...")
@@ -146,7 +153,7 @@ def updateProject(projectName):
     print(f"Updating project at {basePath}...")
     print("Ensuring directories and packages...")
 
-    for folder in ["src", "ui", "tests", "logs"]:
+    for folder in ["src", "ui", "tests", "logs", ".github"]:
         (basePath / folder).mkdir(parents=True, exist_ok=True)
 
     (basePath / "src" / "__init__.py").touch(exist_ok=True)
@@ -161,10 +168,15 @@ def updateProject(projectName):
         f"# {projectName}\n\nProject scaffold created by createProject.py\n",
     )
 
-    srcGuidelines = Path("projectGuidelines.md")
+    srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
     if srcGuidelines.exists():
         print("Checking guidelines file...")
         _copy_if_newer(srcGuidelines, basePath / "projectGuidelines.md")
+
+    srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+    if srcCopilotInstructions.exists():
+        print("Checking copilot instructions...")
+        _copy_if_newer(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
 
     print("Checking template modules...")
     modules = [

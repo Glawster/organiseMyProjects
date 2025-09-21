@@ -9,6 +9,7 @@ from pathlib import Path
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
 REQUIREMENTS_CONTENT = "pywin32\n"
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\n"
+ENV_CONTENT = "PYTHONPATH=src;ui\n"
 MAIN_PY_CONTENT = """from src.logUtils import setupLogging
 from ui.mainMenu import mainMenu
 
@@ -64,6 +65,7 @@ def createProject(projectName):
     (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
     (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
     (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
+    (basePath / ".env").write_text(ENV_CONTENT)
     (basePath / "README.md").write_text(
         f"# {projectName}\n\nProject scaffold created by createProject.py\n"
     )
@@ -153,6 +155,7 @@ def updateProject(projectName):
     _update_text_file(basePath / ".gitignore", GITIGNORE_CONTENT)
     _update_text_file(basePath / "requirements.txt", REQUIREMENTS_CONTENT)
     _update_text_file(basePath / "dev-requirements.txt", DEV_REQUIREMENTS_CONTENT)
+    _update_text_file(basePath / ".env", ENV_CONTENT)
     _update_text_file(
         basePath / "README.md",
         f"# {projectName}\n\nProject scaffold created by createProject.py\n",

@@ -27,6 +27,23 @@ git branch -M main
 git push -u origin main
 ```
 
+## Branches
+```
+# Prune Remote Tracking References
+git fetch -prune
+
+# List Local Branches Not on Remote
+
+git branch -vv | grep ': gone]'
+
+# Delete Those Local Branches
+
+You can delete them manually one by one:
+
+git branch -d branch-name
+```
+
+
 ## 🔄 Sync with GitHub
 ```bash
 # Force overwrite local with GitHub (wipe local changes)

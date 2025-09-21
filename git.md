@@ -6,6 +6,7 @@ git config --global user.name "Andy Wilson"
 git config --global user.email andyw@glawster.com
 git config --global core.editor "code --wait"
 git config --global diff.tool code
+git config --global core.autocrlf true
 git init
 git add --all
 git status -s
@@ -28,7 +29,7 @@ git push -u origin main
 ```
 
 ## Branches
-```
+```bash
 # Prune Remote Tracking References
 git fetch -prune
 

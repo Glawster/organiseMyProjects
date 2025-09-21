@@ -1,1 +1,2 @@
 include .github/copilot-instructions.md
+recursive-include organiseMyProjects/templates *

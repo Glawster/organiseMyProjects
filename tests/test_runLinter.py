@@ -99,12 +99,21 @@ class TestRunLinter:
         original_cwd = os.getcwd()
         try:
             os.chdir(temp_dir)
+            
+            # Verify directories exist before test
+            assert os.path.isdir("src"), "src directory should exist"
+            assert os.path.isdir("ui"), "ui directory should exist" 
+            assert os.path.isdir("tests"), "tests directory should exist"
+            
             with patch('sys.argv', test_args):
                 with patch('organiseMyProjects.runLinter.lintGuiNaming') as mock_lint_gui:
                     main()
                     
+                    # Debug output for troubleshooting
+                    actual_calls = [call.args[0] for call in mock_lint_gui.call_args_list]
+                    
                     # Should lint each project directory
-                    assert mock_lint_gui.call_count == 3
+                    assert mock_lint_gui.call_count == 3, f"Expected 3 calls but got {mock_lint_gui.call_count}. Calls: {actual_calls}"
                     mock_lint_gui.assert_any_call("src")
                     mock_lint_gui.assert_any_call("ui") 
                     mock_lint_gui.assert_any_call("tests")
@@ -123,11 +132,18 @@ class TestRunLinter:
         original_cwd = os.getcwd()
         try:
             os.chdir(temp_dir)
+            
+            # Verify no project directories exist
+            assert not os.path.isdir("src"), "src directory should not exist"
+            assert not os.path.isdir("ui"), "ui directory should not exist"
+            assert not os.path.isdir("tests"), "tests directory should not exist"
+            
             with patch('sys.argv', test_args):
                 with patch('organiseMyProjects.runLinter.lintGuiNaming') as mock_lint_gui:
                     main()
                     
-                    # Should lint current directory
+                    # Should lint current directory since no project dirs found
+                    assert mock_lint_gui.call_count == 1, f"Expected 1 call but got {mock_lint_gui.call_count}"
                     mock_lint_gui.assert_called_once_with(".")
         finally:
             os.chdir(original_cwd)

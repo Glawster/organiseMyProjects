@@ -86,7 +86,7 @@ python main.py
 
 ## Testing
 
-The project includes a comprehensive test suite using pytest:
+The project includes a comprehensive test suite using pytest for **development and validation of this project**. These tests are not part of the distributed package but are used to ensure the reliability of the project scaffolding and linting functionality.
 
 ```bash
 # Run all tests
@@ -108,6 +108,8 @@ pytest --cov=organiseMyProjects
 - `tests/test_runLinter.py` - Tests for the linter CLI interface
 - `tests/test_integration.py` - End-to-end integration tests
 - `tests/conftest.py` - Shared test fixtures and configuration
+
+**Note**: The `tests/` directory is for development and testing of this project itself. It is not included in the installed package, so end users won't get these test files when they install `organiseMyProjects`.
 
 ## Development
 

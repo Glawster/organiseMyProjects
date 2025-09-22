@@ -43,24 +43,33 @@ class GuiNamingVisitor(ast.NodeVisitor):
         self.gridCalls = 0
 
     def visit_Assign(self, node):
-        if isinstance(node.targets[0], ast.Name):
-            varName = node.targets[0].id
+        # Handle both simple names (varName = ...) and attributes (self.varName = ...)
+        if len(node.targets) > 0:
+            target = node.targets[0]
+            varName = None
+            
+            if isinstance(target, ast.Name):
+                varName = target.id
+            elif isinstance(target, ast.Attribute):
+                varName = target.attr
+            
+            if varName:
+                # Check for constants (only for module-level simple names)
+                if isinstance(node.value, (ast.Constant, ast.List, ast.Tuple)):
+                    if isinstance(target, ast.Name) and isinstance(getattr(node, 'parent', None), ast.Module):
+                        if not re.match(namingRules['Constant'], varName):
+                            self.violations.append((varName, 'Constant', node.lineno))
 
-            if isinstance(node.value, (ast.Num, ast.Str, ast.Constant, ast.List, ast.Tuple)):
-                if isinstance(getattr(node, 'parent', None), ast.Module):
-                    if not re.match(namingRules['Constant'], varName):
-                        self.violations.append((varName, 'Constant', node.lineno))
-
-        if isinstance(node.value, ast.Call):
-            try:
-                widgetType = node.value.func.attr if isinstance(node.value.func, ast.Attribute) else None
-                if widgetType in widgetClasses:
-                    varName = node.targets[0].id
-                    pattern = namingRules[widgetType]
-                    if not re.match(pattern, varName):
-                        self.violations.append((varName, widgetType, node.lineno))
-            except AttributeError:
-                pass
+                # Check for widget naming conventions
+                if isinstance(node.value, ast.Call):
+                    try:
+                        widgetType = node.value.func.attr if isinstance(node.value.func, ast.Attribute) else None
+                        if widgetType in widgetClasses:
+                            pattern = namingRules[widgetType]
+                            if not re.match(pattern, varName):
+                                self.violations.append((varName, widgetType, node.lineno))
+                    except AttributeError:
+                        pass
 
         self.generic_visit(node)
 
@@ -149,14 +158,19 @@ def lintGuiNaming(directory):
                     print(f"{filename}: OK")
                     
 def lintFile(filepath):
-
     print(f"\nLinting: {filepath}\n" + "-"*50)
-    violations = checkFile(filepath)
-    if violations:
-        for name, ruleType, lineno in violations:
-            print(f"  Line {lineno}: '{name}' should follow naming rule for {ruleType}.")
-    else:
-        print("  OK")
+    
+    try:
+        violations = checkFile(filepath)
+        if violations:
+            for name, ruleType, lineno in violations:
+                print(f"  Line {lineno}: '{name}' should follow naming rule for {ruleType}.")
+        else:
+            print("  OK")
+    except FileNotFoundError:
+        print(f"  Error: File '{filepath}' does not exist.")
+    except Exception as e:
+        print(f"  Error: Failed to lint file: {e}")
 
 if __name__ == "__main__":
     import sys

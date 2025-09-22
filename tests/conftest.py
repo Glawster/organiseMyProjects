@@ -8,23 +8,23 @@ from pathlib import Path
 
 
 @pytest.fixture
-def temp_dir():
+def tempDir():
     """Create a temporary directory for testing."""
-    temp_path = Path(tempfile.mkdtemp())
-    yield temp_path
-    shutil.rmtree(temp_path)
+    tempPath = Path(tempfile.mkdtemp())
+    yield tempPath
+    shutil.rmtree(tempPath)
 
 
 @pytest.fixture
-def sample_project_name():
+def sampleProjectName():
     """Sample project name for testing."""
     return "testProject"
 
 
 @pytest.fixture
-def mock_python_file(temp_dir):
+def mockPythonFile(tempDir):
     """Create a sample Python file for testing the linter."""
-    python_file = temp_dir / "test_file.py"
+    pythonFile = tempDir / "test_file.py"
     content = '''
 import tkinter as tk
 from tkinter import ttk
@@ -46,5 +46,5 @@ class TestFrame:
         line4 = "test"
         line5 = "test"
 '''
-    python_file.write_text(content)
-    return python_file
+    pythonFile.write_text(content)
+    return pythonFile

@@ -22,7 +22,7 @@ from organiseMyProjects.guiNamingLinter import (
 class TestGuiNamingVisitor:
     """Test cases for GuiNamingVisitor class."""
     
-    def test_visitor_initialization(self):
+    def testVisitorInitialization(self):
         """Test that visitor initializes correctly."""
         lines = ["line1", "line2", "line3"]
         visitor = GuiNamingVisitor(lines)
@@ -32,7 +32,7 @@ class TestGuiNamingVisitor:
         assert visitor.packCalls == 0
         assert visitor.gridCalls == 0
     
-    def test_naming_rules_structure(self):
+    def testNamingRulesStructure(self):
         """Test that naming rules are properly defined."""
         expected_widget_types = {
             'Button', 'Entry', 'Label', 'Frame', 'Text', 
@@ -50,7 +50,7 @@ class TestGuiNamingVisitor:
         assert namingRules['Constant'] == r'^[A-Z_]+$'
         assert namingRules['Class'] == r'^[A-Z][a-zA-Z0-9]*$'
     
-    def test_widget_classes_definition(self):
+    def testWidgetClassesDefinition(self):
         """Test that widget classes are correctly defined."""
         expected_widgets = {
             'Button', 'Entry', 'Label', 'Frame', 'Text',
@@ -62,7 +62,7 @@ class TestGuiNamingVisitor:
         assert 'Constant' not in widgetClasses
         assert 'Class' not in widgetClasses
     
-    def test_class_name_exceptions(self):
+    def testClassNameExceptions(self):
         """Test that class name exceptions are defined."""
         assert 'iCloudSyncFrame' in classNameExceptions
 
@@ -70,7 +70,7 @@ class TestGuiNamingVisitor:
 class TestLintFile:
     """Test cases for lintFile function."""
     
-    def test_lint_file_with_violations(self, mock_python_file, capsys):
+    def testLintFileWithViolations(self, mock_python_file, capsys):
         """Test linting a file that contains violations."""
         lintFile(str(mock_python_file))
         
@@ -81,7 +81,7 @@ class TestLintFile:
         assert "Button" in captured.out
         assert str(mock_python_file) in captured.out
     
-    def test_lint_nonexistent_file(self, temp_dir, capsys):
+    def testLintNonexistentFile(self, temp_dir, capsys):
         """Test linting a file that doesn't exist."""
         nonexistent_file = temp_dir / "nonexistent.py"
         
@@ -90,7 +90,7 @@ class TestLintFile:
         captured = capsys.readouterr()
         assert "does not exist" in captured.out or "No such file" in captured.out
     
-    def test_lint_valid_python_file(self, temp_dir, capsys):
+    def testLintValidPythonFile(self, temp_dir, capsys):
         """Test linting a valid Python file with no violations."""
         valid_file = temp_dir / "valid.py"
         content = '''
@@ -124,7 +124,7 @@ class ValidFrame:
 class TestLintGuiNaming:
     """Test cases for lintGuiNaming function."""
     
-    def test_lint_directory(self, temp_dir, capsys):
+    def testLintDirectory(self, temp_dir, capsys):
         """Test linting a directory containing Python files."""
         # Create a Python file with violations
         python_file = temp_dir / "test.py"
@@ -145,7 +145,7 @@ class TestClass:
         assert "test.py" in captured.out
         assert "readme.txt" not in captured.out
     
-    def test_lint_empty_directory(self, temp_dir, capsys):
+    def testLintEmptyDirectory(self, temp_dir, capsys):
         """Test linting an empty directory."""
         lintGuiNaming(str(temp_dir))
         
@@ -153,7 +153,7 @@ class TestClass:
         # Should handle empty directory gracefully
         assert "Checking GUI naming" in captured.out
     
-    def test_lint_directory_with_subdirs(self, temp_dir, capsys):
+    def testLintDirectoryWithSubdirs(self, temp_dir, capsys):
         """Test linting a directory with subdirectories."""
         # Create subdirectory with Python file
         subdir = temp_dir / "subdir"
@@ -190,7 +190,7 @@ class TestNamingPatterns:
         ("CONSTANT_VALUE", "Constant"),
         ("MyClass", "Class"),
     ])
-    def test_valid_naming_patterns(self, valid_name, widget_type):
+    def testValidNamingPatterns(self, valid_name, widget_type):
         """Test that valid names match their respective patterns."""
         import re
         pattern = namingRules[widget_type]
@@ -210,7 +210,7 @@ class TestNamingPatterns:
         ("constantValue", "Constant"), # Not all caps
         ("myClass", "Class"),      # Should start with capital
     ])
-    def test_invalid_naming_patterns(self, invalid_name, widget_type):
+    def testInvalidNamingPatterns(self, invalid_name, widget_type):
         """Test that invalid names don't match their respective patterns."""
         import re
         pattern = namingRules[widget_type]
@@ -220,11 +220,11 @@ class TestNamingPatterns:
 class TestSpecialCases:
     """Test cases for special scenarios."""
     
-    def test_icloud_exception(self):
+    def testIcloudException(self):
         """Test that iCloud-related class names are handled as exceptions."""
         assert 'iCloudSyncFrame' in classNameExceptions
     
-    def test_widget_classes_subset(self):
+    def testWidgetClassesSubset(self):
         """Test that widgetClasses excludes non-widget types."""
         assert 'Handler' not in widgetClasses
         assert 'Constant' not in widgetClasses  

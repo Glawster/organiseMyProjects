@@ -14,12 +14,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 class TestPackageInstallation:
     """Test package installation and entry points."""
     
-    def test_createproject_entry_point_exists(self):
+    def testCreateProjectEntryPointExists(self):
         """Test that createProject entry point is properly configured."""
         from organiseMyProjects.createProject import main
         assert callable(main)
     
-    def test_runlinter_entry_point_exists(self):
+    def testRunLinterEntryPointExists(self):
         """Test that runLinter entry point is properly configured."""
         from organiseMyProjects.runLinter import main
         assert callable(main)
@@ -28,26 +28,26 @@ class TestPackageInstallation:
 class TestEndToEndWorkflow:
     """End-to-end tests for the complete project creation and linting workflow."""
     
-    def test_create_and_lint_project(self, temp_dir):
+    def testCreateAndLintProject(self, temp_dir):
         """Test creating a project and then linting it."""
-        project_name = "testEndToEnd"
-        project_path = temp_dir / project_name
+        projectName = "testEndToEnd"
+        projectPath = temp_dir / projectName
         
         # Step 1: Create a project
         from organiseMyProjects.createProject import createProject
         
         with patch('organiseMyProjects.createProject.subprocess.run'):
-            createProject(str(project_path))
+            createProject(str(projectPath))
         
         # Verify project was created
-        assert project_path.exists()
-        assert (project_path / ".github" / "copilot-instructions.md").exists()
+        assert projectPath.exists()
+        assert (projectPath / ".github" / "copilot-instructions.md").exists()
         
         # Step 2: Add some Python code with violations to the project
-        ui_dir = project_path / "ui"
-        test_frame = ui_dir / "testFrame.py"
+        uiDir = projectPath / "ui"
+        testFrame = uiDir / "testFrame.py"
         
-        code_with_violations = '''
+        codeWithViolations = '''
 import tkinter as tk
 from tkinter import ttk
 
@@ -67,108 +67,108 @@ class TestFrame:
         statement4 = "test"
         statement5 = "test"
 '''
-        test_frame.write_text(code_with_violations)
+        testFrame.write_text(codeWithViolations)
         
         # Step 3: Lint the project
-        from organiseMyProjects.runLinter import main as lint_main
+        from organiseMyProjects.runLinter import main as lintMain
         
         # Mock sys.argv to simulate command line call
-        test_args = ['runLinter.py', str(project_path)]
+        testArgs = ['runLinter.py', str(projectPath)]
         
-        with patch('sys.argv', test_args):
+        with patch('sys.argv', testArgs):
             # Capture output but don't fail on violations
             try:
-                lint_main()
+                lintMain()
             except SystemExit:
                 pass  # Linter might exit with non-zero code on violations
         
         # If we get here, the basic workflow completed successfully
         assert True  # Test passes if no exceptions were thrown
     
-    def test_update_existing_project(self, temp_dir):
+    def testUpdateExistingProject(self, temp_dir):
         """Test updating an existing project."""
-        project_name = "testUpdate"
-        project_path = temp_dir / project_name
+        projectName = "testUpdate"
+        projectPath = temp_dir / projectName
         
         # Create initial project
         from organiseMyProjects.createProject import createProject, updateProject
         
         with patch('organiseMyProjects.createProject.subprocess.run'):
-            createProject(str(project_path))
+            createProject(str(projectPath))
         
         # Verify initial creation
-        assert project_path.exists()
+        assert projectPath.exists()
         
         # Remove a file to test update
-        (project_path / "main.py").unlink()
-        assert not (project_path / "main.py").exists()
+        (projectPath / "main.py").unlink()
+        assert not (projectPath / "main.py").exists()
         
         # Update the project
         with patch('organiseMyProjects.createProject.subprocess.run'):
-            updateProject(str(project_path))
+            updateProject(str(projectPath))
         
         # Verify file was restored
-        assert (project_path / "main.py").exists()
+        assert (projectPath / "main.py").exists()
     
-    def test_project_structure_completeness(self, temp_dir):
+    def testProjectStructureCompleteness(self, temp_dir):
         """Test that created projects have all expected files and directories."""
-        project_name = "testStructure"
-        project_path = temp_dir / project_name
+        projectName = "testStructure"
+        projectPath = temp_dir / projectName
         
         from organiseMyProjects.createProject import createProject
         
         with patch('organiseMyProjects.createProject.subprocess.run'):
-            createProject(str(project_path))
+            createProject(str(projectPath))
         
         # Define expected structure
-        expected_dirs = [
+        expectedDirs = [
             "src", "ui", "tests", "logs", ".github"
         ]
         
-        expected_files = [
+        expectedFiles = [
             "main.py", ".gitignore", "requirements.txt", "dev-requirements.txt",
             ".env", "README.md", ".pre-commit-config.yaml",
             "src/__init__.py", "ui/__init__.py",
             ".github/copilot-instructions.md"
         ]
         
-        expected_copied_modules = [
+        expectedCopiedModules = [
             "src/logUtils.py", "ui/styleUtils.py", "ui/mainMenu.py",
             "ui/baseFrame.py", "ui/frameTemplate.py", "ui/statusFrame.py",
             "tests/runLinter.py", "tests/guiNamingLinter.py"
         ]
         
         # Check directories
-        for dir_name in expected_dirs:
-            dir_path = project_path / dir_name
-            assert dir_path.exists(), f"Directory {dir_name} should exist"
-            assert dir_path.is_dir(), f"{dir_name} should be a directory"
+        for dirName in expectedDirs:
+            dirPath = projectPath / dirName
+            assert dirPath.exists(), f"Directory {dirName} should exist"
+            assert dirPath.is_dir(), f"{dirName} should be a directory"
         
         # Check files
-        for file_name in expected_files:
-            file_path = project_path / file_name
-            assert file_path.exists(), f"File {file_name} should exist"
-            assert file_path.is_file(), f"{file_name} should be a file"
+        for fileName in expectedFiles:
+            filePath = projectPath / fileName
+            assert filePath.exists(), f"File {fileName} should exist"
+            assert filePath.is_file(), f"{fileName} should be a file"
         
         # Check copied modules
-        for module_name in expected_copied_modules:
-            module_path = project_path / module_name
-            assert module_path.exists(), f"Module {module_name} should exist"
-            assert module_path.is_file(), f"{module_name} should be a file"
+        for moduleName in expectedCopiedModules:
+            modulePath = projectPath / moduleName
+            assert modulePath.exists(), f"Module {moduleName} should exist"
+            assert modulePath.is_file(), f"{moduleName} should be a file"
 
 
 class TestErrorHandling:
     """Test error handling in various scenarios."""
     
-    def test_create_project_invalid_path(self, capsys):
+    def testCreateProjectInvalidPath(self, capsys):
         """Test creating project with invalid path."""
         from organiseMyProjects.createProject import createProject
         
         # Try to create project in a path that can't be created (e.g., inside a file)
-        invalid_path = "/dev/null/impossible_project"
+        invalidPath = "/dev/null/impossible_project"
         
         try:
-            createProject(invalid_path)
+            createProject(invalidPath)
         except (OSError, IOError, PermissionError):
             # These exceptions are expected for invalid paths
             pass
@@ -176,10 +176,10 @@ class TestErrorHandling:
         # Test should pass if appropriate exception handling occurs
         assert True
     
-    def test_lint_invalid_python_syntax(self, temp_dir, capsys):
+    def testLintInvalidPythonSyntax(self, temp_dir, capsys):
         """Test linting file with invalid Python syntax."""
-        python_file = temp_dir / "invalid.py"
-        invalid_content = '''
+        pythonFile = temp_dir / "invalid.py"
+        invalidContent = '''
 import tkinter as tk
 
 class InvalidSyntax:
@@ -187,13 +187,13 @@ class InvalidSyntax:
         # Missing closing quote
         self.btnTest = "incomplete string
 '''
-        python_file.write_text(invalid_content)
+        pythonFile.write_text(invalidContent)
         
         from organiseMyProjects.guiNamingLinter import lintFile
         
         # Should handle syntax errors gracefully
         try:
-            lintFile(str(python_file))
+            lintFile(str(pythonFile))
         except SyntaxError:
             pass  # Expected for invalid syntax
         
@@ -204,27 +204,27 @@ class InvalidSyntax:
 class TestModuleImports:
     """Test that all modules can be imported correctly."""
     
-    def test_import_createproject(self):
+    def testImportCreateProject(self):
         """Test importing createProject module."""
         from organiseMyProjects import createProject
         assert hasattr(createProject, 'createProject')
         assert hasattr(createProject, 'updateProject')
         assert hasattr(createProject, 'main')
     
-    def test_import_gui_naming_linter(self):
+    def testImportGuiNamingLinter(self):
         """Test importing guiNamingLinter module."""
         from organiseMyProjects import guiNamingLinter
         assert hasattr(guiNamingLinter, 'GuiNamingVisitor')
         assert hasattr(guiNamingLinter, 'lintFile')
         assert hasattr(guiNamingLinter, 'lintGuiNaming')
     
-    def test_import_run_linter(self):
+    def testImportRunLinter(self):
         """Test importing runLinter module."""
         from organiseMyProjects import runLinter
         assert hasattr(runLinter, 'main')
         assert hasattr(runLinter, '_lint_target')
     
-    def test_package_metadata(self):
+    def testPackageMetadata(self):
         """Test that package metadata is accessible."""
         import organiseMyProjects
         # Package should be importable and have basic structure
@@ -234,20 +234,20 @@ class TestModuleImports:
 class TestResourceAccess:
     """Test access to package resources."""
     
-    def test_copilot_instructions_resource_access(self):
+    def testCopilotInstructionsResourceAccess(self):
         """Test that copilot instructions can be accessed as a package resource."""
         try:
             from importlib.resources import files
         except ImportError:
             from importlib_resources import files
         
-        package_files = files('organiseMyProjects')
-        copilot_file = package_files / 'copilot-instructions.md'
+        packageFiles = files('organiseMyProjects')
+        copilotFile = packageFiles / 'copilot-instructions.md'
         
         # File should exist in package
-        assert copilot_file.is_file()
+        assert copilotFile.is_file()
         
         # Content should be readable
-        content = copilot_file.read_text()
+        content = copilotFile.read_text()
         assert len(content) > 0
         assert "GitHub Copilot Instructions" in content

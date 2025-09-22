@@ -16,7 +16,7 @@ from organiseMyProjects.runLinter import main, _lint_target
 class TestRunLinter:
     """Test cases for runLinter functionality."""
     
-    def test_lint_target_file(self, mock_python_file, capsys):
+    def testLintTargetFile(self, mock_python_file, capsys):
         """Test linting a single file."""
         with patch('organiseMyProjects.runLinter.lintFile') as mock_lint_file:
             _lint_target(str(mock_python_file))
@@ -25,7 +25,7 @@ class TestRunLinter:
         captured = capsys.readouterr()
         assert f"Linting: {mock_python_file}" in captured.out
     
-    def test_lint_target_directory(self, temp_dir, capsys):
+    def testLintTargetDirectory(self, temp_dir, capsys):
         """Test linting a directory."""
         with patch('organiseMyProjects.runLinter.lintGuiNaming') as mock_lint_gui:
             _lint_target(str(temp_dir))
@@ -34,7 +34,7 @@ class TestRunLinter:
         captured = capsys.readouterr()
         assert f"Linting: {temp_dir}" in captured.out
     
-    def test_main_with_targets(self, mock_python_file):
+    def testMainWithTargets(self, mock_python_file):
         """Test main function with specific targets."""
         test_args = ['runLinter.py', str(mock_python_file)]
         
@@ -43,7 +43,7 @@ class TestRunLinter:
                 main()
                 mock_lint_file.assert_called_once_with(str(mock_python_file))
     
-    def test_main_nonexistent_target(self, temp_dir, capsys):
+    def testMainNonexistentTarget(self, temp_dir, capsys):
         """Test main function with non-existent target."""
         nonexistent = temp_dir / "nonexistent.py"
         test_args = ['runLinter.py', str(nonexistent)]
@@ -55,7 +55,7 @@ class TestRunLinter:
         assert "does not exist" in captured.out
         assert "Skipping" in captured.out
     
-    def test_main_non_python_target(self, temp_dir, capsys):
+    def testMainNonPythonTarget(self, temp_dir, capsys):
         """Test main function with non-Python file target."""
         text_file = temp_dir / "readme.txt"
         text_file.write_text("This is not Python")
@@ -69,7 +69,7 @@ class TestRunLinter:
         assert "not a Python file" in captured.out
         assert "Skipping" in captured.out
     
-    def test_main_unreadable_target(self, temp_dir, capsys):
+    def testMainUnreadableTarget(self, temp_dir, capsys):
         """Test main function with unreadable target."""
         python_file = temp_dir / "test.py"
         python_file.write_text("# Python file")
@@ -85,7 +85,7 @@ class TestRunLinter:
         assert "not readable" in captured.out
         assert "Skipping" in captured.out
     
-    def test_main_no_targets_with_project_dirs(self, temp_dir, capsys):
+    def testMainNoTargetsWithProjectDirs(self, temp_dir, capsys):
         """Test main function with no targets but project directories exist."""
         # Create project directories
         (temp_dir / "src").mkdir()
@@ -123,7 +123,7 @@ class TestRunLinter:
         captured = capsys.readouterr()
         assert "No target supplied" in captured.out
     
-    def test_main_no_targets_no_project_dirs(self, temp_dir, capsys):
+    def testMainNoTargetsNoProjectDirs(self, temp_dir, capsys):
         """Test main function with no targets and no project directories."""
         test_args = ['runLinter.py']
         
@@ -155,7 +155,7 @@ class TestRunLinter:
 class TestIntegration:
     """Integration tests for the complete linting workflow."""
     
-    def test_full_linting_workflow(self, temp_dir, capsys):
+    def testFullLintingWorkflow(self, temp_dir, capsys):
         """Test the complete linting workflow from command line to output."""
         # Create a Python file with various violations
         python_file = temp_dir / "gui_test.py"
@@ -198,7 +198,7 @@ class TestGUI:
         assert str(python_file) in captured.out
         assert "save_button" in captured.out or "status_label" in captured.out
     
-    def test_directory_linting_workflow(self, temp_dir, capsys):
+    def testDirectoryLintingWorkflow(self, temp_dir, capsys):
         """Test linting an entire directory structure."""
         # Create subdirectories
         src_dir = temp_dir / "src"

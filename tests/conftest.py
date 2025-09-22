@@ -6,6 +6,14 @@ import tempfile
 import shutil
 from pathlib import Path
 
+@pytest.fixture
+def testFilePath(tmp_path):
+    file = tmp_path / "example.py"
+    file.write_text(
+        "def greet(name):\n"
+        "    return f'hello {name}'\n"
+    )
+    return file  # return Path; str(file) if your code expects a string
 
 @pytest.fixture
 def tempDir():

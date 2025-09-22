@@ -27,6 +27,8 @@ createProject myNewProject
 Creates:
 ```
 myNewProject/
+├── .github
+│   └── copilot-instructions.md
 ├── src/
 │   └── logUtils.py
 ├── main.py
@@ -43,7 +45,6 @@ myNewProject/
 ├── requirements.txt
 ├── dev-requirements.txt
 ├── .gitignore
-
 ├── README.md
 ├── projectGuidelines.md
 ```

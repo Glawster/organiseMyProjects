@@ -84,8 +84,8 @@ def createProject(projectName):
 
     # Copy the copilot instructions file
     try:
-        template_files = files('organiseMyProjects') / 'templates'
-        copilot_instructions_file = template_files / 'copilot-instructions.md'
+        templateFiles = files('organiseMyProjects') / 'templates'
+        copilot_instructions_file = templateFiles / 'copilot-instructions.md'
         if copilot_instructions_file.is_file():
             print("Copying copilot instructions...")
             copilot_instructions_content = copilot_instructions_file.read_text()

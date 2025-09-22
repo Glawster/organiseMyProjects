@@ -84,8 +84,8 @@ def createProject(projectName):
 
     # Copy the copilot instructions file
     try:
-        templateFiles = files('organiseMyProjects') / 'templates'
-        copilot_instructions_file = templateFiles / 'copilot-instructions.md'
+        package_files = files('organiseMyProjects')
+        copilot_instructions_file = package_files / 'copilot-instructions.md'
         if copilot_instructions_file.is_file():
             print("Copying copilot instructions...")
             copilot_instructions_content = copilot_instructions_file.read_text()
@@ -190,8 +190,8 @@ def updateProject(projectName):
         _copy_if_newer(srcGuidelines, basePath / "projectGuidelines.md")
 
     try:
-        template_files = files('organiseMyProjects') / 'templates'
-        copilot_instructions_file = template_files / 'copilot-instructions.md'
+        package_files = files('organiseMyProjects')
+        copilot_instructions_file = package_files / 'copilot-instructions.md'
         if copilot_instructions_file.is_file():
             print("Checking copilot instructions...")
             copilot_instructions_content = copilot_instructions_file.read_text()

@@ -39,16 +39,17 @@ def main() -> None:
             continue
         _lint_target(target)
 
-    # No path provided; lint the project structure from the CWD
-    print("No target supplied. Searching for project directories to lint...")
-    found = False
-    for folder in ("src", "ui", "tests"):
-        if os.path.isdir(folder):
-            _lint_target(folder)
-            found = True
+    # Only search for project directories if no targets were provided
+    if not args.targets:
+        print("No target supplied. Searching for project directories to lint...")
+        found = False
+        for folder in ("src", "ui", "tests"):
+            if os.path.isdir(folder):
+                _lint_target(folder)
+                found = True
 
-    if not found:
-        _lint_target(".")
+        if not found:
+            _lint_target(".")
 
 if __name__ == "__main__":
     main()

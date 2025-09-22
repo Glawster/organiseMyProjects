@@ -6,7 +6,7 @@ import os
 from organiseMyProjects.guiNamingLinter import lintFile, lintGuiNaming
 
 
-def _lint_target(target: str) -> None:
+def _lintTarget(target: str) -> None:
     """Lint a single file or directory."""
     print(f"Linting: {target}")
     if os.path.isdir(target):
@@ -37,7 +37,7 @@ def main() -> None:
         if not os.path.isdir(target) and not target.endswith(".py"):
             print(f"Target '{target}' is not a Python file or directory. Skipping...")
             continue
-        _lint_target(target)
+        _lintTarget(target)
 
     # Only search for project directories if no targets were provided
     if not args.targets:
@@ -45,11 +45,11 @@ def main() -> None:
         found = False
         for folder in ("src", "ui", "tests"):
             if os.path.isdir(folder):
-                _lint_target(folder)
+                _lintTarget(folder)
                 found = True
 
         if not found:
-            _lint_target(".")
+            _lintTarget(".")
 
 if __name__ == "__main__":
     main()

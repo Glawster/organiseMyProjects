@@ -94,8 +94,12 @@ class TestRunLinter:
         
         test_args = ['runLinter.py']
         
-        with patch('sys.argv', test_args):
-            with patch('organiseMyProjects.runLinter.os.getcwd', return_value=str(temp_dir)):
+        # Change to temp directory and run test
+        import os
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(temp_dir)
+            with patch('sys.argv', test_args):
                 with patch('organiseMyProjects.runLinter.lintGuiNaming') as mock_lint_gui:
                     main()
                     
@@ -104,6 +108,8 @@ class TestRunLinter:
                     mock_lint_gui.assert_any_call("src")
                     mock_lint_gui.assert_any_call("ui") 
                     mock_lint_gui.assert_any_call("tests")
+        finally:
+            os.chdir(original_cwd)
         
         captured = capsys.readouterr()
         assert "No target supplied" in captured.out
@@ -112,13 +118,19 @@ class TestRunLinter:
         """Test main function with no targets and no project directories."""
         test_args = ['runLinter.py']
         
-        with patch('sys.argv', test_args):
-            with patch('organiseMyProjects.runLinter.os.getcwd', return_value=str(temp_dir)):
+        # Change to temp directory and run test
+        import os
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(temp_dir)
+            with patch('sys.argv', test_args):
                 with patch('organiseMyProjects.runLinter.lintGuiNaming') as mock_lint_gui:
                     main()
                     
                     # Should lint current directory
                     mock_lint_gui.assert_called_once_with(".")
+        finally:
+            os.chdir(original_cwd)
         
         captured = capsys.readouterr()
         assert "No target supplied" in captured.out

@@ -10,6 +10,7 @@ A Python toolkit to scaffold new projects with predefined structure, logging, GU
 - 🧪 Automatically include logging setup, dev tools, and layout
 - 🧼 Run a custom GUI naming linter with `runLinter` (default scans the current project)
 - 🧰 Includes pre-commit support and code style guidelines
+- 🤖 Includes GitHub Copilot instructions for consistent development guidelines
 
 ## Installation
 
@@ -27,26 +28,29 @@ createProject myNewProject
 Creates:
 ```
 myNewProject/
-├── .github
-│   └── copilot-instructions.md
+├── .github/
+│   └── copilot-instructions.md    # GitHub Copilot development guidelines
 ├── src/
-│   └── logUtils.py
-├── main.py
+│   ├── __init__.py
+│   └── logUtils.py                # Centralized logging utilities
 ├── ui/
-│   ├── mainMenu.py
-│   ├── baseFrame.py
-│   ├── frameTemplate.py
-│   ├── statusFrame.py
-│   └── styleUtils.py
+│   ├── __init__.py
+│   ├── mainMenu.py               # Main application entry point
+│   ├── baseFrame.py              # Base GUI framework
+│   ├── frameTemplate.py          # Template for new frames
+│   ├── statusFrame.py            # Status display utilities
+│   └── styleUtils.py             # GUI styling utilities
 ├── tests/
-│   ├── runLinter.py
-│   └── guiNamingLinter.py
-├── logs/
-├── requirements.txt
-├── dev-requirements.txt
-├── .gitignore
-├── README.md
-├── projectGuidelines.md
+│   ├── runLinter.py              # Linter entry point
+│   └── guiNamingLinter.py        # GUI naming convention checker
+├── logs/                         # Application log directory
+├── main.py                       # Application main entry point
+├── requirements.txt              # Production dependencies
+├── dev-requirements.txt          # Development dependencies
+├── .gitignore                    # Git ignore patterns
+├── .env                          # Environment configuration
+├── .pre-commit-config.yaml       # Pre-commit hooks configuration
+└── README.md                     # Project documentation
 ```
 
 ### Update an existing project
@@ -76,18 +80,106 @@ After creating a project, install its dependencies and run the starter script:
 ```bash
 cd myNewProject
 pip install -r requirements.txt
+pip install -r dev-requirements.txt  # for development tools
 python main.py
 ```
+
+## Testing
+
+The project includes a comprehensive test suite using pytest:
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test file
+pytest tests/test_createProject.py
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage (if pytest-cov is installed)
+pytest --cov=organiseMyProjects
+```
+
+### Test Structure
+- `tests/test_createProject.py` - Tests for project creation and updating
+- `tests/test_guiNamingLinter.py` - Tests for GUI naming convention linting
+- `tests/test_runLinter.py` - Tests for the linter CLI interface
+- `tests/test_integration.py` - End-to-end integration tests
+- `tests/conftest.py` - Shared test fixtures and configuration
+
+## Development
+
+### Running Tests
+```bash
+# Install development dependencies
+pip install -r dev-requirements.txt
+
+# Run tests
+pytest
+
+# Run tests with coverage
+pytest --cov=organiseMyProjects --cov-report=html
+```
+
+### Code Quality
+The project uses several tools to maintain code quality:
+
+- **Black**: Automatic code formatting
+- **pytest**: Comprehensive test suite
+- **pre-commit**: Git hooks for quality checks
+- **Custom GUI Linter**: Enforces GUI naming conventions
+
+### Pre-commit Hooks
+After creating a project, pre-commit hooks are automatically installed to:
+- Format code with Black
+- Run the custom GUI naming linter
+- Ensure code quality before commits
+
+## Project Guidelines
+
+### Naming Conventions
+- **Functions and Variables**: camelCase (e.g., `processFiles`, `userName`)
+- **Classes**: PascalCase (e.g., `MainFrame`, `ContactSheetFrame`)
+- **Constants**: UPPERCASE_WITH_UNDERSCORES (e.g., `WINDOW_WIDTH`, `MAX_RETRIES`)
+- **GUI Components**: Prefixed naming (e.g., `btnSave`, `lblStatus`, `frmMain`)
+
+### GUI Component Prefixes
+- `btn` - Buttons (`btnSave`, `btnCancel`)
+- `lbl` - Labels (`lblStatus`, `lblInfo`)
+- `frm` - Frames (`frmMain`, `frmSettings`)
+- `entry` - Entry fields (`entryName`, `entryPassword`)
+- `txt` - Text widgets (`txtContent`, `txtNotes`)
+- `chk` - Checkboxes (`chkEnabled`, `chkVisible`)
+- `cmb` - Comboboxes (`cmbSource`, `cmbDestination`)
+
+### Logging Standards
+- Use centralized logger from `logUtils.py`
+- All log messages in lowercase except ERROR messages
+- Format patterns:
+  - `"...message"` for ongoing steps
+  - `"message..."` when a step is done
+  - `"...key: value"` for reporting variables
 
 ## Requirements
 
 - Python 3.7+
 - Windows with Outlook (for `pywin32`-dependent projects)
-- Tools:
+- Development tools:
   - `pywin32`
   - `black`
   - `pytest`
   - `pre-commit`
+
+## Package Structure
+
+The `organiseMyProjects` package includes:
+- `createProject.py` - Main project scaffolding functionality
+- `guiNamingLinter.py` - GUI naming convention enforcement
+- `runLinter.py` - Command-line interface for the linter
+- `copilot-instructions.md` - GitHub Copilot development guidelines
+- Template files for GUI components and utilities
 
 ## License
 

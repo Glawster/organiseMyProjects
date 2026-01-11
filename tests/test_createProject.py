@@ -83,6 +83,26 @@ class TestCreateProject:
         assert sample_project_name in readmeContent
         assert "Project scaffold created by createProject.py" in readmeContent
     
+    def testCreateProjectTemplateFiles(self, temp_dir, sample_project_name):
+        """Test that only template files (not package utilities) are copied."""
+        projectPath = temp_dir / sample_project_name
+        
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            createProject(str(projectPath))
+        
+        # Verify template files are copied
+        assert (projectPath / "ui" / "styleUtils.py").exists()
+        assert (projectPath / "ui" / "mainMenu.py").exists()
+        assert (projectPath / "ui" / "baseFrame.py").exists()
+        assert (projectPath / "ui" / "frameTemplate.py").exists()
+        assert (projectPath / "ui" / "statusFrame.py").exists()
+        assert (projectPath / "tests" / "runLinter.py").exists()
+        assert (projectPath / "tests" / "guiNamingLinter.py").exists()
+        
+        # Verify package utilities are NOT copied
+        assert not (projectPath / "src" / "logUtils.py").exists(), "logUtils.py should NOT be copied to new projects"
+        assert not (projectPath / "createProject.py").exists(), "createProject.py should NOT be copied to new projects"
+    
     def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, capsys):
         """Test behavior when project directory already exists."""
         projectPath = temp_dir / sample_project_name

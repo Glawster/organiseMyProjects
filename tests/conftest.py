@@ -24,8 +24,22 @@ def tempDir():
 
 
 @pytest.fixture
+def temp_dir():
+    """Create a temporary directory for testing (snake_case alias)."""
+    tempPath = Path(tempfile.mkdtemp())
+    yield tempPath
+    shutil.rmtree(tempPath)
+
+
+@pytest.fixture
 def sampleProjectName():
     """Sample project name for testing."""
+    return "testProject"
+
+
+@pytest.fixture
+def sample_project_name():
+    """Sample project name for testing (snake_case alias)."""
     return "testProject"
 
 

@@ -21,20 +21,21 @@ This file contains project-specific details for the **organiseMyProjects** repos
 ```
 organiseMyProjects/
 ├── .github/
-│   ├── copilot-instructions.md           # Generic guidelines (distributed)
-│   └── additional-copilot-instructions.md # Project-specific (this file)
+│   ├── copilot-instructions.md           # Generic guidelines (template)
+│   └── additional-copilot-instructions.md # Project-specific (this file, NOT template)
 ├── organiseMyProjects/                    # Main package
-│   ├── createProject.py                   # Project scaffolding script
-│   ├── guiNamingLinter.py                # GUI naming convention checker
-│   ├── runLinter.py                      # Linter CLI interface
-│   ├── baseFrame.py                      # Base GUI framework
-│   ├── frameTemplate.py                  # Template for new frames
-│   ├── statusFrame.py                    # Status display utilities
-│   ├── logUtils.py                       # Centralized logging
-│   ├── styleUtils.py                     # GUI styling utilities
-│   ├── globalVars.py                     # Global constants
-│   ├── copilot-instructions.md           # Template file (distributed)
-│   └── HELP.md                           # GUI linter documentation
+│   ├── createProject.py                   # [PACKAGE] Project scaffolding tool
+│   ├── logUtils.py                       # [PACKAGE] Centralized logging utility
+│   ├── globalVars.py                     # [PACKAGE] Global constants
+│   ├── copilot-instructions.md           # [TEMPLATE] Generic guidelines
+│   ├── HELP.md                           # [PACKAGE] GUI linter documentation
+│   ├── guiNamingLinter.py                # [TEMPLATE] Naming convention checker
+│   ├── runLinter.py                      # [TEMPLATE] Linter CLI interface
+│   ├── baseFrame.py                      # [TEMPLATE] Base GUI framework
+│   ├── frameTemplate.py                  # [TEMPLATE] Template for new frames
+│   ├── statusFrame.py                    # [TEMPLATE] Status display utilities
+│   ├── styleUtils.py                     # [TEMPLATE] GUI styling utilities
+│   └── mainMenu.py                       # [TEMPLATE] Main menu framework
 ├── tests/                                 # Test suite (not distributed)
 │   ├── test_createProject.py
 │   ├── test_guiNamingLinter.py
@@ -47,6 +48,22 @@ organiseMyProjects/
 ├── DEVELOPER.md                           # Developer guide
 └── pytest.ini                             # Test configuration
 ```
+
+### File Categories
+
+**[PACKAGE]** - Package utilities that remain in organiseMyProjects and are NOT copied to new projects:
+- `createProject.py` - The scaffolding tool itself
+- `logUtils.py` - Package-level logging (projects should implement their own)
+- `globalVars.py` - Package constants
+- `HELP.md` - Documentation
+
+**[TEMPLATE]** - Template files that are copied to new projects:
+- `copilot-instructions.md` - Generic development guidelines
+- `guiNamingLinter.py` - Naming linter for the new project
+- `runLinter.py` - Linter CLI for the new project
+- `baseFrame.py`, `frameTemplate.py`, `statusFrame.py` - GUI framework
+- `styleUtils.py` - GUI styling utilities
+- `mainMenu.py` - Main menu framework
 
 ## Core Components
 
@@ -61,6 +78,7 @@ organiseMyProjects/
 
 ### guiNamingLinter.py
 - **Purpose**: Enforces widget naming conventions via AST analysis
+- **Type**: TEMPLATE (copied to new projects' tests/ directory)
 - **Key Classes**:
   - `GuiNamingVisitor` - AST visitor for analyzing code
 - **Key Functions**:
@@ -70,14 +88,35 @@ organiseMyProjects/
 
 ### runLinter.py
 - **Purpose**: CLI interface for the naming linter
+- **Type**: TEMPLATE (copied to new projects' tests/ directory)
 - **Behavior**:
   - With targets: Lints specified files/directories
   - Without targets: Searches for src/, ui/, tests/ directories
   - Falls back to current directory if no project dirs found
 
+### logUtils.py
+- **Purpose**: Package-level logging utility
+- **Type**: PACKAGE UTILITY (NOT copied to new projects)
+- **Note**: New projects should implement their own logging based on their needs
+
 ## Package Distribution
 
 ### Distribution Strategy
+
+The package contains two types of files:
+
+1. **Package Utilities** - Stay in the organiseMyProjects package:
+   - `createProject.py` - The tool that creates/updates projects
+   - `logUtils.py` - Package-level logging (not distributed to projects)
+   - `globalVars.py` - Package constants
+   
+2. **Template Files** - Copied to new projects via `createProject`:
+   - `copilot-instructions.md` - Generic Copilot guidelines
+   - `guiNamingLinter.py` - Naming checker for the project
+   - `runLinter.py` - Linter CLI for the project
+   - GUI framework files: `baseFrame.py`, `frameTemplate.py`, `statusFrame.py`, `mainMenu.py`, `styleUtils.py`
+
+### Technical Details
 - Tests excluded from package via `setup.py` (not installed)
 - Template files included via `MANIFEST.in`
 - Uses `importlib.resources` for accessing packaged files

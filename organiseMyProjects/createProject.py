@@ -15,13 +15,10 @@ GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
 REQUIREMENTS_CONTENT = "pywin32\n"
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\n"
 ENV_CONTENT = "PYTHONPATH=src;ui\n"
-MAIN_PY_CONTENT = """from src.logUtils import setupLogging
-from ui.mainMenu import mainMenu
-
-logger = setupLogging("main")
+MAIN_PY_CONTENT = """from ui.mainMenu import mainMenu
 
 def main():
-    logger.info("...starting main script")
+    print("Starting application...")
     mainMenu()
 
 if __name__ == "__main__":
@@ -99,9 +96,8 @@ def createProject(projectName):
             print("Copying copilot instructions...")
             shutil.copy(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
 
-    # Copy helper modules into the new project
+    # Copy template modules into the new project
     print("Copying template modules...")
-    shutil.copy(TEMPLATE_DIR / "logUtils.py", basePath / "src" / "logUtils.py")
     shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
     shutil.copy(TEMPLATE_DIR / "mainMenu.py", basePath / "ui" / "mainMenu.py")
     shutil.copy(TEMPLATE_DIR / "baseFrame.py", basePath / "ui" / "baseFrame.py")
@@ -213,7 +209,6 @@ def updateProject(projectName):
 
     print("Checking template modules...")
     modules = [
-        ("logUtils.py", "src/logUtils.py"),
         ("styleUtils.py", "ui/styleUtils.py"),
         ("mainMenu.py", "ui/mainMenu.py"),
         ("baseFrame.py", "ui/baseFrame.py"),

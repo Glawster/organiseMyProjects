@@ -2,6 +2,11 @@ import os
 import shutil
 import subprocess
 import argparse
+try:
+    from importlib.resources import files
+except ImportError:
+    # Fallback for Python < 3.9
+    from importlib_resources import files
 
 from pathlib import Path
 
@@ -10,13 +15,10 @@ GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
 REQUIREMENTS_CONTENT = "pywin32\n"
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\n"
 ENV_CONTENT = "PYTHONPATH=src;ui\n"
-MAIN_PY_CONTENT = """from src.logUtils import setupLogging
-from ui.mainMenu import mainMenu
-
-logger = setupLogging("main")
+MAIN_PY_CONTENT = """from ui.mainMenu import mainMenu
 
 def main():
-    logger.info("...starting main script")
+    print("Starting application...")
     mainMenu()
 
 if __name__ == "__main__":
@@ -55,6 +57,7 @@ def createProject(projectName):
     (basePath / "ui").mkdir()
     (basePath / "tests").mkdir()
     (basePath / "logs").mkdir()
+    (basePath / ".github").mkdir()
 
     # Make directories importable packages
     (basePath / "src" / "__init__.py").touch()
@@ -71,14 +74,31 @@ def createProject(projectName):
     )
 
     # Copy the guidelines file
-    srcGuidelines = Path("projectGuidelines.md")
+    srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
     if srcGuidelines.exists():
         print("Copying project guidelines...")
         shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
 
-    # Copy helper modules into the new project
+    # Copy the copilot instructions file
+    try:
+        package_files = files('organiseMyProjects')
+        copilot_instructions_file = package_files / 'copilot-instructions.md'
+        if copilot_instructions_file.is_file():
+            print("Copying copilot instructions...")
+            copilot_instructions_content = copilot_instructions_file.read_text()
+            (basePath / ".github" / "copilot-instructions.md").write_text(copilot_instructions_content)
+        else:
+            raise FileNotFoundError("Template not found in package")
+    except (ImportError, FileNotFoundError):
+        # Fallback to file system if package resource not available (development mode)
+        srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+        if srcCopilotInstructions.exists():
+            print("Copying copilot instructions...")
+            shutil.copy(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
+
+    # Copy template modules into the new project
     print("Copying template modules...")
-    shutil.copy(TEMPLATE_DIR / "logUtils.py", basePath / "src" / "logUtils.py")
+    shutil.copy(TEMPLATE_DIR / "globalVars.py", basePath / "src" / "globalVars.py")
     shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
     shutil.copy(TEMPLATE_DIR / "mainMenu.py", basePath / "ui" / "mainMenu.py")
     shutil.copy(TEMPLATE_DIR / "baseFrame.py", basePath / "ui" / "baseFrame.py")
@@ -146,7 +166,7 @@ def updateProject(projectName):
     print(f"Updating project at {basePath}...")
     print("Ensuring directories and packages...")
 
-    for folder in ["src", "ui", "tests", "logs"]:
+    for folder in ["src", "ui", "tests", "logs", ".github"]:
         (basePath / folder).mkdir(parents=True, exist_ok=True)
 
     (basePath / "src" / "__init__.py").touch(exist_ok=True)
@@ -161,14 +181,36 @@ def updateProject(projectName):
         f"# {projectName}\n\nProject scaffold created by createProject.py\n",
     )
 
-    srcGuidelines = Path("projectGuidelines.md")
+    srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
     if srcGuidelines.exists():
         print("Checking guidelines file...")
         _copy_if_newer(srcGuidelines, basePath / "projectGuidelines.md")
 
+    try:
+        package_files = files('organiseMyProjects')
+        copilot_instructions_file = package_files / 'copilot-instructions.md'
+        if copilot_instructions_file.is_file():
+            print("Checking copilot instructions...")
+            copilot_instructions_content = copilot_instructions_file.read_text()
+            current_content = ""
+            dest_file = basePath / ".github" / "copilot-instructions.md"
+            if dest_file.exists():
+                current_content = dest_file.read_text()
+            if current_content != copilot_instructions_content:
+                dest_file.write_text(copilot_instructions_content)
+                print(f"Updated {dest_file}")
+        else:
+            raise FileNotFoundError("Template not found in package")
+    except (ImportError, FileNotFoundError):
+        # Fallback to file system if package resource not available (development mode)
+        srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+        if srcCopilotInstructions.exists():
+            print("Checking copilot instructions...")
+            _copy_if_newer(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
+
     print("Checking template modules...")
     modules = [
-        ("logUtils.py", "src/logUtils.py"),
+        ("globalVars.py", "src/globalVars.py"),
         ("styleUtils.py", "ui/styleUtils.py"),
         ("mainMenu.py", "ui/mainMenu.py"),
         ("baseFrame.py", "ui/baseFrame.py"),

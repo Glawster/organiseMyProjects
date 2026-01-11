@@ -98,6 +98,7 @@ def createProject(projectName):
 
     # Copy template modules into the new project
     print("Copying template modules...")
+    shutil.copy(TEMPLATE_DIR / "globalVars.py", basePath / "src" / "globalVars.py")
     shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
     shutil.copy(TEMPLATE_DIR / "mainMenu.py", basePath / "ui" / "mainMenu.py")
     shutil.copy(TEMPLATE_DIR / "baseFrame.py", basePath / "ui" / "baseFrame.py")
@@ -209,6 +210,7 @@ def updateProject(projectName):
 
     print("Checking template modules...")
     modules = [
+        ("globalVars.py", "src/globalVars.py"),
         ("styleUtils.py", "ui/styleUtils.py"),
         ("mainMenu.py", "ui/mainMenu.py"),
         ("baseFrame.py", "ui/baseFrame.py"),

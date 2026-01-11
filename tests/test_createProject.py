@@ -91,6 +91,7 @@ class TestCreateProject:
             createProject(str(projectPath))
         
         # Verify template files are copied
+        assert (projectPath / "src" / "globalVars.py").exists(), "globalVars.py should be copied to new projects"
         assert (projectPath / "ui" / "styleUtils.py").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
         assert (projectPath / "ui" / "baseFrame.py").exists()

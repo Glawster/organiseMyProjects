@@ -24,13 +24,14 @@ organiseMyProjects/
 │   ├── copilot-instructions.md           # Generic guidelines (template)
 │   └── additional-copilot-instructions.md # Project-specific (this file, NOT template)
 ├── organiseMyProjects/                    # Main package
+│   ├── __init__.py                       # [PACKAGE] Package initialization with public API
 │   ├── createProject.py                   # [PACKAGE] Project scaffolding tool
 │   ├── logUtils.py                       # [PACKAGE] Centralized logging utility
-│   ├── globalVars.py                     # [PACKAGE] Global constants
+│   ├── globalVars.py                     # [TEMPLATE] Global constants
 │   ├── copilot-instructions.md           # [TEMPLATE] Generic guidelines
 │   ├── HELP.md                           # [PACKAGE] GUI linter documentation
-│   ├── guiNamingLinter.py                # [TEMPLATE] Naming convention checker
-│   ├── runLinter.py                      # [TEMPLATE] Linter CLI interface
+│   ├── guiNamingLinter.py                # [TEMPLATE + PACKAGE] Naming convention checker
+│   ├── runLinter.py                      # [TEMPLATE + PACKAGE] Linter CLI interface
 │   ├── baseFrame.py                      # [TEMPLATE] Base GUI framework
 │   ├── frameTemplate.py                  # [TEMPLATE] Template for new frames
 │   ├── statusFrame.py                    # [TEMPLATE] Status display utilities
@@ -54,16 +55,18 @@ organiseMyProjects/
 **[PACKAGE]** - Package utilities that remain in organiseMyProjects and are NOT copied to new projects:
 - `createProject.py` - The scaffolding tool itself
 - `logUtils.py` - Package-level logging (projects should implement their own)
-- `globalVars.py` - Package constants
 - `HELP.md` - Documentation
 
 **[TEMPLATE]** - Template files that are copied to new projects:
+- `globalVars.py` - Global constants (copied to src/)
 - `copilot-instructions.md` - Generic development guidelines
-- `guiNamingLinter.py` - Naming linter for the new project
-- `runLinter.py` - Linter CLI for the new project
 - `baseFrame.py`, `frameTemplate.py`, `statusFrame.py` - GUI framework
 - `styleUtils.py` - GUI styling utilities
 - `mainMenu.py` - Main menu framework
+
+**[TEMPLATE + PACKAGE]** - Dual-purpose files that are both copied to new projects AND accessible from the package:
+- `guiNamingLinter.py` - Naming linter (copied to tests/, also runnable via package)
+- `runLinter.py` - Linter CLI (copied to tests/, also runnable via package)
 
 ## Core Components
 
@@ -78,26 +81,37 @@ organiseMyProjects/
 
 ### guiNamingLinter.py
 - **Purpose**: Enforces widget naming conventions via AST analysis
-- **Type**: TEMPLATE (copied to new projects' tests/ directory)
+- **Type**: TEMPLATE + PACKAGE (copied to new projects' tests/ directory AND accessible via package import)
 - **Key Classes**:
   - `GuiNamingVisitor` - AST visitor for analyzing code
 - **Key Functions**:
   - `lintFile(filepath)` - Lint a single Python file
   - `lintGuiNaming(target)` - Lint directory recursively
 - **Rules**: Enforces prefix-based naming (btn*, lbl*, frm*, etc.)
+- **Usage**: 
+  - In new projects: `python tests/guiNamingLinter.py <target>`
+  - From package: `python -m organiseMyProjects.guiNamingLinter <target>` or `from organiseMyProjects import lintFile`
 
 ### runLinter.py
 - **Purpose**: CLI interface for the naming linter
-- **Type**: TEMPLATE (copied to new projects' tests/ directory)
+- **Type**: TEMPLATE + PACKAGE (copied to new projects' tests/ directory AND accessible via package import)
 - **Behavior**:
   - With targets: Lints specified files/directories
   - Without targets: Searches for src/, ui/, tests/ directories
   - Falls back to current directory if no project dirs found
+- **Usage**: 
+  - In new projects: `python tests/runLinter.py [target]`
+  - From package: `python -m organiseMyProjects.runLinter [target]` or `from organiseMyProjects import runLinter`
 
 ### logUtils.py
 - **Purpose**: Package-level logging utility
 - **Type**: PACKAGE UTILITY (NOT copied to new projects)
 - **Note**: New projects should implement their own logging based on their needs
+
+### globalVars.py
+- **Purpose**: Global constants and configuration
+- **Type**: TEMPLATE (copied to new projects' src/ directory)
+- **Note**: Projects should customize these constants for their specific needs
 
 ## Package Distribution
 

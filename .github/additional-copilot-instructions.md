@@ -54,7 +54,7 @@ organiseMyProjects/
 
 **[PACKAGE]** - Package utilities that remain in organiseMyProjects and are NOT copied to new projects:
 - `createProject.py` - The scaffolding tool itself
-- `logUtils.py` - Package-level logging (projects should implement their own)
+- `logUtils.py` - Package-level logging utility (accessible via `from organiseMyProjects.logUtils import getLogger`)
 - `HELP.md` - Documentation
 
 **[TEMPLATE]** - Template files that are copied to new projects:
@@ -105,8 +105,14 @@ organiseMyProjects/
 
 ### logUtils.py
 - **Purpose**: Package-level logging utility
-- **Type**: PACKAGE UTILITY (NOT copied to new projects)
-- **Note**: New projects should implement their own logging based on their needs
+- **Type**: PACKAGE UTILITY (NOT copied to new projects, but accessible via package import)
+- **Key Functions**:
+  - `getLogger(name)` - Get a logger instance (from standard logging module)
+  - `setupLogging(title)` - Configure logging with file handler
+- **Usage**: 
+  - From package: `from organiseMyProjects.logUtils import getLogger`
+  - Example: `logger = getLogger('myApp')`
+- **Note**: New projects should implement their own logging based on their needs, but can reference this utility for setup patterns
 
 ### globalVars.py
 - **Purpose**: Global constants and configuration
@@ -150,6 +156,25 @@ except (ImportError, FileNotFoundError):
     # Fallback for development mode
     template = Path(__file__).parent / 'template.py'
     content = template.read_text()
+```
+
+### Public API Usage Examples
+```python
+# Create and update projects
+from organiseMyProjects import createProject, updateProject
+createProject("myNewProject")
+updateProject("myExistingProject")
+
+# Run linter programmatically
+from organiseMyProjects import lintFile, lintGuiNaming, runLinter
+violations = lintFile("path/to/file.py")
+lintGuiNaming("path/to/directory")
+runLinter()  # CLI interface
+
+# Use logging utility
+from organiseMyProjects.logUtils import getLogger
+logger = getLogger("myApp")
+logger.info("Application started")
 ```
 
 ## Development Workflow

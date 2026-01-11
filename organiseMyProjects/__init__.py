@@ -5,6 +5,7 @@ This package provides tools to create and manage Python projects with:
 - GUI framework components
 - Naming convention linters
 - Development guidelines
+- Logging utilities
 
 Main components:
 - createProject: Project scaffolding tool (package utility)
@@ -16,6 +17,10 @@ Template files (copied to new projects):
 - globalVars.py, baseFrame.py, frameTemplate.py, statusFrame.py
 - mainMenu.py, styleUtils.py, guiNamingLinter.py, runLinter.py
 - copilot-instructions.md
+
+Usage:
+    from organiseMyProjects import createProject, runLinter
+    from organiseMyProjects.logUtils import getLogger
 """
 
 __version__ = "0.1"
@@ -24,6 +29,7 @@ __version__ = "0.1"
 from .createProject import createProject, updateProject
 from .guiNamingLinter import lintFile, lintGuiNaming
 from .runLinter import main as runLinter
+from . import logUtils
 
 __all__ = [
     'createProject',
@@ -31,4 +37,5 @@ __all__ = [
     'lintFile',
     'lintGuiNaming',
     'runLinter',
+    'logUtils',
 ]

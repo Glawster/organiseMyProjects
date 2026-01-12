@@ -6,7 +6,7 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
     install_requires=[
-        "pywin32",
+        'pywin32; sys_platform == "win32"',
         "black",
         "pytest",
         "pre-commit"

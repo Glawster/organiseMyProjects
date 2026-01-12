@@ -75,7 +75,7 @@ def setupLogging(
         logger.info("\n" + "=" * 80)
         _initialized_log_files.add(key)
 
-    logger.info(f"...logging to file: {logFilePath}")
+    logger.info(f"... logging to file: {logFilePath}")
     return logger
 
 

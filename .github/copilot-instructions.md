@@ -13,6 +13,7 @@ These are generic development guidelines for Python projects supporting multiple
 - **FastAPI/React Web Apps**: See [Web Application Guidelines](#web-application-development)
 - **DaVinci Resolve Scripts**: See [Video Automation Guidelines](#video-automation)
 - **Bash/System Scripts**: See [Bash Scripting Guidelines](#bash-scripting)
+- **Dry-Run Implementation**: See [Dry-Run Pattern](#dry-run-pattern) for adding `--dry-run` support to any script
 
 ## Development Standards
 
@@ -501,6 +502,225 @@ logger.error("Failed to process: error details")
 - Profile before optimizing
 - Batch operations when possible
 
+## Dry-Run Pattern
+
+### Overview
+The dry-run pattern allows users to preview what a script would do without making actual changes. This is essential for:
+- Testing script behavior safely
+- Validating operations before execution
+- Debugging complex workflows
+- Building user confidence in automated tools
+
+### Implementation Standard
+
+#### Argument Definition
+Always use consistent argument naming and help text:
+
+```python
+parser.add_argument(
+    "--dry-run",
+    dest="dryRun",
+    action="store_true",
+    help="show what would be done without changing anything",
+)
+```
+
+**Key Points:**
+- Use `--dry-run` with hyphens (standard CLI convention)
+- Map to `dryRun` camelCase destination (Python convention)
+- Use `action="store_true"` (no value needed)
+- Help text should be clear and lowercase
+
+#### Prefix Pattern
+Create a prefix variable based on the dry-run flag:
+
+```python
+prefix = "...[DRY-RUN]" if args.dryRun else "..."
+```
+
+**Usage Rules:**
+- `"..."` - Normal operation prefix (three dots)
+- `"...[DRY-RUN]"` - Dry-run marker with brackets
+- The marker `[DRY-RUN]` clearly indicates simulation mode
+- No need to say "would" in messages - the marker implies it
+
+#### Logging with Prefix
+Use the prefix in all logging and print statements:
+
+```python
+# File operation
+print(f"{prefix}creating directory: {dirPath}")
+
+# Configuration update
+print(f"{prefix}updated config: {configPath}")
+
+# Data processing
+logger.info(f"{prefix}processing {count} files")
+
+# Complex operation
+print(f"{prefix}moving {srcFile} to {destDir}")
+```
+
+#### Conditional Execution
+Only execute actual operations when NOT in dry-run mode:
+
+```python
+if not args.dryRun:
+    dirPath.mkdir(parents=True, exist_ok=True)
+print(f"{prefix}created directory: {dirPath}")
+
+# For file operations
+print(f"{prefix}copying {src} to {dest}")
+if not args.dryRun:
+    shutil.copy(src, dest)
+
+# For configuration changes
+print(f"{prefix}updated config: {configPath}")
+if not args.dryRun:
+    saveConfig(config)
+```
+
+### Complete Example - Python Script
+
+```python
+#!/usr/bin/env python3
+import argparse
+from pathlib import Path
+import shutil
+
+def processFiles(sourceDir: Path, targetDir: Path, dryRun: bool) -> None:
+    """Process files from source to target directory."""
+    prefix = "...[DRY-RUN]" if dryRun else "..."
+    
+    # Ensure target directory exists
+    print(f"{prefix}ensuring target directory: {targetDir}")
+    if not dryRun:
+        targetDir.mkdir(parents=True, exist_ok=True)
+    
+    # Process each file
+    for filePath in sourceDir.glob("*.txt"):
+        targetPath = targetDir / filePath.name
+        print(f"{prefix}copying {filePath} to {targetPath}")
+        if not dryRun:
+            shutil.copy(filePath, targetPath)
+    
+    print(f"{prefix}processing complete")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Process files from source to target directory"
+    )
+    parser.add_argument(
+        "--source",
+        required=True,
+        help="source directory containing files",
+    )
+    parser.add_argument(
+        "--target",
+        required=True,
+        help="target directory for processed files",
+    )
+    parser.add_argument(
+        "--dry-run",
+        dest="dryRun",
+        action="store_true",
+        help="show what would be done without changing anything",
+    )
+    args = parser.parse_args()
+    
+    # Validate paths
+    try:
+        sourceDir = Path(args.source).expanduser().resolve()
+        targetDir = Path(args.target).expanduser().resolve()
+    except (OSError, RuntimeError, ValueError) as e:
+        raise SystemExit(f"Error resolving path: {e}")
+    
+    if not sourceDir.is_dir():
+        raise SystemExit(f"Source directory does not exist: {sourceDir}")
+    
+    # Execute with dry-run awareness
+    processFiles(sourceDir, targetDir, args.dryRun)
+
+if __name__ == "__main__":
+    main()
+```
+
+### Bash Script Pattern
+
+For bash scripts, use a similar pattern with a global variable:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Parse arguments
+DRY_RUN=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Set prefix based on dry-run flag
+if [ "$DRY_RUN" = true ]; then
+    PREFIX="...[DRY-RUN]"
+else
+    PREFIX="..."
+fi
+
+# Use in operations
+echo "${PREFIX}creating directory: $TARGET_DIR"
+if [ "$DRY_RUN" = false ]; then
+    mkdir -p "$TARGET_DIR"
+fi
+
+echo "${PREFIX}moving files"
+if [ "$DRY_RUN" = false ]; then
+    mv "$SOURCE"/*.txt "$TARGET_DIR/"
+fi
+```
+
+### Best Practices
+
+1. **Consistency**: Always use the same prefix pattern across all scripts
+2. **Early Declaration**: Set the prefix variable immediately after parsing arguments
+3. **Complete Logging**: Log ALL operations, not just the ones that execute
+4. **Guard All Changes**: Wrap all filesystem/config/network operations with dry-run checks
+5. **Test Both Modes**: Verify script works correctly in both normal and dry-run modes
+6. **Clear Output**: Make dry-run output identical to normal operation output (except for the marker)
+
+### Common Mistakes to Avoid
+
+❌ **Don't** use "would" in messages:
+```python
+print(f"{prefix}would create directory: {path}")  # Wrong
+```
+
+✅ **Do** use the same message for both modes:
+```python
+print(f"{prefix}creating directory: {path}")  # Correct
+```
+
+❌ **Don't** forget to guard operations:
+```python
+print(f"{prefix}deleting file: {path}")
+path.unlink()  # Wrong - executes in dry-run mode!
+```
+
+✅ **Do** wrap all state-changing operations:
+```python
+print(f"{prefix}deleting file: {path}")
+if not args.dryRun:
+    path.unlink()  # Correct
+```
+
 ## Recovery Pipeline Pattern
 
 ### Python Recovery Tools
@@ -509,7 +729,7 @@ logger.error("Failed to process: error details")
 - Support `--source` argument for target directory
 - Use `argparse` for command-line argument parsing
 - Validate paths using `pathlib.Path` with `resolve()`
-- Support `--dry-run` flags for testing operations
+- Support `--dry-run` flags for testing operations (see [Dry-Run Pattern](#dry-run-pattern))
 
 ### Example Pattern
 ```python
@@ -520,8 +740,16 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description="Tool description")
     parser.add_argument("--source", required=True, help="Source directory")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be done")
+    parser.add_argument(
+        "--dry-run",
+        dest="dryRun",
+        action="store_true",
+        help="show what would be done without changing anything",
+    )
     args = parser.parse_args()
+    
+    # Set prefix for dry-run awareness
+    prefix = "...[DRY-RUN]" if args.dryRun else "..."
     
     try:
         sourceDir = Path(args.source).expanduser().resolve()
@@ -531,7 +759,9 @@ def main():
     if not sourceDir.is_dir():
         raise SystemExit(f"Directory does not exist: {sourceDir}")
     
-    # Process files...
+    # Process files with dry-run awareness
+    print(f"{prefix}processing files in: {sourceDir}")
+    # Add actual processing logic here...
 
 if __name__ == "__main__":
     main()
@@ -553,7 +783,7 @@ if __name__ == "__main__":
 12. **Clear Feedback**: Provide progress messages for all operations
 13. **Non-Destructive**: Move files instead of deleting when possible
 14. **Path Validation**: Resolve and check all paths before operations
-15. **Dry Run Support**: Include `--dry-run` flags for testing
+15. **Dry Run Support**: Include `--dry-run` flags for testing (see [Dry-Run Pattern](#dry-run-pattern))
 
 ## Best Practices
 

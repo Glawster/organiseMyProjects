@@ -259,6 +259,36 @@ def processData(data):
 9. **Type Hints**: Use type annotations for better code clarity
 10. **DRY Principle**: Don't repeat yourself - extract common code
 
+## Dry-Run Pattern
+
+For scripts that modify files or system state, always support `--dry-run` mode:
+
+### Implementation
+```python
+parser.add_argument(
+    "--dry-run",
+    dest="dryRun",
+    action="store_true",
+    help="show what would be done without changing anything",
+)
+
+# Set prefix based on flag
+prefix = "...[DRY-RUN]" if args.dryRun else "..."
+
+# Use in logging
+print(f"{prefix}creating directory: {dirPath}")
+if not args.dryRun:
+    dirPath.mkdir(parents=True, exist_ok=True)
+
+print(f"{prefix}processing {count} files")
+```
+
+### Key Points
+- Use `"...[DRY-RUN]"` prefix for simulation mode, `"..."` for normal operation
+- Log ALL operations, but only execute when NOT in dry-run mode
+- Don't use "would" in messages - the marker implies simulation
+- Wrap all state-changing operations with `if not args.dryRun:`
+
 ## Best Practices
 
 ### Code Quality

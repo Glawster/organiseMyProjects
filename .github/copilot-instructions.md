@@ -100,6 +100,19 @@ These are generic development guidelines for Python projects supporting multiple
 #### Naming Rules
 Widgets must follow specific prefixes based on their type. See component standards above.
 
+#### Horizontal and Vertical Widget Naming
+For widgets that would naturally be named with "horizontal" or "vertical" prefixes, use abbreviated forms:
+- `hrz*` - Horizontal widgets (e.g., `hrzSpacer`, `hrzLayout`)
+- `vrt*` - Vertical widgets (e.g., `vrtSpacer`, `vrtLayout`)
+
+**Examples:**
+- ❌ `self.horizontalSpacer = QSpacerItem()` - Wrong
+- ✅ `self.hrzSpacer = QSpacerItem()` - Correct (Qt snake_case: `hrz_spacer`)
+- ❌ `self.verticalLayout = QVBoxLayout()` - Wrong
+- ✅ `self.vrtLayout = QVBoxLayout()` - Correct (Qt snake_case: `vrt_layout`)
+
+This applies to both Tkinter and Qt/PySide6 projects.
+
 #### Function Formatting Rules
 - Methods longer than 4 lines should have a blank line after the `def` statement
 - Short methods (≤4 lines) do not require blank line

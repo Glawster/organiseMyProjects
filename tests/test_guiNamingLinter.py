@@ -451,3 +451,169 @@ class MyFrame:
         
         # Should have no violations - Tkinter allows prefix-based camelCase
         assert len(violations) == 0
+
+
+class TestHorizontalVerticalNaming:
+    """Test cases for horizontal and vertical widget naming conventions."""
+    
+    def testHorizontalWidgetViolation(self, temp_dir):
+        """Test that horizontalSpacer triggers a violation."""
+        test_file = temp_dir / "test_horizontal.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.horizontalSpacer = QSpacerItem()  # Should be hrzSpacer
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violation for horizontalSpacer
+        assert len(violations) > 0
+        assert any('horizontalSpacer' in str(v) for v in violations)
+        assert any('hrzSpacer' in str(v) for v in violations)
+    
+    def testVerticalWidgetViolation(self, temp_dir):
+        """Test that verticalSpacer triggers a violation."""
+        test_file = temp_dir / "test_vertical.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.verticalSpacer = QSpacerItem()  # Should be vrtSpacer
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violation for verticalSpacer
+        assert len(violations) > 0
+        assert any('verticalSpacer' in str(v) for v in violations)
+        assert any('vrtSpacer' in str(v) for v in violations)
+    
+    def testHrzPrefixValid(self, temp_dir):
+        """Test that hrzSpacer is valid."""
+        test_file = temp_dir / "test_hrz_valid.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.hrz_spacer = QSpacerItem()  # Valid with hrz prefix
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations for hrz_ prefix
+        assert len(violations) == 0
+    
+    def testVrtPrefixValid(self, temp_dir):
+        """Test that vrtSpacer is valid."""
+        test_file = temp_dir / "test_vrt_valid.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.vrt_spacer = QSpacerItem()  # Valid with vrt prefix
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations for vrt_ prefix
+        assert len(violations) == 0
+    
+    def testHorizontalLayoutViolation(self, temp_dir):
+        """Test that horizontalLayout triggers a violation."""
+        test_file = temp_dir / "test_horizontal_layout.py"
+        content = '''
+from PySide6.QtWidgets import QHBoxLayout
+
+class MyWidget:
+    def __init__(self):
+        self.horizontalLayout = QHBoxLayout()  # Should be hrzLayout
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violation for horizontalLayout
+        assert len(violations) > 0
+        assert any('horizontalLayout' in str(v) for v in violations)
+        assert any('hrzLayout' in str(v) for v in violations)
+    
+    def testVerticalLayoutViolation(self, temp_dir):
+        """Test that verticalLayout triggers a violation."""
+        test_file = temp_dir / "test_vertical_layout.py"
+        content = '''
+from PySide6.QtWidgets import QVBoxLayout
+
+class MyWidget:
+    def __init__(self):
+        self.verticalLayout = QVBoxLayout()  # Should be vrtLayout
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violation for verticalLayout
+        assert len(violations) > 0
+        assert any('verticalLayout' in str(v) for v in violations)
+        assert any('vrtLayout' in str(v) for v in violations)
+    
+    def testMultipleHorizontalVerticalViolations(self, temp_dir):
+        """Test multiple horizontal and vertical widgets in same file."""
+        test_file = temp_dir / "test_multiple_hv.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem, QHBoxLayout, QVBoxLayout
+
+class MyWidget:
+    def __init__(self):
+        self.horizontalSpacer = QSpacerItem()  # Should be hrzSpacer
+        self.verticalSpacer = QSpacerItem()  # Should be vrtSpacer
+        self.horizontalLayout = QHBoxLayout()  # Should be hrzLayout
+        self.verticalLayout = QVBoxLayout()  # Should be vrtLayout
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have 4 violations
+        assert len(violations) == 4
+        assert any('horizontalSpacer' in str(v) for v in violations)
+        assert any('verticalSpacer' in str(v) for v in violations)
+        assert any('horizontalLayout' in str(v) for v in violations)
+        assert any('verticalLayout' in str(v) for v in violations)
+    
+    def testTkinterHorizontalVertical(self, temp_dir):
+        """Test that horizontal/vertical rules apply to Tkinter too."""
+        test_file = temp_dir / "test_tkinter_hv.py"
+        content = '''
+import tkinter as tk
+
+class MyFrame:
+    def __init__(self):
+        self.horizontalFrame = tk.Frame()  # Should be hrzFrame
+        self.verticalFrame = tk.Frame()  # Should be vrtFrame
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violations for horizontal/vertical
+        assert len(violations) >= 2
+        assert any('horizontalFrame' in str(v) for v in violations)
+        assert any('verticalFrame' in str(v) for v in violations)

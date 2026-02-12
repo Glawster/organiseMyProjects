@@ -155,6 +155,8 @@ After creating a project, pre-commit hooks are automatically installed to:
 - `txt` - Text widgets (`txtContent`, `txtNotes`)
 - `chk` - Checkboxes (`chkEnabled`, `chkVisible`)
 - `cmb` - Comboboxes (`cmbSource`, `cmbDestination`)
+- `hrz` - Horizontal widgets (`hrzSpacer`, `hrzLayout`)
+- `vrt` - Vertical widgets (`vrtSpacer`, `vrtLayout`)
 
 ### Logging Standards
 - Use centralized logger from `logUtils.py`

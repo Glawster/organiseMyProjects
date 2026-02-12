@@ -80,14 +80,22 @@ organiseMyProjects/
 - **Resource Access**: Uses `importlib.resources` with filesystem fallback
 
 ### guiNamingLinter.py
-- **Purpose**: Enforces widget naming conventions via AST analysis
+- **Purpose**: Enforces widget naming conventions via AST analysis for both Tkinter and Qt/PySide6 projects
 - **Type**: TEMPLATE + PACKAGE (copied to new projects' tests/ directory AND accessible via package import)
 - **Key Classes**:
   - `GuiNamingVisitor` - AST visitor for analyzing code
 - **Key Functions**:
   - `lintFile(filepath)` - Lint a single Python file
   - `lintGuiNaming(target)` - Lint directory recursively
-- **Rules**: Enforces prefix-based naming (btn*, lbl*, frm*, etc.)
+  - `detectFramework(content)` - Auto-detect GUI framework (Tkinter/Qt/None)
+  - `isSnakeCase(name)` - Validate snake_case naming
+- **Framework Detection**: Automatically detects framework from imports:
+  - **Tkinter**: Detects `import tkinter` or `from tkinter`
+  - **Qt**: Detects `from PySide6`, `from PyQt5`, or `from PyQt6`
+- **Naming Rules**:
+  - **Tkinter Projects**: Enforces prefix-based naming (btn*, lbl*, frm*, etc.) with camelCase
+  - **Qt Projects**: Enforces snake_case naming (no prefix requirement)
+  - **Mixed Projects**: Per-file framework detection (some files Tkinter, some Qt)
 - **Usage**: 
   - In new projects: `python tests/guiNamingLinter.py <target>`
   - From package: `python -m organiseMyProjects.guiNamingLinter <target>` or `from organiseMyProjects import lintFile`
@@ -99,6 +107,7 @@ organiseMyProjects/
   - With targets: Lints specified files/directories
   - Without targets: Searches for src/, ui/, tests/ directories
   - Falls back to current directory if no project dirs found
+  - Auto-detects framework per file
 - **Usage**: 
   - In new projects: `python tests/runLinter.py [target]`
   - From package: `python -m organiseMyProjects.runLinter [target]` or `from organiseMyProjects import runLinter`
@@ -267,6 +276,145 @@ Before submitting changes:
 - [ ] Backward compatibility maintained
 - [ ] Cross-platform functionality verified (if possible)
 
+## GUI Naming Linter Details
+
+### Framework Detection
+
+The linter automatically detects which GUI framework is used in each file:
+
+- **Tkinter**: Detects `import tkinter` or `from tkinter` imports
+- **Qt**: Detects `from PySide6`, `from PyQt5`, or `from PyQt6` imports
+- **None**: Files without recognized GUI framework are skipped for widget validation
+
+### Naming Rules by Framework
+
+#### Tkinter Projects
+
+**Widget Naming (STRICT prefix rules):**
+- `ttk.Button` / `tk.Button` → `btnName` (e.g., `btnSave`, `btnCancel`)
+- `ttk.Label` / `tk.Label` → `lblName` (e.g., `lblStatus`, `lblTitle`)
+- `ttk.Entry` / `tk.Entry` → `entryName` (e.g., `entryUsername`, `entryPassword`)
+- `ttk.Frame` / `tk.Frame` → `frmName` (e.g., `frmMain`, `frmSidebar`)
+- `tk.Text` → `txtName` (e.g., `txtContent`, `txtLog`)
+- `tk.Listbox` → `lstName` (e.g., `lstItems`, `lstFiles`)
+- `ttk.Checkbutton` / `tk.Checkbutton` → `chkName` (e.g., `chkEnabled`, `chkRemember`)
+- `ttk.Radiobutton` / `tk.Radiobutton` → `rdoName` (e.g., `rdoOption1`, `rdoOption2`)
+- `ttk.Combobox` → `cmbName` (e.g., `cmbSelection`, `cmbCategory`)
+
+**Naming Convention:**
+- Use camelCase after prefix
+- Private members use leading underscore: `_btnInternal`
+
+**Example (Tkinter):**
+```python
+import tkinter as tk
+from tkinter import ttk
+
+class MainFrame(ttk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        # Valid Tkinter naming
+        self.btnSave = ttk.Button(self, text="Save")
+        self.lblStatus = ttk.Label(self, text="Ready")
+        self.entryName = ttk.Entry(self)
+        
+        # Invalid - will be flagged by linter
+        self.saveButton = ttk.Button(self)  # Missing 'btn' prefix
+        self.status_label = ttk.Label(self)  # snake_case not allowed
+```
+
+#### Qt Projects
+
+**Widget Naming (NO prefix requirement):**
+- All Qt widgets (QPushButton, QLabel, QLineEdit, etc.) use snake_case
+- No prefix requirement (e.g., `save_button`, not `btnSave`)
+- Private members use leading underscore: `_internal_widget`
+
+**Naming Convention:**
+- Use snake_case for all widget names
+- No prefix requirement
+- Private members: `_private_widget`
+
+**Example (Qt):**
+```python
+from PySide6.QtWidgets import QWidget, QPushButton, QLabel, QLineEdit
+
+class MainWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # Valid Qt naming
+        self.save_button = QPushButton("Save")
+        self.status_label = QLabel("Ready")
+        self.name_input = QLineEdit()
+        self._internal_widget = QWidget()  # Private member
+        
+        # Invalid - will be flagged by linter
+        self.saveButton = QPushButton()  # camelCase not allowed
+        self.btnSave = QPushButton()  # Tkinter-style not allowed
+```
+
+#### Mixed Projects
+
+The linter supports projects with both Tkinter and Qt files:
+
+```
+project/
+├── tkinter_ui.py      # Uses Tkinter rules (prefix-based)
+└── qt_ui.py           # Uses Qt rules (snake_case)
+```
+
+Each file is analyzed independently based on its imports.
+
+### Function Formatting Rules
+
+**Both frameworks:**
+- Methods longer than 4 lines should have a blank line after the `def` statement
+- Short methods (≤4 lines) do not require blank line
+
+```python
+# Short method - no blank line needed
+def shortMethod(self):
+    return self.value
+
+# Long method - blank line required after def
+def longMethod(self):
+    
+    line1 = "test"
+    line2 = "test"
+    line3 = "test"
+    line4 = "test"
+    line5 = "test"
+```
+
+### Usage
+
+```bash
+# Lint current directory (auto-detect framework)
+runLinter
+
+# Lint specific file
+runLinter path/to/file.py
+
+# Lint directory
+runLinter path/to/directory
+```
+
+### Qt Widget Types Supported
+
+The linter recognizes these Qt widget types:
+- QPushButton, QToolButton
+- QLabel
+- QLineEdit, QTextEdit, QPlainTextEdit
+- QListWidget, QListView
+- QComboBox
+- QCheckBox, QRadioButton
+- QWidget, QFrame, QGroupBox
+- QTableWidget, QTableView, QTreeWidget, QTreeView
+- QSpinBox, QDoubleSpinBox, QSlider, QProgressBar
+- QTabWidget, QScrollArea, QSplitter, QStackedWidget
+
 ## Common Development Tasks
 
 ### Adding a New Template File
@@ -277,10 +425,16 @@ Before submitting changes:
 5. Update README.md with file description
 
 ### Adding a New Widget Type to Linter
-1. Add naming rule to `NAMING_RULES` dict in `guiNamingLinter.py`
-2. Add widget class to `WIDGET_CLASSES` set
+**For Tkinter widgets:**
+1. Add naming rule to `namingRules` dict in `guiNamingLinter.py`
+2. Add widget class to `widgetClasses` set
 3. Add parametrized test cases in `test_guiNamingLinter.py`
 4. Update HELP.md and copilot-instructions.md
+
+**For Qt widgets:**
+1. Add widget type to `qtWidgetTypes` set in `guiNamingLinter.py`
+2. Add parametrized test cases in `test_guiNamingLinter.py`
+3. Update HELP.md and copilot-instructions.md
 
 ### Modifying Project Structure
 1. Update `createProject()` function

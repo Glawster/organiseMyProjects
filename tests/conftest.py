@@ -70,3 +70,21 @@ class TestFrame:
 '''
     pythonFile.write_text(content)
     return pythonFile
+
+
+@pytest.fixture
+def mockQtFile(tempDir):
+    """Create a sample Qt/PySide6 Python file for testing the linter."""
+    qtFile = tempDir / "test_qt_file.py"
+    content = '''
+from PySide6.QtWidgets import QWidget, QPushButton, QLabel
+
+class TestWidget(QWidget):
+    def __init__(self):
+        self.save_button = QPushButton()  # Valid snake_case
+        self.title_label = QLabel()  # Valid snake_case
+        self.invalidButton = QPushButton()  # Invalid - not snake_case
+        self._internal_widget = QWidget()  # Valid - private member
+'''
+    qtFile.write_text(content)
+    return qtFile

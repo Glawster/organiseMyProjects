@@ -57,8 +57,7 @@ class TestGuiNamingVisitor:
         """Test that widget classes are correctly defined."""
         expected_widgets = {
             'Button', 'Entry', 'Label', 'Frame', 'Text',
-            'Listbox', 'Checkbutton', 'Radiobutton', 'Combobox',
-            'HorizontalSpacer', 'VerticalSpacer'
+            'Listbox', 'Checkbutton', 'Radiobutton', 'Combobox'
         }
         
         assert widgetClasses == expected_widgets
@@ -558,6 +557,29 @@ class MyWidget:
         assert len(violations) == 2
         assert any('horizontalSpacer' in str(v) for v in violations)
         assert any('verticalSpacer' in str(v) for v in violations)
+    
+    def testHorizontalVerticalNonSpacerItem(self, temp_dir):
+        """Test that horizontal/vertical naming is only enforced for QSpacerItem."""
+        qt_file = temp_dir / "test_non_spacer.py"
+        content = '''
+from PySide6.QtWidgets import QWidget
+
+class MyWidget:
+    def __init__(self):
+        
+        # These should NOT be flagged - they are regular variables, not QSpacerItem
+        self.horizontalAlignment = "left"
+        self.verticalOffset = 10
+        self.horizontal_layout = None
+        self.vertical_spacing = 5
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have no violations - these are not QSpacerItem widgets
+        assert len(violations) == 0
 
 
 class TestPythonDirectives:

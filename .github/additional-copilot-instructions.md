@@ -291,15 +291,15 @@ The linter automatically detects which GUI framework is used in each file:
 #### Tkinter Projects
 
 **Widget Naming (STRICT prefix rules):**
-- `QPushButton` → `btnName` (e.g., `btnSave`, `btnCancel`)
-- `QLabel` → `lblName` (e.g., `lblStatus`, `lblTitle`)
-- `QLineEdit` → `entryName` (e.g., `entryUsername`, `entryPassword`)
-- `QFrame` → `frmName` (e.g., `frmMain`, `frmSidebar`)
-- `QTextEdit` → `txtName` (e.g., `txtContent`, `txtLog`)
-- `QListWidget` → `lstName` (e.g., `lstItems`, `lstFiles`)
-- `QCheckBox` → `chkName` (e.g., `chkEnabled`, `chkRemember`)
-- `QRadioButton` → `rdoName` (e.g., `rdoOption1`, `rdoOption2`)
-- `QComboBox` → `cmbName` (e.g., `cmbSelection`, `cmbCategory`)
+- `ttk.Button` / `tk.Button` → `btnName` (e.g., `btnSave`, `btnCancel`)
+- `ttk.Label` / `tk.Label` → `lblName` (e.g., `lblStatus`, `lblTitle`)
+- `ttk.Entry` / `tk.Entry` → `entryName` (e.g., `entryUsername`, `entryPassword`)
+- `ttk.Frame` / `tk.Frame` → `frmName` (e.g., `frmMain`, `frmSidebar`)
+- `tk.Text` → `txtName` (e.g., `txtContent`, `txtLog`)
+- `tk.Listbox` → `lstName` (e.g., `lstItems`, `lstFiles`)
+- `ttk.Checkbutton` / `tk.Checkbutton` → `chkName` (e.g., `chkEnabled`, `chkRemember`)
+- `ttk.Radiobutton` / `tk.Radiobutton` → `rdoName` (e.g., `rdoOption1`, `rdoOption2`)
+- `ttk.Combobox` → `cmbName` (e.g., `cmbSelection`, `cmbCategory`)
 
 **Naming Convention:**
 - Use camelCase after prefix

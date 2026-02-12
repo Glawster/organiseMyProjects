@@ -68,8 +68,9 @@ def isSnakeCase(name: str) -> bool:
     
     Allows lowercase letters, numbers, and underscores.
     Can start with underscore (for private members).
+    Allows single-character names (e.g., 'x', 'i').
     """
-    return bool(re.match(r'^_?[a-z][a-z0-9_]*$', name))
+    return bool(re.match(r'^_?[a-z]([a-z0-9_]*)?$', name))
 
 class GuiNamingVisitor(ast.NodeVisitor):
     def __init__(self, lines: list[str], framework: str = None):

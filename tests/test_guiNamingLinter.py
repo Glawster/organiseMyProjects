@@ -275,6 +275,9 @@ class TestSnakeCase:
         "_private_member",
         "button2",
         "test_widget_2",
+        "x",  # Single character
+        "i",  # Single character
+        "_x",  # Private single character
     ])
     def testValidSnakeCase(self, valid_name):
         """Test that valid snake_case names pass validation."""

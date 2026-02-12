@@ -27,6 +27,8 @@ namingRules = {
     'Handler': r'^on[A-Z]\w+',
     'Constant': r'^[A-Z_]+$',
     'Class': r'^[A-Z][a-zA-Z0-9]*$',
+    'HorizontalSpacer': r'^hrzSpacer[A-Z]?\w*',
+    'VerticalSpacer': r'^vrtSpacer[A-Z]?\w*',
 }
 
 # Qt widget types that should use snake_case (no prefix requirement)
@@ -37,6 +39,17 @@ qtWidgetTypes = {
     'QTableWidget', 'QTableView', 'QTreeWidget', 'QTreeView',
     'QSpinBox', 'QDoubleSpinBox', 'QSlider', 'QProgressBar',
     'QTabWidget', 'QScrollArea', 'QSplitter', 'QStackedWidget'
+}
+
+# Qt widget types that should use hrz/vrt prefix (horizontal/vertical)
+qtHorizontalVerticalWidgets = {
+    'QSpacerItem': {'horizontal': 'hrz', 'vertical': 'vrt'},
+}
+
+# Map widget type names to expected prefix patterns
+widgetPrefixMap = {
+    'horizontalSpacer': 'hrzSpacer',
+    'verticalSpacer': 'vrtSpacer',
 }
 
 # Allow patterns or names to bypass class rule
@@ -93,10 +106,13 @@ class GuiNamingVisitor(ast.NodeVisitor):
             
             if varName:
                 # Check for constants (only for module-level simple names)
+                # Exclude Python directives (dunder names like __version__, __all__, __init__, etc.)
                 if isinstance(node.value, (ast.Constant, ast.List, ast.Tuple)):
                     if isinstance(target, ast.Name) and isinstance(getattr(node, 'parent', None), ast.Module):
-                        if not re.match(namingRules['Constant'], varName):
-                            self.violations.append((varName, 'Constant', node.lineno))
+                        # Skip Python directives (dunder names)
+                        if not (varName.startswith('__') and varName.endswith('__')):
+                            if not re.match(namingRules['Constant'], varName):
+                                self.violations.append((varName, 'Constant', node.lineno))
 
                 # Check for widget naming conventions
                 if isinstance(node.value, ast.Call):
@@ -119,6 +135,14 @@ class GuiNamingVisitor(ast.NodeVisitor):
                             elif self.framework == 'qt' and widgetType in qtWidgetTypes:
                                 if not isSnakeCase(varName):
                                     self.violations.append((varName, f'Qt {widgetType} (snake_case)', node.lineno))
+                            
+                            # Check Qt horizontal/vertical widgets (hrz/vrt prefix)
+                            elif self.framework == 'qt':
+                                # Check if variable name starts with horizontal or vertical
+                                if varName.startswith('horizontal') or varName.startswith('vertical'):
+                                    expectedPrefix = 'hrz' if varName.startswith('horizontal') else 'vrt'
+                                    suggestedName = expectedPrefix + varName[len('horizontal' if varName.startswith('horizontal') else 'vertical'):]
+                                    self.violations.append((varName, f'Qt horizontal/vertical widget (use {expectedPrefix} prefix, e.g., {suggestedName})', node.lineno))
                     except AttributeError:
                         pass
 

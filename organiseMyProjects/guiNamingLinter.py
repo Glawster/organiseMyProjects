@@ -122,13 +122,13 @@ class GuiNamingVisitor(ast.NodeVisitor):
                             # Check Qt horizontal/vertical widgets (hrz/vrt prefix for QSpacerItem)
                             elif self.framework == 'qt' and widgetType == 'QSpacerItem':
                                 # Check if variable name starts with horizontal or vertical
-                                isHorizontal = varName.startswith('horizontal')
-                                isVertical = varName.startswith('vertical')
-                                if isHorizontal or isVertical:
-                                    expectedPrefix = 'hrz' if isHorizontal else 'vrt'
-                                    oldPrefix = 'horizontal' if isHorizontal else 'vertical'
-                                    suggestedName = expectedPrefix + varName[len(oldPrefix):]
-                                    self.violations.append((varName, f'Qt horizontal/vertical widget (use {expectedPrefix} prefix, e.g., {suggestedName})', node.lineno))
+                                is_horizontal = varName.startswith('horizontal')
+                                is_vertical = varName.startswith('vertical')
+                                if is_horizontal or is_vertical:
+                                    expected_prefix = 'hrz' if is_horizontal else 'vrt'
+                                    old_prefix = 'horizontal' if is_horizontal else 'vertical'
+                                    suggested_name = expected_prefix + varName[len(old_prefix):]
+                                    self.violations.append((varName, f'Qt horizontal/vertical widget (use {expected_prefix} prefix, e.g., {suggested_name})', node.lineno))
                             
                             # Check Qt widgets (snake_case naming)
                             elif self.framework == 'qt' and widgetType in qtWidgetTypes:

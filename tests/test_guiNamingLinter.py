@@ -15,7 +15,10 @@ from organiseMyProjects.guiNamingLinter import (
     lintGuiNaming,
     namingRules,
     classNameExceptions,
-    widgetClasses
+    widgetClasses,
+    detectFramework,
+    isSnakeCase,
+    qtWidgetTypes
 )
 
 
@@ -70,16 +73,16 @@ class TestGuiNamingVisitor:
 class TestLintFile:
     """Test cases for lintFile function."""
     
-    def testLintFileWithViolations(self, mock_python_file, capsys):
+    def testLintFileWithViolations(self, mockPythonFile, capsys):
         """Test linting a file that contains violations."""
-        lintFile(str(mock_python_file))
+        lintFile(str(mockPythonFile))
         
         captured = capsys.readouterr()
         
         # Should report violations
         assert "invalid_button" in captured.out
         assert "Button" in captured.out
-        assert str(mock_python_file) in captured.out
+        assert str(mockPythonFile) in captured.out
     
     def testLintNonexistentFile(self, temp_dir, capsys):
         """Test linting a file that doesn't exist."""
@@ -231,3 +234,217 @@ class TestSpecialCases:
         assert 'Class' not in widgetClasses
         assert 'Button' in widgetClasses
         assert 'Label' in widgetClasses
+
+
+class TestFrameworkDetection:
+    """Test cases for framework detection."""
+    
+    def testDetectTkinter(self):
+        """Test detection of Tkinter framework."""
+        content = "import tkinter as tk\nfrom tkinter import ttk"
+        assert detectFramework(content) == 'tkinter'
+        
+        content2 = "from tkinter import *"
+        assert detectFramework(content2) == 'tkinter'
+    
+    def testDetectQt(self):
+        """Test detection of Qt frameworks."""
+        content1 = "from PySide6.QtWidgets import QWidget"
+        assert detectFramework(content1) == 'qt'
+        
+        content2 = "from PyQt5.QtCore import Qt"
+        assert detectFramework(content2) == 'qt'
+        
+        content3 = "from PyQt6.QtWidgets import QApplication"
+        assert detectFramework(content3) == 'qt'
+    
+    def testDetectNoFramework(self):
+        """Test files without recognized GUI framework."""
+        content = "import os\nimport sys"
+        assert detectFramework(content) is None
+
+
+class TestSnakeCase:
+    """Test cases for snake_case validation."""
+    
+    @pytest.mark.parametrize("valid_name", [
+        "save_button",
+        "title_label",
+        "username_input",
+        "_internal_widget",
+        "_private_member",
+        "button2",
+        "test_widget_2",
+    ])
+    def testValidSnakeCase(self, valid_name):
+        """Test that valid snake_case names pass validation."""
+        assert isSnakeCase(valid_name), f"{valid_name} should be valid snake_case"
+    
+    @pytest.mark.parametrize("invalid_name", [
+        "saveButton",  # camelCase
+        "SaveButton",  # PascalCase
+        "btnSave",     # prefix style
+        "CONSTANT",    # all caps
+        "save-button", # hyphens
+        "2button",     # starts with number
+        "",            # empty string
+    ])
+    def testInvalidSnakeCase(self, invalid_name):
+        """Test that invalid snake_case names fail validation."""
+        assert not isSnakeCase(invalid_name), f"{invalid_name} should not be valid snake_case"
+
+
+class TestQtWidgets:
+    """Test cases for Qt widget types."""
+    
+    def testQtWidgetTypes(self):
+        """Test that common Qt widgets are defined."""
+        assert 'QPushButton' in qtWidgetTypes
+        assert 'QLabel' in qtWidgetTypes
+        assert 'QLineEdit' in qtWidgetTypes
+        assert 'QWidget' in qtWidgetTypes
+        assert 'QComboBox' in qtWidgetTypes
+
+
+class TestQtNamingValidation:
+    """Test cases for Qt widget naming validation."""
+    
+    def testQtValidNaming(self, mockQtFile, capsys):
+        """Test that valid Qt naming passes."""
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(mockQtFile))
+        
+        # Should have one violation for invalidButton (not snake_case)
+        assert len(violations) == 1
+        assert 'invalidButton' in str(violations[0])
+    
+    def testQtSnakeCaseViolation(self, temp_dir):
+        """Test that camelCase in Qt files is flagged."""
+        qt_file = temp_dir / "test_qt.py"
+        content = '''
+from PySide6.QtWidgets import QPushButton
+
+class MyWidget:
+    def __init__(self):
+        self.saveButton = QPushButton()  # Invalid - not snake_case
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        assert len(violations) > 0
+        assert any('saveButton' in str(v) for v in violations)
+    
+    def testQtPrivateMembersValid(self, temp_dir):
+        """Test that Qt private members with leading underscore are valid."""
+        qt_file = temp_dir / "test_qt_private.py"
+        content = '''
+from PySide6.QtWidgets import QWidget
+
+class MyWidget:
+    def __init__(self):
+        self._internal_widget = QWidget()  # Valid - private snake_case
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have no violations for private members in snake_case
+        assert len(violations) == 0
+    
+    def testQtMultipleWidgets(self, temp_dir):
+        """Test validation with multiple Qt widgets."""
+        qt_file = temp_dir / "test_qt_multi.py"
+        content = '''
+from PySide6.QtWidgets import QPushButton, QLabel, QLineEdit
+
+class MyWidget:
+    def __init__(self):
+        self.save_button = QPushButton()  # Valid
+        self.title_label = QLabel()  # Valid
+        self.usernameInput = QLineEdit()  # Invalid - camelCase
+        self.btnCancel = QPushButton()  # Invalid - not snake_case
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have 2 violations
+        assert len(violations) == 2
+        assert any('usernameInput' in str(v) for v in violations)
+        assert any('btnCancel' in str(v) for v in violations)
+
+
+class TestMixedProjects:
+    """Test cases for projects with both Tkinter and Qt files."""
+    
+    def testMixedProjectLinting(self, temp_dir, capsys):
+        """Test linting a directory with both Tkinter and Qt files."""
+        # Create Tkinter file
+        tk_file = temp_dir / "tkinter_app.py"
+        tk_content = '''
+import tkinter as tk
+
+class TkFrame:
+    def __init__(self):
+        self.btnSave = tk.Button()  # Valid Tkinter
+'''
+        tk_file.write_text(tk_content)
+        
+        # Create Qt file
+        qt_file = temp_dir / "qt_app.py"
+        qt_content = '''
+from PySide6.QtWidgets import QPushButton
+
+class QtWidget:
+    def __init__(self):
+        self.save_button = QPushButton()  # Valid Qt
+'''
+        qt_file.write_text(qt_content)
+        
+        lintGuiNaming(str(temp_dir))
+        
+        captured = capsys.readouterr()
+        
+        # Both files should be processed and marked as OK
+        assert "tkinter_app.py" in captured.out
+        assert "qt_app.py" in captured.out
+    
+    def testTkinterRulesNotAppliedToQt(self, temp_dir):
+        """Test that Tkinter prefix rules are not applied to Qt files."""
+        qt_file = temp_dir / "test_qt.py"
+        content = '''
+from PySide6.QtWidgets import QPushButton
+
+class MyWidget:
+    def __init__(self):
+        self.save_button = QPushButton()  # Valid Qt, no btn prefix needed
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have no violations - Qt doesn't require btn prefix
+        assert len(violations) == 0
+    
+    def testQtRulesNotAppliedToTkinter(self, temp_dir):
+        """Test that Qt snake_case rules are not applied to Tkinter files."""
+        tk_file = temp_dir / "test_tk.py"
+        content = '''
+import tkinter as tk
+
+class MyFrame:
+    def __init__(self):
+        self.btnSave = tk.Button()  # Valid Tkinter, not snake_case
+'''
+        tk_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(tk_file))
+        
+        # Should have no violations - Tkinter allows prefix-based camelCase
+        assert len(violations) == 0

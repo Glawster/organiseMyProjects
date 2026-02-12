@@ -3,7 +3,7 @@ guiNamingLinter.py - GUI Code Quality Linter
 
 This linter enforces project-specific guidelines for Python GUI development:
 - Function formatting (blank line after def if >4 statements)
-- Widget naming conventions
+- Widget naming conventions (Tkinter and Qt/PySide6)
 - Constant and variable naming rules
 - Logging message formatting
 - Misspelling detection (e.g., 'iCloud')
@@ -13,7 +13,7 @@ import ast
 import os
 import re
 
-# Naming rules for GUI elements and handlers
+# Naming rules for Tkinter GUI elements and handlers
 namingRules = {
     'Button': r'^btn[A-Z]\w+',
     'Entry': r'^entry[A-Z]\w+',
@@ -29,15 +29,52 @@ namingRules = {
     'Class': r'^[A-Z][a-zA-Z0-9]*$',
 }
 
+# Qt widget types that should use snake_case (no prefix requirement)
+qtWidgetTypes = {
+    'QPushButton', 'QToolButton', 'QLabel', 'QLineEdit', 'QTextEdit', 
+    'QPlainTextEdit', 'QListWidget', 'QListView', 'QComboBox', 
+    'QCheckBox', 'QRadioButton', 'QWidget', 'QFrame', 'QGroupBox',
+    'QTableWidget', 'QTableView', 'QTreeWidget', 'QTreeView',
+    'QSpinBox', 'QDoubleSpinBox', 'QSlider', 'QProgressBar',
+    'QTabWidget', 'QScrollArea', 'QSplitter', 'QStackedWidget'
+}
+
 # Allow patterns or names to bypass class rule
 classNameExceptions = {'iCloudSyncFrame'}
 classNamePatterns = [r'^iCloud[A-Z]\w*']
 
 widgetClasses = set(namingRules.keys()) - {'Handler', 'Constant', 'Class'}
 
+
+def detectFramework(fileContent: str) -> str:
+    """
+    Detect which GUI framework is used in the file.
+    
+    Returns:
+        'tkinter' for Tkinter projects
+        'qt' for Qt/PySide6/PyQt5/PyQt6 projects
+        None for files without recognized GUI framework
+    """
+    if 'import tkinter' in fileContent or 'from tkinter' in fileContent:
+        return 'tkinter'
+    elif any(keyword in fileContent for keyword in ['from PySide6', 'from PyQt5', 'from PyQt6']):
+        return 'qt'
+    return None
+
+
+def isSnakeCase(name: str) -> bool:
+    """
+    Check if name follows snake_case convention.
+    
+    Allows lowercase letters, numbers, and underscores.
+    Can start with underscore (for private members).
+    """
+    return bool(re.match(r'^_?[a-z][a-z0-9_]*$', name))
+
 class GuiNamingVisitor(ast.NodeVisitor):
-    def __init__(self, lines: list[str]):
+    def __init__(self, lines: list[str], framework: str = None):
         self.lines = lines
+        self.framework = framework
         self.violations = []
         self.packCalls = 0
         self.gridCalls = 0
@@ -63,13 +100,27 @@ class GuiNamingVisitor(ast.NodeVisitor):
                 # Check for widget naming conventions
                 if isinstance(node.value, ast.Call):
                     try:
-                        widgetType = node.value.func.attr if isinstance(node.value.func, ast.Attribute) else None
-                        if widgetType in widgetClasses:
-                            pattern = namingRules[widgetType]
-                            if not re.match(pattern, varName):
-                                self.violations.append((varName, widgetType, node.lineno))
+                        # Get widget type from the call
+                        widgetType = None
+                        if isinstance(node.value.func, ast.Attribute):
+                            widgetType = node.value.func.attr
+                        elif isinstance(node.value.func, ast.Name):
+                            widgetType = node.value.func.id
+                        
+                        if widgetType:
+                            # Check Tkinter widgets (prefix-based naming)
+                            if self.framework == 'tkinter' and widgetType in widgetClasses:
+                                pattern = namingRules[widgetType]
+                                if not re.match(pattern, varName):
+                                    self.violations.append((varName, widgetType, node.lineno))
+                            
+                            # Check Qt widgets (snake_case naming)
+                            elif self.framework == 'qt' and widgetType in qtWidgetTypes:
+                                if not isSnakeCase(varName):
+                                    self.violations.append((varName, f'Qt {widgetType} (snake_case)', node.lineno))
                     except AttributeError:
                         pass
+
 
         self.generic_visit(node)
 
@@ -133,13 +184,19 @@ def checkFile(filepath):
     with open(filepath, 'r', encoding='utf-8') as file:
         text = file.read()
 
+    # Detect GUI framework from file content
+    framework = detectFramework(text)
+    
     lines = text.splitlines()
     tree = ast.parse(text, filename=filepath)
     annotateParents(tree)
-    visitor = GuiNamingVisitor(lines)
+    visitor = GuiNamingVisitor(lines, framework=framework)
     visitor.visit(tree)
-    if visitor.gridCalls > 0 and visitor.packCalls == 0:
+    
+    # Only check for grid/pack usage in Tkinter files
+    if framework == 'tkinter' and visitor.gridCalls > 0 and visitor.packCalls == 0:
         visitor.violations.append(("layout", "Use 'pack()' instead of 'grid()'", 0))
+    
     return visitor.violations
 
 def lintGuiNaming(directory):

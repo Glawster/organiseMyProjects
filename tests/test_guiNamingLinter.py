@@ -662,3 +662,91 @@ myConstant = "value"  # Should be flagged
         # Should have violation for myConstant
         assert len(violations) > 0
         assert any('myConstant' in str(v) for v in violations)
+
+class TestFunctionSpacingWithDocstrings:
+    """Test cases for function spacing rules with docstrings."""
+    
+    def testFunctionWithDocstringNotFlagged(self, temp_dir):
+        """Test that functions with docstrings don't need blank line after def."""
+        test_file = temp_dir / "test_docstring.py"
+        content = '''
+def my_function():
+    """This is a docstring."""
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations - docstring exempts from blank line rule
+        assert len(violations) == 0
+    
+    def testFunctionWithoutDocstringRequiresBlankLine(self, temp_dir):
+        """Test that functions without docstrings need blank line after def."""
+        test_file = temp_dir / "test_no_docstring.py"
+        content = '''
+def my_function():
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violation - no docstring and no blank line
+        assert len(violations) > 0
+        assert any('my_function' in str(v) for v in violations)
+        assert any('Function spacing' in str(v) for v in violations)
+    
+    def testFunctionWithBlankLineAndNoDocstring(self, temp_dir):
+        """Test that functions with blank line after def pass."""
+        test_file = temp_dir / "test_blank_line.py"
+        content = '''
+def my_function():
+    
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations - blank line is present
+        assert len(violations) == 0
+    
+    def testMultilineDocstring(self, temp_dir):
+        """Test that multi-line docstrings also exempt from blank line rule."""
+        test_file = temp_dir / "test_multiline_docstring.py"
+        content = '''
+def my_function():
+    """
+    This is a multi-line docstring.
+    
+    It has multiple lines.
+    """
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations - docstring exempts from blank line rule
+        assert len(violations) == 0

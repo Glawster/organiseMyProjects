@@ -144,12 +144,23 @@ class GuiNamingVisitor(ast.NodeVisitor):
         """Check for a blank line immediately after the ``def`` line."""
 
         if len(node.body) > 4 and node.lineno < len(self.lines):
-            # ``lineno`` is 1-indexed; check the next line in the file
-            line_after_def = self.lines[node.lineno].strip()
-            if line_after_def:
-                self.violations.append(
-                    (node.name, 'Function spacing (no blank line after def)', node.lineno)
-                )
+            # Check if first statement is a docstring
+            first_stmt = node.body[0]
+            is_docstring = (
+                isinstance(first_stmt, ast.Expr) and
+                isinstance(first_stmt.value, ast.Constant) and
+                isinstance(first_stmt.value.value, str)
+            )
+            
+            # Skip blank line requirement if function starts with a docstring
+            # (per PEP 257, docstrings should come immediately after def)
+            if not is_docstring:
+                # ``lineno`` is 1-indexed; check the next line in the file
+                line_after_def = self.lines[node.lineno].strip()
+                if line_after_def:
+                    self.violations.append(
+                        (node.name, 'Function spacing (no blank line after def)', node.lineno)
+                    )
 
         self.generic_visit(node)
 

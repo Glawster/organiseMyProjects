@@ -98,12 +98,12 @@ class GuiNamingVisitor(ast.NodeVisitor):
                 hasHorizontalVerticalViolation = False
                 if varName.startswith('horizontal'):
                     # Suggest using hrz prefix instead
-                    suggested = 'hrz' + varName[10:]  # Remove 'horizontal' and add 'hrz'
+                    suggested = 'hrz' + varName[10:]  # Replace 'horizontal' (10 chars) with 'hrz'
                     self.violations.append((varName, f'Horizontal widget (use "{suggested}" instead)', node.lineno))
                     hasHorizontalVerticalViolation = True
                 elif varName.startswith('vertical'):
                     # Suggest using vrt prefix instead
-                    suggested = 'vrt' + varName[8:]  # Remove 'vertical' and add 'vrt'
+                    suggested = 'vrt' + varName[8:]  # Replace 'vertical' (8 chars) with 'vrt'
                     self.violations.append((varName, f'Vertical widget (use "{suggested}" instead)', node.lineno))
                     hasHorizontalVerticalViolation = True
                 

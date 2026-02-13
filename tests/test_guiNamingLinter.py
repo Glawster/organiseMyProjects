@@ -451,3 +451,302 @@ class MyFrame:
         
         # Should have no violations - Tkinter allows prefix-based camelCase
         assert len(violations) == 0
+
+
+class TestHorizontalVerticalWidgets:
+    """Test cases for horizontal/vertical widget naming conventions."""
+    
+    def testValidHorizontalSpacer(self, temp_dir):
+        """Test that hrz prefix for horizontal widgets is valid."""
+        qt_file = temp_dir / "test_hrz.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.hrzSpacer = QSpacerItem(40, 20)  # Valid
+        self.hrzSpacerMain = QSpacerItem(40, 20)  # Valid
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have no violations for hrz prefix
+        assert len(violations) == 0
+    
+    def testValidVerticalSpacer(self, temp_dir):
+        """Test that vrt prefix for vertical widgets is valid."""
+        qt_file = temp_dir / "test_vrt.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.vrtSpacer = QSpacerItem(20, 40)  # Valid
+        self.vrtSpacerMain = QSpacerItem(20, 40)  # Valid
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have no violations for vrt prefix
+        assert len(violations) == 0
+    
+    def testInvalidHorizontalSpacer(self, temp_dir):
+        """Test that horizontalSpacer is flagged as invalid."""
+        qt_file = temp_dir / "test_horizontal.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.horizontalSpacer = QSpacerItem(40, 20)  # Invalid
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have violation for horizontalSpacer
+        assert len(violations) > 0
+        assert any('horizontalSpacer' in str(v) for v in violations)
+        assert any('hrz' in str(v) for v in violations)
+    
+    def testInvalidVerticalSpacer(self, temp_dir):
+        """Test that verticalSpacer is flagged as invalid."""
+        qt_file = temp_dir / "test_vertical.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        self.verticalSpacer = QSpacerItem(20, 40)  # Invalid
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have violation for verticalSpacer
+        assert len(violations) > 0
+        assert any('verticalSpacer' in str(v) for v in violations)
+        assert any('vrt' in str(v) for v in violations)
+    
+    def testMixedHorizontalVertical(self, temp_dir):
+        """Test mixed valid and invalid horizontal/vertical widget names."""
+        qt_file = temp_dir / "test_mixed.py"
+        content = '''
+from PySide6.QtWidgets import QSpacerItem
+
+class MyWidget:
+    def __init__(self):
+        
+        self.hrzSpacer = QSpacerItem(40, 20)  # Valid
+        self.horizontalSpacer = QSpacerItem(40, 20)  # Invalid
+        self.vrtSpacer = QSpacerItem(20, 40)  # Valid
+        self.verticalSpacer = QSpacerItem(20, 40)  # Invalid
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have 2 violations (horizontalSpacer and verticalSpacer)
+        assert len(violations) == 2
+        assert any('horizontalSpacer' in str(v) for v in violations)
+        assert any('verticalSpacer' in str(v) for v in violations)
+    
+    def testHorizontalVerticalNonSpacerItem(self, temp_dir):
+        """Test that horizontal/vertical naming is only enforced for QSpacerItem."""
+        qt_file = temp_dir / "test_non_spacer.py"
+        content = '''
+from PySide6.QtWidgets import QWidget
+
+class MyWidget:
+    def __init__(self):
+        
+        # These should NOT be flagged - they are regular variables, not QSpacerItem
+        self.horizontalAlignment = "left"
+        self.verticalOffset = 10
+        self.horizontal_layout = None
+        self.vertical_spacing = 5
+'''
+        qt_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(qt_file))
+        
+        # Should have no violations - these are not QSpacerItem widgets
+        assert len(violations) == 0
+
+
+class TestPythonDirectives:
+    """Test cases for Python directives (dunder names)."""
+    
+    def testDunderVersionNotFlagged(self, temp_dir):
+        """Test that __version__ is not flagged as constant violation."""
+        test_file = temp_dir / "test_version.py"
+        content = '''
+__version__ = "1.0.0"
+__author__ = "Test Author"
+__license__ = "MIT"
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations for dunder names
+        assert len(violations) == 0
+    
+    def testDunderAllNotFlagged(self, temp_dir):
+        """Test that __all__ is not flagged as constant violation."""
+        test_file = temp_dir / "test_all.py"
+        content = '''
+__all__ = ['function1', 'function2']
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations for __all__
+        assert len(violations) == 0
+    
+    def testDunderInitNotFlagged(self, temp_dir):
+        """Test that __init__ module is not flagged."""
+        test_file = temp_dir / "test_init.py"
+        content = '''
+__init__ = "module"
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations for __init__
+        assert len(violations) == 0
+    
+    def testMultipleDunderNames(self, temp_dir):
+        """Test that multiple dunder names are not flagged."""
+        test_file = temp_dir / "test_multiple.py"
+        content = '''
+__version__ = "1.0.0"
+__author__ = "Test Author"
+__license__ = "MIT"
+__all__ = ['something']
+__doc__ = "Documentation"
+__name__ = "__main__"
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations for dunder names
+        assert len(violations) == 0
+    
+    def testRegularConstantStillFlagged(self, temp_dir):
+        """Test that regular constants without proper naming are still flagged."""
+        test_file = temp_dir / "test_constant.py"
+        content = '''
+myConstant = "value"  # Should be flagged
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violation for myConstant
+        assert len(violations) > 0
+        assert any('myConstant' in str(v) for v in violations)
+
+class TestFunctionSpacingWithDocstrings:
+    """Test cases for function spacing rules with docstrings."""
+    
+    def testFunctionWithDocstringNotFlagged(self, temp_dir):
+        """Test that functions with docstrings don't need blank line after def."""
+        test_file = temp_dir / "test_docstring.py"
+        content = '''
+def my_function():
+    """This is a docstring."""
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations - docstring exempts from blank line rule
+        assert len(violations) == 0
+    
+    def testFunctionWithoutDocstringRequiresBlankLine(self, temp_dir):
+        """Test that functions without docstrings need blank line after def."""
+        test_file = temp_dir / "test_no_docstring.py"
+        content = '''
+def my_function():
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have violation - no docstring and no blank line
+        assert len(violations) > 0
+        assert any('my_function' in str(v) for v in violations)
+        assert any('Function spacing' in str(v) for v in violations)
+    
+    def testFunctionWithBlankLineAndNoDocstring(self, temp_dir):
+        """Test that functions with blank line after def pass."""
+        test_file = temp_dir / "test_blank_line.py"
+        content = '''
+def my_function():
+    
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations - blank line is present
+        assert len(violations) == 0
+    
+    def testMultilineDocstring(self, temp_dir):
+        """Test that multi-line docstrings also exempt from blank line rule."""
+        test_file = temp_dir / "test_multiline_docstring.py"
+        content = '''
+def my_function():
+    """
+    This is a multi-line docstring.
+    
+    It has multiple lines.
+    """
+    line1 = 1
+    line2 = 2
+    line3 = 3
+    line4 = 4
+    line5 = 5
+'''
+        test_file.write_text(content)
+        
+        from organiseMyProjects.guiNamingLinter import checkFile
+        violations = checkFile(str(test_file))
+        
+        # Should have no violations - docstring exempts from blank line rule
+        assert len(violations) == 0

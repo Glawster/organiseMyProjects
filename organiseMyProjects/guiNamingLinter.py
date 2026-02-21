@@ -108,10 +108,13 @@ class GuiNamingVisitor(ast.NodeVisitor):
                     hasHorizontalVerticalViolation = True
                 
                 # Check for constants (only for module-level simple names)
+                # Exclude Python directives (dunder names like __version__, __all__, __init__, etc.)
                 if isinstance(node.value, (ast.Constant, ast.List, ast.Tuple)):
                     if isinstance(target, ast.Name) and isinstance(getattr(node, 'parent', None), ast.Module):
-                        if not re.match(namingRules['Constant'], varName):
-                            self.violations.append((varName, 'Constant', node.lineno))
+                        # Skip Python directives (dunder names)
+                        if not (varName.startswith('__') and varName.endswith('__')):
+                            if not re.match(namingRules['Constant'], varName):
+                                self.violations.append((varName, 'Constant', node.lineno))
 
                 # Check for widget naming conventions (skip if already reported horizontal/vertical violation)
                 if not hasHorizontalVerticalViolation and isinstance(node.value, ast.Call):
@@ -130,6 +133,17 @@ class GuiNamingVisitor(ast.NodeVisitor):
                                 if not re.match(pattern, varName):
                                     self.violations.append((varName, widgetType, node.lineno))
                             
+                            # Check Qt horizontal/vertical widgets (hrz/vrt prefix for QSpacerItem)
+                            elif self.framework == 'qt' and widgetType == 'QSpacerItem':
+                                # Check if variable name starts with horizontal or vertical
+                                is_horizontal = varName.startswith('horizontal')
+                                is_vertical = varName.startswith('vertical')
+                                if is_horizontal or is_vertical:
+                                    expected_prefix = 'hrz' if is_horizontal else 'vrt'
+                                    old_prefix = 'horizontal' if is_horizontal else 'vertical'
+                                    suggested_name = expected_prefix + varName[len(old_prefix):]
+                                    self.violations.append((varName, f'Qt horizontal/vertical widget (use {expected_prefix} prefix, e.g., {suggested_name})', node.lineno))
+                            
                             # Check Qt widgets (snake_case naming)
                             elif self.framework == 'qt' and widgetType in qtWidgetTypes:
                                 if not isSnakeCase(varName):
@@ -144,12 +158,23 @@ class GuiNamingVisitor(ast.NodeVisitor):
         """Check for a blank line immediately after the ``def`` line."""
 
         if len(node.body) > 4 and node.lineno < len(self.lines):
-            # ``lineno`` is 1-indexed; check the next line in the file
-            line_after_def = self.lines[node.lineno].strip()
-            if line_after_def:
-                self.violations.append(
-                    (node.name, 'Function spacing (no blank line after def)', node.lineno)
-                )
+            # Check if first statement is a docstring
+            first_stmt = node.body[0]
+            is_docstring = (
+                isinstance(first_stmt, ast.Expr) and
+                isinstance(first_stmt.value, ast.Constant) and
+                isinstance(first_stmt.value.value, str)
+            )
+            
+            # Skip blank line requirement if function starts with a docstring
+            # (per PEP 257, docstrings should come immediately after def)
+            if not is_docstring:
+                # ``lineno`` is 1-indexed; check the next line in the file
+                line_after_def = self.lines[node.lineno].strip()
+                if line_after_def:
+                    self.violations.append(
+                        (node.name, 'Function spacing (no blank line after def)', node.lineno)
+                    )
 
         self.generic_visit(node)
 

@@ -37,7 +37,8 @@ qtWidgetTypes = {
     'QTableWidget', 'QTableView', 'QTreeWidget', 'QTreeView',
     'QSpinBox', 'QDoubleSpinBox', 'QSlider', 'QProgressBar',
     'QTabWidget', 'QScrollArea', 'QSplitter', 'QStackedWidget',
-    'QSpacerItem'
+    'QSpacerItem', 'QHBoxLayout', 'QVBoxLayout', 'QGridLayout',
+    'QFormLayout'
 }
 
 # Allow patterns or names to bypass class rule
@@ -93,6 +94,19 @@ class GuiNamingVisitor(ast.NodeVisitor):
                 varName = target.attr
             
             if varName:
+                # Check for horizontal/vertical naming (both Tkinter and Qt)
+                hasHorizontalVerticalViolation = False
+                if varName.startswith('horizontal'):
+                    # Suggest using hrz prefix instead
+                    suggested = 'hrz' + varName[10:]  # Replace 'horizontal' (10 chars) with 'hrz'
+                    self.violations.append((varName, f'Horizontal widget (use "{suggested}" instead)', node.lineno))
+                    hasHorizontalVerticalViolation = True
+                elif varName.startswith('vertical'):
+                    # Suggest using vrt prefix instead
+                    suggested = 'vrt' + varName[8:]  # Replace 'vertical' (8 chars) with 'vrt'
+                    self.violations.append((varName, f'Vertical widget (use "{suggested}" instead)', node.lineno))
+                    hasHorizontalVerticalViolation = True
+                
                 # Check for constants (only for module-level simple names)
                 # Exclude Python directives (dunder names like __version__, __all__, __init__, etc.)
                 if isinstance(node.value, (ast.Constant, ast.List, ast.Tuple)):
@@ -102,8 +116,8 @@ class GuiNamingVisitor(ast.NodeVisitor):
                             if not re.match(namingRules['Constant'], varName):
                                 self.violations.append((varName, 'Constant', node.lineno))
 
-                # Check for widget naming conventions
-                if isinstance(node.value, ast.Call):
+                # Check for widget naming conventions (skip if already reported horizontal/vertical violation)
+                if not hasHorizontalVerticalViolation and isinstance(node.value, ast.Call):
                     try:
                         # Get widget type from the call
                         widgetType = None

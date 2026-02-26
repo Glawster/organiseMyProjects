@@ -128,3 +128,70 @@ def cleanOldLogFiles(logDir: Path, daysToKeep: int) -> tuple[int, list[str]]:
             continue
 
     return removedCount, removedFiles
+
+# logUtils.py
+
+def drawBox(
+    message: str,
+    border_char: str = "─",
+    corner_char: str = "+",
+    side_char: str = "│",
+    padding: int = 2,
+    logger=None
+) -> None:
+    """
+    Print a nicely formatted ASCII box around a log message.
+    
+    Useful for making important log entries stand out:
+    
+    +──────────────────────────────────────────────────────────┐
+    │  [ERROR] Database connection failed                      │
+    │  Attempted 3 retries. Check credentials and network.     │
+    └──────────────────────────────────────────────────────────┘
+
+    Args:
+        message: The text to display inside the box (can be multi-line)
+        border_char: Character for horizontal lines
+        corner_char: Corner characters
+        side_char: Vertical bar character
+        padding: Spaces between text and sides
+        logger: Optional logger instance (e.g. logging.getLogger())
+                If provided, uses logger instead of print()
+    """
+
+    # Split into lines and calculate content width
+    lines = message.splitlines()
+    if not lines:
+        lines = ["(empty message)"]
+
+    contentWidth = max(len(line) for line in lines)
+    innerWidth = contentWidth + padding * 2
+
+    # Build border
+    top_bottom = corner_char + border_char * innerWidth + corner_char
+
+    # Header line with level
+    header = f"{lines[0]}"
+    headerPadding = innerWidth - len(header) - padding * 2
+    headerLine = f"{side_char}{' ' * padding}{header}{' ' * headerPadding}{side_char}"
+
+    # Prepare body lines
+    bodyLines = []
+    for line in lines[1:]:
+        padRight = innerWidth - len(line) - padding * 2
+        bodyLines.append(f"{side_char}{' ' * padding}{line}{' ' * padRight}{side_char}")
+
+    # Output
+    output_lines = [
+        top_bottom,
+        headerLine,
+        *(bodyLines if len(lines) > 1 else []),
+        top_bottom
+    ]
+
+    if logger is not None:
+        for outLine in output_lines:
+            logger.info(outLine)
+    else:
+        for outLine in output_lines:
+            print(outLine)

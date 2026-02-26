@@ -1,11 +1,12 @@
 """
 Tests for createProject.py functionality.
 """
+import datetime
 import pytest
 import os
 import sys
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -13,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from organiseMyProjects.createProject import (
     createProject, 
     updateProject, 
+    _backup_file,
     _copy_if_newer, 
     _update_text_file,
     GITIGNORE_CONTENT,
@@ -115,23 +117,15 @@ class TestCreateProject:
         assert "already exists" in captured.out
     
     def testCreateProjectCopilotInstructions(self, temp_dir, sample_project_name):
-        """Test that copilot instructions are copied from package resources."""
+        """Test that copilot instructions are copied from the .github/ directory."""
         projectPath = temp_dir / sample_project_name
-        
-        # Mock the package resource access
-        with patch('organiseMyProjects.createProject.files') as mock_files:
-            mockPackageFiles = mock_files.return_value
-            mockCopilotFile = mockPackageFiles.__truediv__.return_value
-            mockCopilotFile.is_file.return_value = True
-            mockCopilotFile.read_text.return_value = "# GitHub Copilot Instructions\nTest content"
-            
-            with patch('organiseMyProjects.createProject.subprocess.run'):
-                createProject(str(projectPath))
-        
-        # Verify copilot instructions file was created
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            createProject(str(projectPath))
+
         copilotFile = projectPath / ".github" / "copilot-instructions.md"
         assert copilotFile.exists()
-        assert "# GitHub Copilot Instructions" in copilotFile.read_text()
+        assert len(copilotFile.read_text()) > 0
 
 
 class TestUpdateProject:
@@ -231,3 +225,69 @@ class TestUtilityFunctions:
         _update_text_file(dest, newContent)
         
         assert dest.read_text() == newContent
+
+
+class TestBackupFile:
+    """Test cases for _backup_file helper."""
+
+    def testBackupFileCreatesBackup(self, temp_dir):
+        """Test that _backup_file renames existing file to stem.YYMMDD.ext."""
+        dest = temp_dir / "globalVars.py"
+        dest.write_text("original content")
+
+        _backup_file(dest)
+
+        stamp = datetime.date.today().strftime("%y%m%d")
+        backup = temp_dir / f"globalVars.{stamp}.py"
+        assert backup.exists(), "Backup file should be created"
+        assert backup.read_text() == "original content"
+        assert not dest.exists(), "Original file should be renamed away"
+
+    def testBackupFileNoExistingFile(self, temp_dir):
+        """Test that _backup_file does nothing when file doesn't exist."""
+        dest = temp_dir / "nonexistent.py"
+        _backup_file(dest)  # Should not raise
+        assert not dest.exists()
+
+    def testCopyIfNewerBacksUpBeforeOverwriting(self, temp_dir):
+        """Test that _copy_if_newer creates a backup when overwriting."""
+        import time
+
+        src = temp_dir / "source.py"
+        dest = temp_dir / "dest.py"
+
+        dest.write_text("old content")
+        time.sleep(0.05)
+        src.write_text("new content")
+
+        _copy_if_newer(src, dest)
+
+        stamp = datetime.date.today().strftime("%y%m%d")
+        backup = temp_dir / f"dest.{stamp}.py"
+        assert backup.exists(), "Backup should exist after overwrite"
+        assert backup.read_text() == "old content"
+        assert dest.read_text() == "new content"
+
+    def testUpdateTextFileBacksUpBeforeOverwriting(self, temp_dir):
+        """Test that _update_text_file creates a backup when overwriting."""
+        dest = temp_dir / "config.txt"
+        dest.write_text("old")
+
+        _update_text_file(dest, "new content")
+
+        stamp = datetime.date.today().strftime("%y%m%d")
+        backup = temp_dir / f"config.{stamp}.txt"
+        assert backup.exists(), "Backup should exist after overwrite"
+        assert backup.read_text() == "old"
+        assert dest.read_text() == "new content"
+
+    def testUpdateTextFileNoBackupWhenSameContent(self, temp_dir):
+        """Test that _update_text_file does NOT create a backup when content is unchanged."""
+        dest = temp_dir / "config.txt"
+        dest.write_text("same content")
+
+        _update_text_file(dest, "same content")
+
+        stamp = datetime.date.today().strftime("%y%m%d")
+        backup = temp_dir / f"config.{stamp}.txt"
+        assert not backup.exists(), "No backup should be created when content is unchanged"

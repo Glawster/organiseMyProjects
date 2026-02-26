@@ -1,13 +1,8 @@
+import datetime
 import os
 import shutil
 import subprocess
 import argparse
-try:
-    from importlib.resources import files
-except ImportError:
-    # Fallback for Python < 3.9
-    from importlib_resources import files
-
 from pathlib import Path
 
 # text templates used when creating or updating projects
@@ -80,21 +75,10 @@ def createProject(projectName):
         shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
 
     # Copy the copilot instructions file
-    try:
-        package_files = files('organiseMyProjects')
-        copilot_instructions_file = package_files / 'copilot-instructions.md'
-        if copilot_instructions_file.is_file():
-            print("Copying copilot instructions...")
-            copilot_instructions_content = copilot_instructions_file.read_text()
-            (basePath / ".github" / "copilot-instructions.md").write_text(copilot_instructions_content)
-        else:
-            raise FileNotFoundError("Template not found in package")
-    except (ImportError, FileNotFoundError):
-        # Fallback to file system if package resource not available (development mode)
-        srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
-        if srcCopilotInstructions.exists():
-            print("Copying copilot instructions...")
-            shutil.copy(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
+    srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+    if srcCopilotInstructions.exists():
+        print("Copying copilot instructions...")
+        shutil.copy(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
 
     # Copy template modules into the new project
     print("Copying template modules...")
@@ -127,11 +111,21 @@ def createProject(projectName):
     print(f"Project '{projectName}' created with full structure.")
 
 
+def _backup_file(dest: Path) -> None:
+    """Rename dest to {stem}.YYMMDD{suffix} before overwriting."""
+    if dest.exists():
+        stamp = datetime.date.today().strftime("%y%m%d")
+        backup = dest.with_name(f"{dest.stem}.{stamp}{dest.suffix}")
+        dest.rename(backup)
+        print(f"Backed up {dest.name} → {backup.name}")
+
+
 def _copy_if_newer(src: Path, dest: Path):
 
     """Copy src to dest if dest doesn't exist or src is newer."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
+        _backup_file(dest)
         shutil.copy(src, dest)
         print(f"Updated {dest}")
 
@@ -152,6 +146,7 @@ def _update_text_file(dest: Path, content: str):
         current = None
 
     if current != new_bytes:
+        _backup_file(dest)
         dest.write_bytes(new_bytes)
         print(f"Updated {dest}")
 
@@ -186,27 +181,10 @@ def updateProject(projectName):
         print("Checking guidelines file...")
         _copy_if_newer(srcGuidelines, basePath / "projectGuidelines.md")
 
-    try:
-        package_files = files('organiseMyProjects')
-        copilot_instructions_file = package_files / 'copilot-instructions.md'
-        if copilot_instructions_file.is_file():
-            print("Checking copilot instructions...")
-            copilot_instructions_content = copilot_instructions_file.read_text()
-            current_content = ""
-            dest_file = basePath / ".github" / "copilot-instructions.md"
-            if dest_file.exists():
-                current_content = dest_file.read_text()
-            if current_content != copilot_instructions_content:
-                dest_file.write_text(copilot_instructions_content)
-                print(f"Updated {dest_file}")
-        else:
-            raise FileNotFoundError("Template not found in package")
-    except (ImportError, FileNotFoundError):
-        # Fallback to file system if package resource not available (development mode)
-        srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
-        if srcCopilotInstructions.exists():
-            print("Checking copilot instructions...")
-            _copy_if_newer(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
+    srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+    if srcCopilotInstructions.exists():
+        print("Checking copilot instructions...")
+        _copy_if_newer(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
 
     print("Checking template modules...")
     modules = [

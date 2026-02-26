@@ -1,829 +1,241 @@
-# GitHub Copilot Instructions - Generic Development Guidelines
+# GitHub Copilot Instructions -- Master Development Guidelines (v2)
 
-## Overview
+------------------------------------------------------------------------
 
-These are generic development guidelines for Python projects supporting multiple frameworks and patterns. They establish consistent coding standards, naming conventions, and best practices that can be applied across projects.
+# Table of Contents
 
-**Note**: For project-specific information, architecture details, and custom workflows, see `additional-copilot-instructions.md` in the `.github` directory.
+1.  [Overview](#overview)\
+2.  [Architecture Principles](#architecture-principles)\
+3.  [Development Standards](#development-standards)\
+4.  [Project Structure Standard](#project-structure-standard)\
+5.  [CLI Design Standards](#cli-design-standards)\
+6.  [Environment & Dependency Policy](#environment--dependency-policy)\
+7.  [Framework Guidelines](#framework-guidelines)\
+8.  [Patterns](#patterns)\
+9.  [Error Handling & Logging](#error-handling--logging)\
+10. [Security Standards](#security-standards)\
+11. [Testing Standards](#testing-standards)\
+12. [Performance Guidelines](#performance-guidelines)\
+13. [Refactoring Guidelines](#refactoring-guidelines)\
+14. [Common Principles to Always
+    Follow](#common-principles-to-always-follow)
 
-## Quick Reference by Technology
+------------------------------------------------------------------------
 
-- **Tkinter Desktop Apps**: See [Tkinter Guidelines](#tkinter-gui-development)
-- **Qt/PySide6 Apps**: See [Qt Guidelines](#qt-gui-development)
-- **FastAPI/React Web Apps**: See [Web Application Guidelines](#web-application-development)
-- **DaVinci Resolve Scripts**: See [Video Automation Guidelines](#video-automation)
-- **Bash/System Scripts**: See [Bash Scripting Guidelines](#bash-scripting)
-- **Dry-Run Implementation**: See [Dry-Run Pattern](#dry-run-pattern) for adding `--dry-run` support to any script
+# Overview
 
-## Development Standards
+These are master development guidelines for all projects.
 
-### Code Style & Quality
-- **Python Formatting**: Use `black` for consistent code formatting
-- **Bash Scripts**: Use `set -euo pipefail` for safety, follow shellcheck recommendations
-- **JavaScript/React**: Prettier (standard React/ESLint rules)
-- **Linting**: 
-  - Python: Custom GUI naming linter for Tkinter, PEP 8 for general code
-  - Bash: shellcheck
-  - JavaScript: ESLint
-- **Pre-commit hooks**: Automatic formatting and linting before commits
-- **Testing**: pytest for comprehensive test coverage
-- **Type hints**: Use type annotations where appropriate
-- **Documentation**: Docstrings for all public functions and classes
+Project-specific details belong in:
 
-### File Organization
-- **UI Code**: Separate GUI components from business logic
-- **Business Logic**: Core functionality independent of UI (NO framework dependencies in core logic)
-- **Utilities**: Shared helper functions in dedicated modules
-- **Tests**: Mirror source structure in test directory
-- **Configuration**: Centralize constants and settings
+.github/additional-copilot-instructions.md
 
-## Naming Conventions by Framework
+This document defines universal rules.
 
-### Tkinter Projects
-- **GUI Components**: Prefix-based (e.g., `frmMain`, `btnSave`, `lblStatus`)
-- **Classes**: PascalCase (e.g., `MainFrame`, `DataProcessor`)
-- **Functions and Variables**: camelCase (e.g., `processData`, `loadConfig`)
-- **Constants**: UPPERCASE_WITH_UNDERSCORES (e.g., `MAX_SIZE`)
-- **Private Members**: Leading underscore (e.g., `_internalMethod`)
-- **Files**: camelCase (e.g., `dataProcessor.py`)
+------------------------------------------------------------------------
 
-### Qt/PySide6 Projects
-- **Classes**: PascalCase (e.g., `MainWindow`, `DataProcessor`)
-- **Functions and Variables**: snake_case (e.g., `process_data`, `load_config`)
-- **Qt Signals**: camelCase (e.g., `imageSelected`, `dataSaved`)
-- **Constants**: UPPERCASE_WITH_UNDERSCORES (e.g., `MAX_SIZE`)
-- **Private Members**: Leading underscore (e.g., `_internal_method`)
-- **Files**: camelCase (e.g., `dataProcessor.py`)
+# Architecture Principles
 
-### DaVinci Resolve / Video Automation
-- **Functions and Variables**: camelCase (e.g., `getResolve`, `timelineExists`)
-- **Constants**: UPPER_SNAKE_CASE (e.g., `VIDEO_EXTENSIONS`)
-- **Classes**: PascalCase (e.g., `TestTimeline`)
-- **Files**: camelCase (e.g., `organiseHomeVideo.py`)
+1.  Core logic must never depend on UI frameworks\
+2.  Business logic must be testable without GUI\
+3.  GUI layers orchestrate --- they do not implement business logic\
+4.  CLI tools must run non-interactively\
+5.  File operations must be centralized and reusable\
+6.  Logging must be initialized at entry point\
+7.  Scripts must be safe-by-default\
+8.  Move files instead of deleting where possible\
+9.  Prefer explicit over implicit behavior\
+10. Validate all paths before use
 
-### Bash Scripts
-- **Shell Scripts**: Descriptive names with `.sh` extension (e.g., `organiseHome.sh`)
-- **Functions**: camelCase (e.g., `makeDir`, `moveIfExists`)
-- **Variables**: camelCase (e.g., `sourceDir`, `targetPath`)
-- **Constants**: UPPERCASE_WITH_UNDERSCORES
+------------------------------------------------------------------------
 
-### Web Applications (FastAPI/React)
-- **Python Classes**: PascalCase (e.g., `MediaEditor`)
-- **Python Functions/Variables**: camelCase (e.g., `processUpload`)
-- **JavaScript/React Components**: PascalCase (e.g., `UploadButton`)
-- **Constants**: UPPERCASE_WITH_UNDERSCORES (e.g., `MAX_UPLOAD_SIZE`)
+# Development Standards
 
-## Tkinter GUI Development
+## Code Quality
 
-### Framework Patterns
-- Use `pack()` layout manager consistently (avoid `grid()` unless necessary)
-- Implement consistent padding using constants (e.g., `PAD_X`, `PAD_Y`)
-- Follow frame-based component organization
-- Use status indicators for user feedback and progress
-- Inherit from base frame classes for standard functionality
+-   Python formatted with black\
+-   Bash uses set -euo pipefail\
+-   Use type hints\
+-   Use docstrings for public functions/classes
 
-### Component Standards
-- **Buttons**: `ttk.Button` with `btn` prefix
-- **Entry Fields**: `ttk.Entry` with `ent` prefix
-- **Labels**: `ttk.Label` with `lbl` prefix
-- **Frames**: `ttk.Frame` with `frm` prefix
-- **Listboxes**: `tk.Listbox` with `lst` prefix
-- **Comboboxes**: `ttk.Combobox` with `cmb` prefix
-- **Checkbuttons**: `ttk.Checkbutton` with `chk` prefix
-- **Radiobuttons**: `ttk.Radiobutton` with `rad` prefix
-- **Text Widgets**: `tk.Text` with `txt` prefix
-- **Scrollbars**: `ttk.Scrollbar` with `scr` prefix
-- **Canvas**: `tk.Canvas` with `can` prefix
+## Separation of Concerns
 
-### GUI Naming Linter
+-   UI separate from business logic\
+-   Core logic has no framework dependencies\
+-   Utilities isolated in dedicated modules\
+-   Tests mirror source structure
 
-#### Naming Rules
-Widgets must follow specific prefixes based on their type. See component standards above.
+------------------------------------------------------------------------
 
-#### Horizontal and Vertical Widget Naming
-For widgets that would naturally be named with "horizontal" or "vertical" prefixes, use abbreviated forms:
-- `hrz*` - Horizontal widgets (e.g., `hrzSpacer`, `hrzLayout`)
-- `vrt*` - Vertical widgets (e.g., `vrtSpacer`, `vrtLayout`)
+# Project Structure Standard
 
-**Examples:**
-- ❌ `self.horizontalSpacer = QSpacerItem()` - Wrong
-- ✅ `self.hrzSpacer = QSpacerItem()` - Correct (Qt snake_case: `hrz_spacer`)
-- ❌ `self.verticalLayout = QVBoxLayout()` - Wrong
-- ✅ `self.vrtLayout = QVBoxLayout()` - Correct (Qt snake_case: `vrt_layout`)
+    projectName/
+    ├── src/
+    │   └── projectName/
+    │       ├── __init__.py
+    │       ├── main.py
+    │       ├── core/
+    │       ├── ui/
+    │       ├── utils/
+    │       └── patterns/
+    ├── Qt/ui
+    ├── tests/
+    ├── requirements.txt
+    ├── README.md
+    └── .github/
+        └── additional-copilot-instructions.md
 
-This applies to both Tkinter and Qt/PySide6 projects.
+------------------------------------------------------------------------
 
-#### Function Formatting Rules
-- Methods longer than 4 lines should have a blank line after the `def` statement
-- Short methods (≤4 lines) do not require blank line
+# CLI Design Standards
 
-#### Usage
-```bash
-runLinter                    # Lint current directory
-runLinter path/to/file.py    # Lint specific file
-runLinter path/to/directory  # Lint directory
+All CLI tools must:
+
+-   Use argparse\
+-   Validate paths before processing\
+-   Log start and completion\
+-   Exit with 0 on success, non-zero on failure\
+-   Support --confirm (safe-by-default)\
+-   Provide clear help text\
+-   Print a completion summary
+
+### Required Pattern
+
+``` python
+parser.add_argument(
+    "--confirm",
+    dest="confirm",
+    action="store_true",
+    help="execute changes (default is dry-run)",
+)
+dryRun = not args.confirm
 ```
 
-### Example Code
-```python
-import tkinter as tk
-from tkinter import ttk
+------------------------------------------------------------------------
 
-class MyFrame(ttk.Frame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self._createWidgets()
-        
-    def _createWidgets(self):
-        self.frmMain = ttk.Frame(self)
-        self.frmMain.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-        
-        self.lblStatus = ttk.Label(self.frmMain, text="Ready")
-        self.lblStatus.pack(pady=5)
-        
-        self.btnAction = ttk.Button(
-            self.frmMain, 
-            text="Process", 
-            command=self._onAction
-        )
-        self.btnAction.pack(pady=5)
-    
-    def _onAction(self):
-        """Handle button click."""
-        self.lblStatus.config(text="Processing...")
-        # Do work
-        self.lblStatus.config(text="Complete")
+# Environment & Dependency Policy
+
+-   Target Python 3.10+\
+-   Use requirements.txt unless packaged\
+-   Do not auto-install dependencies at runtime\
+-   Fail fast if external tools are missing\
+-   Validate system requirements explicitly
+
+------------------------------------------------------------------------
+
+# Patterns
+
+## Logging Pattern (logUtils)
+
+All projects must use centralized logging.
+
+``` python
+from organiseMyProjects.logUtils import getLogger
+logger = getLogger("projectName")
 ```
 
-## Qt GUI Development
+-   Initialize logging in main()\
+-   Use lowercase messages\
+-   Use consistent message patterns
 
-### Framework Patterns
-- Use Qt layouts (QVBoxLayout, QHBoxLayout, QGridLayout, QSplitter)
-- Use signals and slots for component communication
-- Inherit from appropriate Qt widget classes
-- Keep UI code separate from business logic
-- Follow Qt's Model-View patterns where appropriate
-
-### Component Standards
-- **Buttons**: `QPushButton` or `QToolButton`
-- **Labels**: `QLabel` for text and images
-- **Text Input**: `QLineEdit` (single line) or `QTextEdit`/`QPlainTextEdit` (multi-line)
-- **Lists**: `QListWidget` or `QListView` with models
-- **Combos**: `QComboBox` for dropdown selections
-- **Checks**: `QCheckBox` for boolean options
-- **Radio**: `QRadioButton` for single-choice options
-- **Containers**: `QWidget`, `QFrame`, `QGroupBox`
-- **Dialogs**: `QDialog`, `QMessageBox`, `QFileDialog`
-- **Menus**: `QMenuBar`, `QMenu`, `QAction`
-
-### Qt-Specific Patterns
-
-#### Signals and Slots
-- Define custom signals using `Signal` from `PySide6.QtCore`
-- Connect signals to slots using `.connect()`
-- Emit signals to notify components
-- Disconnect signals when widgets are destroyed if needed
-
-#### Widget Initialization
-- Call `super().__init__()` in widget constructors
-- Set up UI in a separate `_setup_ui()` method
-- Initialize member variables before UI setup
-- Connect signals after UI is created
-
-#### Layout Management
-- Always use layouts, never fixed positions
-- Use spacers to control widget spacing
-- Set size policies appropriately
-- Use `setSizeConstraint()` for proper sizing
-
-#### Resource Management
-- Clean up resources in `closeEvent()` or destructors
-- Disconnect signals when appropriate
-- Close file handles and network connections
-
-### Example Code
-```python
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel
-from PySide6.QtCore import Signal
-
-class MyWidget(QWidget):
-    """Custom widget with signal example."""
-    
-    processing_complete = Signal(str)
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._setup_ui()
-        
-    def _setup_ui(self):
-        """Set up the user interface."""
-        layout = QVBoxLayout(self)
-        
-        self.status_label = QLabel("Ready")
-        layout.addWidget(self.status_label)
-        
-        self.action_button = QPushButton("Process")
-        self.action_button.clicked.connect(self._on_action)
-        layout.addWidget(self.action_button)
-    
-    def _on_action(self):
-        """Handle button click."""
-        self.status_label.setText("Processing...")
-        result = self._do_processing()
-        self.status_label.setText("Complete")
-        self.processing_complete.emit(result)
-    
-    def _do_processing(self) -> str:
-        """Perform the actual processing."""
-        return "result"
-```
-
-## Web Application Development
-
-### Architecture (FastAPI + React)
-
-#### Backend (FastAPI)
-- Use FastAPI for all API endpoints
-- Design RESTful endpoints
-- Validate incoming requests (file type, size, format)
-- Serve static/media files securely
-- Return clear JSON error messages
-
-#### Frontend (React)
-- Use functional components and hooks
-- Leverage UI libraries (Material UI, etc.)
-- Store API URLs in environment files
-- Handle loading, errors, and job statuses gracefully
-- Provide responsive layouts
-
-#### Backend Example
-```python
-from fastapi import FastAPI, UploadFile, File
-
-app = FastAPI()
-
-@app.post("/upload/")
-async def uploadMedia(file: UploadFile = File(...)):
-    # Validate file type/size
-    # Store in upload directory
-    # Return file id/path
-    ...
-```
-
-#### Frontend Example
-```javascript
-import React, { useState } from "react";
-import { Button } from "@mui/material";
-
-function UploadButton() {
-  const [file, setFile] = useState(null);
-
-  const handleChange = (e) => setFile(e.target.files[0]);
-  
-  const handleUpload = async () => {
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    await fetch("/upload/", { method: "POST", body: formData });
-  };
-
-  return (
-    <>
-      <input type="file" onChange={handleChange} />
-      <Button onClick={handleUpload}>Upload</Button>
-    </>
-  );
-}
-```
-
-## Video Automation
-
-### DaVinci Resolve Integration
-- Never assume DaVinci Resolve APIs are available
-- Use try/except blocks around all Resolve API calls
-- Support both `DaVinciResolveScript` and `bmd` import methods
-- Test API compatibility across different versions
-
-### Common Patterns
-
-#### Timeline Management
-```python
-# Check if timeline exists
-if timelineExists(project, timelineName):
-    timeline = getTimelineByName(project, timelineName)
-else:
-    timeline = createTimelineInFolder(project, mediaPool, folder, timelineName)
-
-# Check if timeline is empty
-if timelineIsEmpty(timeline):
-    mediaPool.AppendToTimeline(clips)
-```
-
-#### Safe API Calls
-```python
-# Use safeCall for uncertain API methods
-success, result = safeCall(project, "GetTimelineByName", timelineName)
-if success and result:
-    # Use result
-    pass
-```
-
-### Stop File Mechanism
-- Support graceful cancellation via stop files
-- Check for stop files at appropriate intervals
-- Support multiple stop file locations
-- Use `stopIfRequested()` pattern
-
-## Bash Scripting
-
-### Safety Patterns
-- Always use `set -euo pipefail` at the start
-- Quote all variable expansions: `"$VAR"` not `$VAR`
-- Use `[[` for conditionals instead of `[`
-- Check if paths exist before operating on them
-
-### Common Patterns
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Helper function
-makeDir() {
-    local dir="$1"
-    if [ ! -d "$dir" ]; then
-        echo "creating directory: $dir"
-        mkdir -p "$dir"
-    fi
-}
-
-# Safe file operation
-moveIfExists() {
-    local src="$1"
-    local dest="$2"
-    if [ -e "$src" ]; then
-        mv -i "$src" "$dest/"
-    fi
-}
-```
-
-### User Interaction
-- Provide clear progress messages
-- Use `echo "=== Section Title ==="` for major operations
-- Use `-i` flag for interactive confirmations
-- Exit with appropriate status codes (0 for success, non-zero for errors)
-
-## Testing Requirements
-
-### Test Structure
-- Use pytest conventions (`test_*.py` files, `test_*` functions)
-- Create focused, single-purpose test functions
-- Use `tmp_path` fixture for temporary file/directory testing
-- Mock external dependencies appropriately
-- Organize tests to mirror source structure
-
-### Fast Validation Commands
-
-For projects with quick validation:
-```bash
-# Compile check (< 1 second)
-find . -name "*.py" -exec python3 -m py_compile {} \;
-
-# Test suite (< 1 second)
-python3 -m unittest discover tests/ -v
-
-# Headless verification (< 1 second)
-python3 headless_test.py
-```
-
-### Test Categories
-- **Unit Tests**: Individual functions/methods in isolation
-- **Integration Tests**: Component interactions
-- **End-to-End Tests**: Complete workflows
-- **GUI Tests**: User interface behavior
-- **Headless Tests**: Testing without display (for CI)
-
-### Coverage Expectations
-- Core business logic: >90% coverage
-- Critical functions: 100% coverage
-- Error handling: All error paths tested
-- Edge cases: Comprehensive boundary testing
-- Happy path and failure scenarios both covered
-
-### Test Best Practices
-- Use descriptive test function names
-- Follow Arrange-Act-Assert pattern
-- Use `tmp_path` for file operations (automatic cleanup)
-- Mock external services and expensive operations
-- Provide descriptive error messages in assertions
-- Test both success and failure scenarios
-- Keep tests independent and repeatable
-- Use parametrize for testing multiple inputs
-
-## Error Handling & Logging
-
-### Logging Standards
-- Use centralized logging configuration
-- Include module name and operation context
-- Log at appropriate levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-- Store logs with timestamp and rotation as appropriate
-
-### Logging Guidelines
-- **Message Format**: Keep messages lowercase and consistent
-- **Major Actions**: `"doing something..."` - action being initiated
-- **Action Completion**: `"...something done"` - action completed
-- **General Updates**: `"...message"` - informational updates
-- **Information Display**: `"...message: value"` - displaying data
-- **Error Messages**: Use Sentence Case for ERROR level messages
-
-### Usage Example
-```python
-from src.logUtils import logger
-
-logger.info("...processing data")
-logger.error("Failed to process: error details")
-```
-
-### Error Recovery
-- Implement graceful degradation for non-critical failures
-- Provide user-actionable error messages
-- Offer clear guidance when operations fail
-- Handle missing dependencies gracefully
-- Validate input before processing
-- Use try-except blocks appropriately
-- Log errors with sufficient context
-- Maintain application stability during errors
-
-## Security Considerations
-
-### Credential Handling
-- Never hardcode credentials or API keys
-- Use encrypted storage for sensitive data
-- Implement secure authentication flows
-- Clear credential caches when requested
-
-### File Operations
-- Validate file paths and extensions
-- Use safe file naming with conflict resolution
-- Implement proper error handling
-- Respect user permissions and system limitations
-- Always sanitize user-generated names
-- Support both Windows and Unix path separators
-
-### Path Handling
-- Always validate and sanitize file paths
-- Use absolute paths where possible
-- Avoid operations on system directories without confirmation
-- Check permissions before attempting operations
-
-### User Data Protection
-- Never delete files without explicit user consent
-- Use move operations instead of delete where possible
-- Create backup directories for filtered/removed items
-- Log all file operations for audit trail
-
-### API/Web Security
-- Validate all user input
-- Use secure storage for sensitive data
-- Handle exceptions without leaking sensitive information
-- Follow principle of least privilege
-- Limit upload size and sanitize files
-
-## Media Processing
-
-### File Type Support
-- **Photos**: JPEG, PNG, TIFF with EXIF metadata preservation
-- **Videos**: MP4, MOV with metadata extraction
-- **Thumbnails**: Consistent sizing and quality
-
-### Metadata Handling
-- Preserve EXIF data during file operations
-- Extract timestamp information reliably
-- Handle missing or corrupted metadata gracefully
-- Support multiple date sources (EXIF, file creation, modified)
-
-### Processing Tools
-- Use PIL/Pillow for image operations
-- Use `imagehash` for perceptual hashing and deduplication
-- Use ffmpeg for video analysis
-- Handle errors gracefully (corrupted files, missing metadata)
-
-### Performance Considerations
-- Use lazy loading for large collections
-- Implement progress feedback for batch operations
-- Cache results to improve responsiveness
-- Handle memory efficiently for large files
-- Profile before optimizing
-- Batch operations when possible
+------------------------------------------------------------------------
 
 ## Dry-Run Pattern
 
-### Overview
-The dry-run pattern allows users to preview what a script would do without making actual changes. This is essential for:
-- Testing script behavior safely
-- Validating operations before execution
-- Debugging complex workflows
-- Building user confidence in automated tools
+Use --confirm (never --dry-run).
 
-### Implementation Standard
-
-#### Argument Definition
-Always use consistent argument naming and help text:
-
-```python
-parser.add_argument(
-    "--dry-run",
-    dest="dryRun",
-    action="store_true",
-    help="show what would be done without changing anything",
-)
+``` python
+prefix = "[] " if dryRun else ""
 ```
 
-**Key Points:**
-- Use `--dry-run` with hyphens (standard CLI convention)
-- Map to `dryRun` camelCase destination (Python convention)
-- Use `action="store_true"` (no value needed)
-- Help text should be clear and lowercase
+Guard operations:
 
-#### Prefix Pattern
-Create a prefix variable based on the dry-run flag:
-
-```python
-prefix = "...[DRY-RUN]" if args.dryRun else "..."
+``` python
+print(f"{prefix}moving file: {src}")
+if not dryRun:
+    shutil.move(src, dest)
 ```
 
-**Usage Rules:**
-- `"..."` - Normal operation prefix (three dots)
-- `"...[DRY-RUN]"` - Dry-run marker with brackets
-- The marker `[DRY-RUN]` clearly indicates simulation mode
-- No need to say "would" in messages - the marker implies it
-
-#### Logging with Prefix
-Use the prefix in all logging and print statements:
-
-```python
-# File operation
-print(f"{prefix}creating directory: {dirPath}")
-
-# Configuration update
-print(f"{prefix}updated config: {configPath}")
-
-# Data processing
-logger.info(f"{prefix}processing {count} files")
-
-# Complex operation
-print(f"{prefix}moving {srcFile} to {destDir}")
-```
-
-#### Conditional Execution
-Only execute actual operations when NOT in dry-run mode:
-
-```python
-if not args.dryRun:
-    dirPath.mkdir(parents=True, exist_ok=True)
-print(f"{prefix}created directory: {dirPath}")
-
-# For file operations
-print(f"{prefix}copying {src} to {dest}")
-if not args.dryRun:
-    shutil.copy(src, dest)
-
-# For configuration changes
-print(f"{prefix}updated config: {configPath}")
-if not args.dryRun:
-    saveConfig(config)
-```
-
-### Complete Example - Python Script
-
-```python
-#!/usr/bin/env python3
-import argparse
-from pathlib import Path
-import shutil
-
-def processFiles(sourceDir: Path, targetDir: Path, dryRun: bool) -> None:
-    """Process files from source to target directory."""
-    prefix = "...[DRY-RUN]" if dryRun else "..."
-    
-    # Ensure target directory exists
-    print(f"{prefix}ensuring target directory: {targetDir}")
-    if not dryRun:
-        targetDir.mkdir(parents=True, exist_ok=True)
-    
-    # Process each file
-    for filePath in sourceDir.glob("*.txt"):
-        targetPath = targetDir / filePath.name
-        print(f"{prefix}copying {filePath} to {targetPath}")
-        if not dryRun:
-            shutil.copy(filePath, targetPath)
-    
-    print(f"{prefix}processing complete")
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Process files from source to target directory"
-    )
-    parser.add_argument(
-        "--source",
-        required=True,
-        help="source directory containing files",
-    )
-    parser.add_argument(
-        "--target",
-        required=True,
-        help="target directory for processed files",
-    )
-    parser.add_argument(
-        "--dry-run",
-        dest="dryRun",
-        action="store_true",
-        help="show what would be done without changing anything",
-    )
-    args = parser.parse_args()
-    
-    # Validate paths
-    try:
-        sourceDir = Path(args.source).expanduser().resolve()
-        targetDir = Path(args.target).expanduser().resolve()
-    except (OSError, RuntimeError, ValueError) as e:
-        raise SystemExit(f"Error resolving path: {e}")
-    
-    if not sourceDir.is_dir():
-        raise SystemExit(f"Source directory does not exist: {sourceDir}")
-    
-    # Execute with dry-run awareness
-    processFiles(sourceDir, targetDir, args.dryRun)
-
-if __name__ == "__main__":
-    main()
-```
-
-### Bash Script Pattern
-
-For bash scripts, use a similar pattern with a global variable:
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Parse arguments
-DRY_RUN=false
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1"
-            exit 1
-            ;;
-    esac
-done
-
-# Set prefix based on dry-run flag
-if [ "$DRY_RUN" = true ]; then
-    PREFIX="...[DRY-RUN]"
-else
-    PREFIX="..."
-fi
-
-# Use in operations
-echo "${PREFIX}creating directory: $TARGET_DIR"
-if [ "$DRY_RUN" = false ]; then
-    mkdir -p "$TARGET_DIR"
-fi
-
-echo "${PREFIX}moving files"
-if [ "$DRY_RUN" = false ]; then
-    mv "$SOURCE"/*.txt "$TARGET_DIR/"
-fi
-```
-
-### Best Practices
-
-1. **Consistency**: Always use the same prefix pattern across all scripts
-2. **Early Declaration**: Set the prefix variable immediately after parsing arguments
-3. **Complete Logging**: Log ALL operations, not just the ones that execute
-4. **Guard All Changes**: Wrap all filesystem/config/network operations with dry-run checks
-5. **Test Both Modes**: Verify script works correctly in both normal and dry-run modes
-6. **Clear Output**: Make dry-run output identical to normal operation output (except for the marker)
-
-### Common Mistakes to Avoid
-
-❌ **Don't** use "would" in messages:
-```python
-print(f"{prefix}would create directory: {path}")  # Wrong
-```
-
-✅ **Do** use the same message for both modes:
-```python
-print(f"{prefix}creating directory: {path}")  # Correct
-```
-
-❌ **Don't** forget to guard operations:
-```python
-print(f"{prefix}deleting file: {path}")
-path.unlink()  # Wrong - executes in dry-run mode!
-```
-
-✅ **Do** wrap all state-changing operations:
-```python
-print(f"{prefix}deleting file: {path}")
-if not args.dryRun:
-    path.unlink()  # Correct
-```
+------------------------------------------------------------------------
 
 ## Recovery Pipeline Pattern
 
-### Python Recovery Tools
-- Scripts should work in-place, preserving directory structure
-- Create subdirectories for filtered items (e.g., `BlackImages/`, `Duplicates/`)
-- Support `--source` argument for target directory
-- Use `argparse` for command-line argument parsing
-- Validate paths using `pathlib.Path` with `resolve()`
-- Support `--dry-run` flags for testing operations (see [Dry-Run Pattern](#dry-run-pattern))
+-   Never destroy original structure\
+-   Create subdirectories for filtered items\
+-   Support --source\
+-   Support --confirm\
+-   Always validate paths first
 
-### Example Pattern
-```python
-#!/usr/bin/env python3
-import argparse
-from pathlib import Path
+------------------------------------------------------------------------
 
-def main():
-    parser = argparse.ArgumentParser(description="Tool description")
-    parser.add_argument("--source", required=True, help="Source directory")
-    parser.add_argument(
-        "--dry-run",
-        dest="dryRun",
-        action="store_true",
-        help="show what would be done without changing anything",
-    )
-    args = parser.parse_args()
-    
-    # Set prefix for dry-run awareness
-    prefix = "...[DRY-RUN]" if args.dryRun else "..."
-    
-    try:
-        sourceDir = Path(args.source).expanduser().resolve()
-    except (OSError, RuntimeError, ValueError) as e:
-        raise SystemExit(f"Error resolving path: {e}")
-    
-    if not sourceDir.is_dir():
-        raise SystemExit(f"Directory does not exist: {sourceDir}")
-    
-    # Process files with dry-run awareness
-    print(f"{prefix}processing files in: {sourceDir}")
-    # Add actual processing logic here...
+## Stop File Pattern
 
-if __name__ == "__main__":
-    main()
-```
+-   Check for stop file periodically\
+-   Exit gracefully if detected\
+-   Log cancellation event
 
-## Common Patterns to Follow
+------------------------------------------------------------------------
 
-1. **Separation of Concerns**: Keep GUI, business logic, and data access separate
-2. **Error Handling**: Use try-except blocks with proper logging
-3. **User Feedback**: Provide clear status messages and progress indicators
-4. **Resource Management**: Clean up resources properly
-5. **Modular Design**: Create small, focused functions and classes
-6. **Configuration Management**: Centralize settings and constants
-7. **Testing**: Write tests for all new functionality
-8. **Documentation**: Add docstrings to public functions and classes
-9. **Type Hints**: Use type annotations for better code clarity
-10. **DRY Principle**: Don't repeat yourself - extract common code
-11. **Safety First**: Validate inputs, use safe patterns
-12. **Clear Feedback**: Provide progress messages for all operations
-13. **Non-Destructive**: Move files instead of deleting when possible
-14. **Path Validation**: Resolve and check all paths before operations
-15. **Dry Run Support**: Include `--dry-run` flags for testing (see [Dry-Run Pattern](#dry-run-pattern))
+# Error Handling & Logging
 
-## Best Practices
+-   Fail fast for invalid input\
+-   Gracefully degrade for non-critical failures\
+-   Always log errors with context\
+-   Never swallow exceptions silently
 
-### Code Quality
-- Write self-documenting code with clear names
-- Keep functions short and focused (single responsibility)
-- Use meaningful variable and function names
-- Comment only when necessary to explain "why", not "what"
-- Follow language-specific style guidelines
-- Use type hints for function signatures
+------------------------------------------------------------------------
 
-### Performance
-- Profile before optimizing
-- Use appropriate data structures
-- Avoid premature optimization
-- Cache expensive computations when appropriate
-- Use lazy loading for large datasets
-- Batch operations when possible
+# Security Standards
 
-### Maintainability
-- Keep dependencies minimal and well-documented
-- Write tests that document expected behavior
-- Use version control effectively
-- Document breaking changes
-- Consider backward compatibility
-- Maintain compatibility through wrapper functions when needed
+-   Never hardcode credentials\
+-   Never log sensitive data\
+-   Validate and sanitize file paths\
+-   Respect user permissions
 
----
+------------------------------------------------------------------------
 
-**This master document contains generic guidelines applicable across all projects. For project-specific details, architecture, and custom workflows, always refer to `additional-copilot-instructions.md` in the `.github` directory of each repository.**
+# Testing Standards
+
+-   Core logic \>90% coverage\
+-   Critical functions 100% coverage\
+-   Use Arrange--Act--Assert\
+-   Use tmp_path for file tests
+
+------------------------------------------------------------------------
+
+# Performance Guidelines
+
+-   Profile before optimizing\
+-   Use lazy loading for large sets\
+-   Cache expensive computations\
+-   Batch filesystem operations
+
+------------------------------------------------------------------------
+
+# Refactoring Guidelines
+
+Refactor when:
+
+-   Function \> 40 lines\
+-   Class \> 300 lines\
+-   Nesting \> 3 levels\
+-   Repeated logic appears twice
+
+------------------------------------------------------------------------
+
+# Common Principles to Always Follow
+
+1.  Separation of concerns\
+2.  Safe-by-default execution\
+3.  Clear user feedback\
+4.  Centralized logging\
+5.  Non-destructive file handling\
+6.  Explicit path validation\
+7.  Dry-run support\
+8.  Small, focused functions\
+9.  Test before refactor\
+10. Consistency across frameworks
+
+------------------------------------------------------------------------
+
+End of Master Development Guidelines

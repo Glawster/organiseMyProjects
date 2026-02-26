@@ -16,7 +16,7 @@ Main components:
 Template files (copied to new projects):
 - globalVars.py, baseFrame.py, frameTemplate.py, statusFrame.py
 - mainMenu.py, styleUtils.py, guiNamingLinter.py, runLinter.py
-- copilot-instructions.md
+- .github/copilot-instructions.md (copied from this repo's .github/)
 
 Usage:
     from organiseMyProjects import createProject, runLinter

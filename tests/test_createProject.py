@@ -6,7 +6,7 @@ import pytest
 import os
 import sys
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -117,23 +117,15 @@ class TestCreateProject:
         assert "already exists" in captured.out
     
     def testCreateProjectCopilotInstructions(self, temp_dir, sample_project_name):
-        """Test that copilot instructions are copied from package resources."""
+        """Test that copilot instructions are copied from the .github/ directory."""
         projectPath = temp_dir / sample_project_name
-        
-        # Mock the package resource access
-        with patch('organiseMyProjects.createProject.files') as mock_files:
-            mockPackageFiles = mock_files.return_value
-            mockCopilotFile = mockPackageFiles.__truediv__.return_value
-            mockCopilotFile.is_file.return_value = True
-            mockCopilotFile.read_text.return_value = "# GitHub Copilot Instructions\nTest content"
-            
-            with patch('organiseMyProjects.createProject.subprocess.run'):
-                createProject(str(projectPath))
-        
-        # Verify copilot instructions file was created
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            createProject(str(projectPath))
+
         copilotFile = projectPath / ".github" / "copilot-instructions.md"
         assert copilotFile.exists()
-        assert "# GitHub Copilot Instructions" in copilotFile.read_text()
+        assert len(copilotFile.read_text()) > 0
 
 
 class TestUpdateProject:

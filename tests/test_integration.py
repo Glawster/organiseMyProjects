@@ -233,21 +233,15 @@ class TestModuleImports:
 
 class TestResourceAccess:
     """Test access to package resources."""
-    
-    def testCopilotInstructionsResourceAccess(self):
-        """Test that copilot instructions can be accessed as a package resource."""
-        try:
-            from importlib.resources import files
-        except ImportError:
-            from importlib_resources import files
-        
-        packageFiles = files('organiseMyProjects')
-        copilotFile = packageFiles / 'copilot-instructions.md'
-        
-        # File should exist in package
-        assert copilotFile.is_file()
-        
-        # Content should be readable
-        content = copilotFile.read_text()
+
+    def testCopilotInstructionsFileAccess(self):
+        """Test that copilot instructions exist at the canonical .github/ path."""
+        from organiseMyProjects.createProject import TEMPLATE_DIR
+
+        srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+        assert srcCopilotInstructions.is_file(), (
+            f"copilot-instructions.md not found at {srcCopilotInstructions}"
+        )
+        content = srcCopilotInstructions.read_text()
         assert len(content) > 0
         assert "GitHub Copilot Instructions" in content

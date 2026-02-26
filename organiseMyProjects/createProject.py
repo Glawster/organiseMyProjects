@@ -56,7 +56,7 @@ VSCODE_SETTINGS_CONTENT = """{
    "python.testing.nosetestsEnabled": false,
    "python.testing.pytestArgs": [
       "tests",
-      "--override-ini=python_files=test[!_]*.py"
+      "--override-ini=python_files=test[a-zA-Z]*.py"
    ]
 }
 """

@@ -142,7 +142,7 @@ Shared test fixtures and configuration:
 - `sample_project_name` - Standard test project name
 - `mock_python_file` - Sample Python file with violations
 
-#### `tests/test_logUtils.py`
+#### `tests/testLogUtils.py`
 Tests for logging utilities:
 - `TestDrawBox` - Box-drawing function tests
 

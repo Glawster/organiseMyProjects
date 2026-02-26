@@ -168,9 +168,17 @@ runLinter file1.py dir1/ file2.py
 - **General Updates**: `"...message"` - informational updates
 - **Information Display**: `"...message: value"` - displaying data
 - **Error Messages**: Use Sentence Case for ERROR level messages
+- **Available Functions** (`organiseMyProjects.logUtils`):
+  - `getLogger(name, logDir, level, includeConsole)` - Get/create a logger with a file handler
+  - `setupLogging(title, logDir, level, includeConsole)` - Underlying logger setup with `FileHandler`
+  - `setLogLevel(level, targetLogger)` - Change log level at runtime
+  - `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than N days
+  - Logs go to `~/.local/state/organiseMy/logs/<name>.<YYYYMMDD_HHMM>.log` by default
 - **Usage Example**: 
   ```python
-  from src.logUtils import logger  # or appropriate import
+  from organiseMyProjects.logUtils import getLogger
+
+  logger = getLogger("myApp")
   logger.info("...processing data")
   logger.error("Failed to process: error details")
   ```

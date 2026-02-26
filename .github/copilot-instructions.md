@@ -435,10 +435,19 @@ python3 headless_test.py
 - **Information Display**: `"...message: value"` - displaying data
 - **Error Messages**: Use Sentence Case for ERROR level messages
 
+### Available Functions (`organiseMyProjects.logUtils`)
+- `getLogger(name, logDir, level, includeConsole)` - Get/create a logger with a file handler (convenience wrapper)
+- `setupLogging(title, logDir, level, includeConsole)` - Create/retrieve a logger with a `FileHandler`
+- `setLogLevel(level, targetLogger)` - Change log level at runtime
+- `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than N days; returns `(count, [filenames])`
+
+Logs are written to `~/.local/state/organiseMy/logs/<name>.<YYYYMMDD_HHMM>.log` by default.
+
 ### Usage Example
 ```python
-from src.logUtils import logger
+from organiseMyProjects.logUtils import getLogger
 
+logger = getLogger("myApp")
 logger.info("...processing data")
 logger.error("Failed to process: error details")
 ```

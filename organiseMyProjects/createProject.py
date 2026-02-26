@@ -1,3 +1,4 @@
+import datetime
 import os
 import shutil
 import subprocess
@@ -127,11 +128,21 @@ def createProject(projectName):
     print(f"Project '{projectName}' created with full structure.")
 
 
+def _backup_file(dest: Path) -> None:
+    """Rename dest to {stem}.YYMMDD{suffix} before overwriting."""
+    if dest.exists():
+        stamp = datetime.date.today().strftime("%y%m%d")
+        backup = dest.with_name(f"{dest.stem}.{stamp}{dest.suffix}")
+        dest.rename(backup)
+        print(f"Backed up {dest.name} → {backup.name}")
+
+
 def _copy_if_newer(src: Path, dest: Path):
 
     """Copy src to dest if dest doesn't exist or src is newer."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
+        _backup_file(dest)
         shutil.copy(src, dest)
         print(f"Updated {dest}")
 
@@ -152,6 +163,7 @@ def _update_text_file(dest: Path, content: str):
         current = None
 
     if current != new_bytes:
+        _backup_file(dest)
         dest.write_bytes(new_bytes)
         print(f"Updated {dest}")
 

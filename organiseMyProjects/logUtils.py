@@ -172,13 +172,13 @@ def drawBox(
 
     # Header line with level
     header = f"{lines[0]}"
-    headerPadding = innerWidth - len(header) - padding * 2
+    headerPadding = innerWidth - len(header) - padding
     headerLine = f"{side_char}{' ' * padding}{header}{' ' * headerPadding}{side_char}"
 
     # Prepare body lines
     bodyLines = []
     for line in lines[1:]:
-        padRight = innerWidth - len(line) - padding * 2
+        padRight = innerWidth - len(line) - padding
         bodyLines.append(f"{side_char}{' ' * padding}{line}{' ' * padRight}{side_char}")
 
     # Output

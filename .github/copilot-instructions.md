@@ -13,7 +13,7 @@ These are generic development guidelines for Python projects supporting multiple
 - **FastAPI/React Web Apps**: See [Web Application Guidelines](#web-application-development)
 - **DaVinci Resolve Scripts**: See [Video Automation Guidelines](#video-automation)
 - **Bash/System Scripts**: See [Bash Scripting Guidelines](#bash-scripting)
-- **Dry-Run Implementation**: See [Dry-Run Pattern](#dry-run-pattern) for adding `--dry-run` support to any script
+- **Dry-Run Implementation**: See [Dry-Run Pattern](#dry-run-pattern) for adding safe-by-default dry-run support to any script
 
 ## Development Standards
 
@@ -531,16 +531,16 @@ Always use consistent argument naming and help text:
 
 ```python
 parser.add_argument(
-    "--dry-run",
-    dest="dryRun",
+    "--confirm",
+    dest="confirm",
     action="store_true",
-    help="show what would be done without changing anything",
+    help="execute changes (default is dry-run)",
 )
 ```
 
 **Key Points:**
-- Use `--dry-run` with hyphens (standard CLI convention)
-- Map to `dryRun` camelCase destination (Python convention)
+- Use `--confirm` to opt-in to execution (safe-by-default pattern)
+- Map to `confirm` camelCase destination, then derive `dryRun = not args.confirm`
 - Use `action="store_true"` (no value needed)
 - Help text should be clear and lowercase
 
@@ -548,14 +548,14 @@ parser.add_argument(
 Create a prefix variable based on the dry-run flag:
 
 ```python
-prefix = "...[DRY-RUN]" if args.dryRun else "..."
+prefix = "[] " if dryRun else ""
 ```
 
 **Usage Rules:**
-- `"..."` - Normal operation prefix (three dots)
-- `"...[DRY-RUN]"` - Dry-run marker with brackets
-- The marker `[DRY-RUN]` clearly indicates simulation mode
-- No need to say "would" in messages - the marker implies it
+- `""` - Normal operation prefix (empty — no clutter)
+- `"[] "` - Dry-run marker with brackets and trailing space
+- The marker `[]` clearly indicates simulation mode
+- No need to say "would" in messages — the marker implies it
 
 #### Logging with Prefix
 Use the prefix in all logging and print statements:
@@ -578,18 +578,18 @@ print(f"{prefix}moving {srcFile} to {destDir}")
 Only execute actual operations when NOT in dry-run mode:
 
 ```python
-if not args.dryRun:
+if not dryRun:
     dirPath.mkdir(parents=True, exist_ok=True)
 print(f"{prefix}created directory: {dirPath}")
 
 # For file operations
 print(f"{prefix}copying {src} to {dest}")
-if not args.dryRun:
+if not dryRun:
     shutil.copy(src, dest)
 
 # For configuration changes
 print(f"{prefix}updated config: {configPath}")
-if not args.dryRun:
+if not dryRun:
     saveConfig(config)
 ```
 
@@ -603,20 +603,20 @@ import shutil
 
 def processFiles(sourceDir: Path, targetDir: Path, dryRun: bool) -> None:
     """Process files from source to target directory."""
-    prefix = "...[DRY-RUN]" if dryRun else "..."
-    
+    prefix = "[] " if dryRun else ""
+
     # Ensure target directory exists
     print(f"{prefix}ensuring target directory: {targetDir}")
     if not dryRun:
         targetDir.mkdir(parents=True, exist_ok=True)
-    
+
     # Process each file
     for filePath in sourceDir.glob("*.txt"):
         targetPath = targetDir / filePath.name
         print(f"{prefix}copying {filePath} to {targetPath}")
         if not dryRun:
             shutil.copy(filePath, targetPath)
-    
+
     print(f"{prefix}processing complete")
 
 def main():
@@ -634,25 +634,31 @@ def main():
         help="target directory for processed files",
     )
     parser.add_argument(
-        "--dry-run",
-        dest="dryRun",
+        "--confirm",
+        dest="confirm",
         action="store_true",
-        help="show what would be done without changing anything",
+        help="execute changes (default is dry-run)",
     )
     args = parser.parse_args()
-    
+
+    dryRun = not args.confirm
+    prefix = "[] " if dryRun else ""
+
     # Validate paths
     try:
         sourceDir = Path(args.source).expanduser().resolve()
         targetDir = Path(args.target).expanduser().resolve()
     except (OSError, RuntimeError, ValueError) as e:
         raise SystemExit(f"Error resolving path: {e}")
-    
+
     if not sourceDir.is_dir():
         raise SystemExit(f"Source directory does not exist: {sourceDir}")
-    
+
+    if dryRun:
+        print("DRY-RUN MODE: no changes will be made (use --confirm to execute)")
+
     # Execute with dry-run awareness
-    processFiles(sourceDir, targetDir, args.dryRun)
+    processFiles(sourceDir, targetDir, dryRun)
 
 if __name__ == "__main__":
     main()
@@ -666,12 +672,11 @@ For bash scripts, use a similar pattern with a global variable:
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Parse arguments
-DRY_RUN=false
+CONFIRM=false
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --dry-run)
-            DRY_RUN=true
+        --confirm)
+            CONFIRM=true
             shift
             ;;
         *)
@@ -681,14 +686,20 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Set prefix based on dry-run flag
-if [ "$DRY_RUN" = true ]; then
-    PREFIX="...[DRY-RUN]"
-else
-    PREFIX="..."
+DRY_RUN=true
+if [ "$CONFIRM" = true ]; then
+    DRY_RUN=false
 fi
 
-# Use in operations
+PREFIX="[] "
+if [ "$DRY_RUN" = false ]; then
+    PREFIX=""
+fi
+
+if [ "$DRY_RUN" = true ]; then
+    echo "DRY-RUN MODE: no changes will be made (use --confirm to execute)"
+fi
+
 echo "${PREFIX}creating directory: $TARGET_DIR"
 if [ "$DRY_RUN" = false ]; then
     mkdir -p "$TARGET_DIR"
@@ -711,27 +722,25 @@ fi
 
 ### Common Mistakes to Avoid
 
-❌ **Don't** use "would" in messages:
+❌ **Don't** use `--dry-run` as the flag:
 ```python
-print(f"{prefix}would create directory: {path}")  # Wrong
+parser.add_argument("--dry-run", ...)  # Wrong
 ```
 
-✅ **Do** use the same message for both modes:
+✅ **Do** use `--confirm` so scripts are safe by default:
 ```python
-print(f"{prefix}creating directory: {path}")  # Correct
+parser.add_argument("--confirm", dest="confirm", action="store_true", help="execute changes (default is dry-run)")  # Correct
+dryRun = not args.confirm
 ```
 
-❌ **Don't** forget to guard operations:
+❌ **Don't** use `"...[DRY-RUN]"` as the prefix:
 ```python
-print(f"{prefix}deleting file: {path}")
-path.unlink()  # Wrong - executes in dry-run mode!
+prefix = "...[DRY-RUN]" if dryRun else "..."  # Wrong
 ```
 
-✅ **Do** wrap all state-changing operations:
+✅ **Do** use `"[] "` / `""`:
 ```python
-print(f"{prefix}deleting file: {path}")
-if not args.dryRun:
-    path.unlink()  # Correct
+prefix = "[] " if dryRun else ""  # Correct
 ```
 
 ## Recovery Pipeline Pattern
@@ -742,7 +751,7 @@ if not args.dryRun:
 - Support `--source` argument for target directory
 - Use `argparse` for command-line argument parsing
 - Validate paths using `pathlib.Path` with `resolve()`
-- Support `--dry-run` flags for testing operations (see [Dry-Run Pattern](#dry-run-pattern))
+- Support `--confirm` flag for executing operations (see [Dry-Run Pattern](#dry-run-pattern))
 
 ### Example Pattern
 ```python
@@ -754,15 +763,15 @@ def main():
     parser = argparse.ArgumentParser(description="Tool description")
     parser.add_argument("--source", required=True, help="Source directory")
     parser.add_argument(
-        "--dry-run",
-        dest="dryRun",
+        "--confirm",
+        dest="confirm",
         action="store_true",
-        help="show what would be done without changing anything",
+        help="execute changes (default is dry-run)",
     )
     args = parser.parse_args()
-    
-    # Set prefix for dry-run awareness
-    prefix = "...[DRY-RUN]" if args.dryRun else "..."
+
+    dryRun = not args.confirm
+    prefix = "[] " if dryRun else ""
     
     try:
         sourceDir = Path(args.source).expanduser().resolve()
@@ -796,7 +805,7 @@ if __name__ == "__main__":
 12. **Clear Feedback**: Provide progress messages for all operations
 13. **Non-Destructive**: Move files instead of deleting when possible
 14. **Path Validation**: Resolve and check all paths before operations
-15. **Dry Run Support**: Include `--dry-run` flags for testing (see [Dry-Run Pattern](#dry-run-pattern))
+15. **Dry Run Support**: Use `--confirm` flag with `dryRun = not args.confirm` — safe by default (see [Dry-Run Pattern](#dry-run-pattern))
 
 ## Best Practices
 

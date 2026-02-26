@@ -274,33 +274,37 @@ def processData(data):
 
 ## Dry-Run Pattern
 
-For scripts that modify files or system state, always support `--dry-run` mode:
+For scripts that modify files or system state, always support dry-run mode (safe by default):
 
 ### Implementation
 ```python
 parser.add_argument(
-    "--dry-run",
-    dest="dryRun",
+    "--confirm",
+    dest="confirm",
     action="store_true",
-    help="show what would be done without changing anything",
+    help="execute changes (default is dry-run)",
 )
 
+dryRun = not args.confirm
+
 # Set prefix based on flag
-prefix = "...[DRY-RUN]" if args.dryRun else "..."
+prefix = "[] " if dryRun else ""
 
 # Use in logging
 print(f"{prefix}creating directory: {dirPath}")
-if not args.dryRun:
+if not dryRun:
     dirPath.mkdir(parents=True, exist_ok=True)
 
 print(f"{prefix}processing {count} files")
 ```
 
 ### Key Points
-- Use `"...[DRY-RUN]"` prefix for simulation mode, `"..."` for normal operation
+- Use `--confirm` to opt-in to execution (safe-by-default pattern)
+- Derive `dryRun = not args.confirm`
+- Use `"[] "` prefix for simulation mode, `""` for normal operation
 - Log ALL operations, but only execute when NOT in dry-run mode
 - Don't use "would" in messages - the marker implies simulation
-- Wrap all state-changing operations with `if not args.dryRun:`
+- Wrap all state-changing operations with `if not dryRun:`
 
 ## Best Practices
 

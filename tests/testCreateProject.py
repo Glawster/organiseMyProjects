@@ -22,7 +22,9 @@ from organiseMyProjects.createProject import (
     DEV_REQUIREMENTS_CONTENT,
     ENV_CONTENT,
     MAIN_PY_CONTENT,
-    PRECOMMIT_CONTENT
+    PRECOMMIT_CONTENT,
+    PYTEST_INI_CONTENT,
+    VSCODE_SETTINGS_CONTENT,
 )
 
 
@@ -84,6 +86,26 @@ class TestCreateProject:
         readmeContent = (projectPath / "README.md").read_text()
         assert sample_project_name in readmeContent
         assert "Project scaffold created by createProject.py" in readmeContent
+
+    def testCreateProjectPytestIni(self, temp_dir, sample_project_name):
+        """Test that createProject creates pytest.ini with the correct content."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            createProject(str(projectPath))
+
+        assert (projectPath / "pytest.ini").exists()
+        assert (projectPath / "pytest.ini").read_text() == PYTEST_INI_CONTENT
+
+    def testCreateProjectVscodeSettings(self, temp_dir, sample_project_name):
+        """Test that createProject creates .vscode/settings.json with the correct content."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            createProject(str(projectPath))
+
+        assert (projectPath / ".vscode" / "settings.json").exists()
+        assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
     
     def testCreateProjectTemplateFiles(self, temp_dir, sample_project_name):
         """Test that only template files (not package utilities) are copied."""
@@ -154,6 +176,51 @@ class TestUpdateProject:
         
         captured = capsys.readouterr()
         assert "does not exist" in captured.out
+
+    def testUpdateProjectPytestIni(self, temp_dir, sample_project_name):
+        """Test that updateProject creates/updates pytest.ini with the correct content."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            updateProject(str(projectPath))
+
+        assert (projectPath / "pytest.ini").exists()
+        assert (projectPath / "pytest.ini").read_text() == PYTEST_INI_CONTENT
+
+    def testUpdateProjectVscodeSettings(self, temp_dir, sample_project_name):
+        """Test that updateProject creates/updates .vscode/settings.json with the correct content."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            updateProject(str(projectPath))
+
+        assert (projectPath / ".vscode" / "settings.json").exists()
+        assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
+
+    def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
+        """Test that updateProject updates pytest.ini if it is outdated."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        (projectPath / "pytest.ini").write_text("old content")
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            updateProject(str(projectPath))
+
+        assert (projectPath / "pytest.ini").read_text() == PYTEST_INI_CONTENT
+
+    def testUpdateProjectVscodeSettingsOutdated(self, temp_dir, sample_project_name):
+        """Test that updateProject updates .vscode/settings.json if it is outdated."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        (projectPath / ".vscode").mkdir()
+        (projectPath / ".vscode" / "settings.json").write_text('{"old": true}')
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            updateProject(str(projectPath))
+
+        assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
 
 
 class TestUtilityFunctions:

@@ -25,6 +25,52 @@ The main module responsible for project scaffolding functionality.
 - `MAIN_PY_CONTENT` - Main application entry point template
 - `PRECOMMIT_CONTENT` - Pre-commit configuration template
 
+#### `logUtils.py`
+Centralised logging utilities shared across organiseMyProjects tooling.
+
+**Key Functions:**
+- `setupLogging(title, logDir, level, includeConsole)` - Create/retrieve a named logger with a `FileHandler`
+- `getLogger(name, logDir, level, includeConsole)` - Convenience wrapper around `setupLogging`
+- `setLogLevel(level, targetLogger)` - Change the log level of a logger at runtime
+- `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than the specified number of days
+- `drawBox(message, border_char, corner_char, side_char, padding, logger)` - Print or log a text message surrounded by a Unicode box
+
+**`drawBox` Details:**
+
+Draws an ASCII/Unicode box around a (potentially multi-line) message to make it visually prominent in logs or console output.
+
+```
++──────────────────────────────────────────────────────────+
+│  [ERROR] Database connection failed                      │
+│  Attempted 3 retries. Check credentials and network.     │
++──────────────────────────────────────────────────────────+
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `message` | `str` | *(required)* | Text to display; may contain `\n` for multiple lines |
+| `border_char` | `str` | `"─"` | Character used for horizontal border lines |
+| `corner_char` | `str` | `"+"` | Character used at the four corners |
+| `side_char` | `str` | `"│"` | Character used for vertical side borders |
+| `padding` | `int` | `2` | Spaces between text and the side borders |
+| `logger` | `logging.Logger` or `None` | `None` | If provided, each line is emitted via `logger.info()`; otherwise output goes to `print()` |
+
+**Usage Examples:**
+
+```python
+from organiseMyProjects.logUtils import drawBox, getLogger
+
+# Print to stdout
+drawBox("Deployment complete")
+
+# Log via a logger instance
+log = getLogger("MyApp")
+drawBox("[ERROR] Database connection failed\nAttempted 3 retries.", logger=log)
+
+# Custom box characters
+drawBox("Warning", border_char="-", corner_char="*", side_char="|")
+```
+
 #### `guiNamingLinter.py`
 Implements custom linting rules for GUI naming conventions and code formatting.
 
@@ -95,6 +141,10 @@ Shared test fixtures and configuration:
 - `temp_dir` - Temporary directory fixture
 - `sample_project_name` - Standard test project name
 - `mock_python_file` - Sample Python file with violations
+
+#### `tests/test_logUtils.py`
+Tests for logging utilities:
+- `TestDrawBox` - Box-drawing function tests
 
 #### `tests/test_createProject.py`
 Tests for project creation functionality:

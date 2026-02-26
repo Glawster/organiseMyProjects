@@ -185,6 +185,25 @@ The `organiseMyProjects` package includes:
 - `copilot-instructions.md` - GitHub Copilot development guidelines
 - Template files for GUI components and utilities
 
+### Sync Copilot Instructions to other repos
+
+`organiseMyProjects` is the single source of truth for `.github/copilot-instructions.md`.
+Use `syncCopilotInstructions.py` to push the canonical template to all downstream Glawster repos.
+
+```bash
+# Preview what would change (dry-run, default)
+python syncCopilotInstructions.py
+
+# Actually push updates
+GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
+
+# Pass the token directly and show extra detail
+python syncCopilotInstructions.py --confirm --token <your-pat> --verbose
+```
+
+Requires a GitHub Personal Access Token with `repo` scope, supplied via the
+`GITHUB_TOKEN` environment variable or the `--token` flag.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

@@ -35,6 +35,32 @@ PRECOMMIT_CONTENT = """repos:
         types: [python]
 """
 
+PYTEST_INI_CONTENT = """[tool:pytest]
+testpaths = tests
+python_files = test[!_]*.py
+python_functions = test*
+python_classes = Test*
+addopts = 
+    -v
+    --tb=short
+    --strict-markers
+    --disable-warnings
+filterwarnings = 
+    ignore::DeprecationWarning
+    ignore::PendingDeprecationWarning
+"""
+
+VSCODE_SETTINGS_CONTENT = """{
+   "python.testing.pytestEnabled": true,
+   "python.testing.unittestEnabled": false,
+   "python.testing.nosetestsEnabled": false,
+   "python.testing.pytestArgs": [
+      "tests",
+      "--override-ini=python_files=test[!_]*.py"
+   ]
+}
+"""
+
 TEMPLATE_DIR = Path(__file__).resolve().parent
 
 def createProject(projectName):
@@ -98,6 +124,13 @@ def createProject(projectName):
     # Create .pre-commit-config.yaml
     preCommitPath = basePath / ".pre-commit-config.yaml"
     preCommitPath.write_text(PRECOMMIT_CONTENT)
+
+    # Create pytest config
+    (basePath / "pytest.ini").write_text(PYTEST_INI_CONTENT)
+
+    # Create VSCode settings
+    (basePath / ".vscode").mkdir(exist_ok=True)
+    (basePath / ".vscode" / "settings.json").write_text(VSCODE_SETTINGS_CONTENT)
 
     # Initialize git and install pre-commit
     try:
@@ -202,6 +235,9 @@ def updateProject(projectName):
 
     _update_text_file(basePath / "main.py", MAIN_PY_CONTENT)
     _update_text_file(basePath / ".pre-commit-config.yaml", PRECOMMIT_CONTENT)
+    _update_text_file(basePath / "pytest.ini", PYTEST_INI_CONTENT)
+    (basePath / ".vscode").mkdir(parents=True, exist_ok=True)
+    _update_text_file(basePath / ".vscode" / "settings.json", VSCODE_SETTINGS_CONTENT)
 
     print(f"Project '{projectName}' updated.")
 

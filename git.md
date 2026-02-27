@@ -1,5 +1,7 @@
 # Git Commands Summary
 
+## This file is a summary of useful git commands the user has come across.
+
 ## 🛠 Setup
 ```bash
 git config --global user.name "Andy Wilson"

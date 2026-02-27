@@ -2,7 +2,52 @@
 
 ## Project-Specific Information
 
-This file contains project-specific details for the **organiseMyProjects** repository. For generic Python/Tkinter development guidelines, see `copilot-instructions.md`.
+This file contains project-specific details for the **organiseMyProjects** repository. For generic Python/Tkinter development guidelines, see `copilot-instructions.md`. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`.
+
+## Installation
+
+```bash
+pip install .
+```
+
+## Usage
+
+### Create a new project
+```bash
+createProject myNewProject
+```
+
+### Update an existing project
+```bash
+# from anywhere
+createProject myExistingProject --update
+
+# or from within the project directory
+createProject --update
+```
+
+### Run the GUI naming linter
+```bash
+# lint the whole project from its root
+runLinter
+
+# or specify a file or directory
+runLinter <file_or_dir>
+```
+
+### Sync Copilot instructions to other repos
+```bash
+# Preview what would change (dry-run, default)
+python syncCopilotInstructions.py
+
+# Actually push updates
+GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
+```
+
+## Requirements
+
+- Python 3.10+
+- Development tools: `black`, `pytest`, `pre-commit`
 
 ## Project Overview
 
@@ -38,15 +83,18 @@ organiseMyProjects/
 │   ├── styleUtils.py                     # [TEMPLATE] GUI styling utilities
 │   └── mainMenu.py                       # [TEMPLATE] Main menu framework
 ├── tests/                                 # Test suite (not distributed)
-│   ├── test_createProject.py
-│   ├── test_guiNamingLinter.py
-│   ├── test_runLinter.py
-│   ├── test_integration.py
+│   ├── testCreateProject.py
+│   ├── testGuiNamingLinter.py
+│   ├── testRunLinter.py
+│   ├── testIntegration.py
+│   ├── testLogUtils.py
+│   ├── testSyncCopilotInstructions.py
 │   └── conftest.py
+├── documentation/                         # Project documentation
+│   ├── README.md                          # User documentation
+│   └── DEVELOPER.md                       # Developer guide
 ├── setup.py                               # Package configuration
 ├── MANIFEST.in                            # Distribution files
-├── README.md                              # User documentation
-├── DEVELOPER.md                           # Developer guide
 └── pytest.ini                             # Test configuration
 ```
 
@@ -207,13 +255,13 @@ pip install pytest black
 python -m pytest
 
 # Run specific test file
-python -m pytest tests/test_createProject.py
+python -m pytest tests/testCreateProject.py
 
 # Run with verbose output
 python -m pytest -v
 
 # Run with coverage
-python run_tests.py --coverage
+python -m pytest --cov=organiseMyProjects
 ```
 
 ### Linting and Formatting
@@ -241,11 +289,13 @@ createProject --update
 ## Test Suite Details
 
 ### Test Organization
-- `test_createProject.py` - 12 tests for project scaffolding
-- `test_guiNamingLinter.py` - 36 tests for linter logic
-- `test_runLinter.py` - 10 tests for CLI interface
-- `test_integration.py` - 12 tests for end-to-end workflows
-- **Total**: 70+ comprehensive tests
+- `testCreateProject.py` - 24 tests for project scaffolding
+- `testGuiNamingLinter.py` - 35 tests for linter logic
+- `testRunLinter.py` - 10 tests for CLI interface
+- `testIntegration.py` - 12 tests for end-to-end workflows
+- `testLogUtils.py` - 10 tests for logging utilities
+- `testSyncCopilotInstructions.py` - 13 tests for Copilot instructions sync
+- **Total**: 104 comprehensive tests
 
 ### Test Patterns
 - Use `tmp_path` for temporary directories (automatic cleanup)
@@ -265,7 +315,7 @@ createProject --update
 ## Code Review Checklist (Project-Specific)
 
 Before submitting changes:
-- [ ] All 70+ tests pass: `python -m pytest`
+- [ ] All 104 tests pass: `python -m pytest`
 - [ ] Code formatted: `black organiseMyProjects/ tests/`
 - [ ] Linter passes: `runLinter organiseMyProjects/`
 - [ ] Test project creation: `createProject testProject`
@@ -421,25 +471,25 @@ The linter recognizes these Qt widget types:
 1. Add file to `organiseMyProjects/` directory
 2. Update `MANIFEST.in` if needed
 3. Update `createProject()` to copy the file
-4. Add test in `test_createProject.py`
-5. Update README.md with file description
+4. Add test in `testCreateProject.py`
+5. Update `documentation/README.md` with file description
 
 ### Adding a New Widget Type to Linter
 **For Tkinter widgets:**
 1. Add naming rule to `namingRules` dict in `guiNamingLinter.py`
 2. Add widget class to `widgetClasses` set
-3. Add parametrized test cases in `test_guiNamingLinter.py`
+3. Add parametrized test cases in `testGuiNamingLinter.py`
 4. Update HELP.md and copilot-instructions.md
 
 **For Qt widgets:**
 1. Add widget type to `qtWidgetTypes` set in `guiNamingLinter.py`
-2. Add parametrized test cases in `test_guiNamingLinter.py`
+2. Add parametrized test cases in `testGuiNamingLinter.py`
 3. Update HELP.md and copilot-instructions.md
 
 ### Modifying Project Structure
 1. Update `createProject()` function
 2. Update tests to verify new structure
-3. Update README.md documentation
+3. Update `documentation/README.md` documentation
 4. Consider backward compatibility for `updateProject()`
 
 ## Troubleshooting

@@ -146,31 +146,38 @@ Shared test fixtures and configuration:
 Tests for logging utilities:
 - `TestDrawBox` - Box-drawing function tests
 
-#### `tests/test_createProject.py`
+#### `tests/testCreateProject.py`
 Tests for project creation functionality:
 - `TestCreateProject` - Basic project creation tests
 - `TestUpdateProject` - Project update functionality tests
 - `TestUtilityFunctions` - Utility function tests
 
-#### `tests/test_guiNamingLinter.py`
+#### `tests/testGuiNamingLinter.py`
 Tests for linting functionality:
 - `TestGuiNamingVisitor` - AST visitor tests
 - `TestLintFile` - File linting tests
 - `TestLintGuiNaming` - Directory linting tests
 - `TestNamingPatterns` - Naming pattern validation tests
 
-#### `tests/test_runLinter.py`
+#### `tests/testRunLinter.py`
 Tests for command-line interface:
 - `TestRunLinter` - CLI functionality tests
 - `TestIntegration` - Complete workflow tests
 
-#### `tests/test_integration.py`
+#### `tests/testIntegration.py`
 End-to-end integration tests:
 - `TestPackageInstallation` - Entry point tests
 - `TestEndToEndWorkflow` - Complete workflow tests
 - `TestErrorHandling` - Error scenario tests
 - `TestModuleImports` - Import verification tests
 - `TestResourceAccess` - Package resource tests
+
+#### `tests/testSyncCopilotInstructions.py`
+Tests for Copilot instructions sync utility:
+- `TestBuildTargetContent` - Content building tests
+- `TestBuildHeaders` - HTTP header tests
+- `TestGetRemoteFile` - Remote file retrieval tests
+- `TestSyncRepo` - Sync operation tests
 
 ### Running Tests
 
@@ -179,7 +186,7 @@ End-to-end integration tests:
 pytest
 
 # Run specific test module
-pytest tests/test_createProject.py
+pytest tests/testCreateProject.py
 
 # Run with verbose output
 pytest -v
@@ -188,10 +195,10 @@ pytest -v
 pytest --cov=organiseMyProjects
 
 # Run specific test class
-pytest tests/test_createProject.py::TestCreateProject
+pytest tests/testCreateProject.py::TestCreateProject
 
 # Run specific test method
-pytest tests/test_createProject.py::TestCreateProject::test_create_project_basic_structure
+pytest tests/testCreateProject.py::TestCreateProject::testCreateProjectBasicStructure
 ```
 
 ### Test Patterns
@@ -230,7 +237,7 @@ def test_file_creation(temp_dir):
 1. Clone the repository
 2. Install development dependencies:
    ```bash
-   pip install -r dev-requirements.txt
+   pip install pytest black
    ```
 3. Install the package in development mode:
    ```bash
@@ -299,7 +306,7 @@ To add new linting rules to `guiNamingLinter.py`:
 
 1. Add the rule to `namingRules` dictionary
 2. Update the `GuiNamingVisitor` class to check for the new rule
-3. Add tests for the new rule in `tests/test_guiNamingLinter.py`
+3. Add tests for the new rule in `tests/testGuiNamingLinter.py`
 
 Example:
 ```python

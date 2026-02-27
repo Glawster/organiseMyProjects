@@ -103,10 +103,11 @@ pytest --cov=organiseMyProjects
 ```
 
 ### Test Structure
-- `tests/test_createProject.py` - Tests for project creation and updating
-- `tests/test_guiNamingLinter.py` - Tests for GUI naming convention linting
-- `tests/test_runLinter.py` - Tests for the linter CLI interface
-- `tests/test_integration.py` - End-to-end integration tests
+- `tests/testCreateProject.py` - Tests for project creation and updating
+- `tests/testGuiNamingLinter.py` - Tests for GUI naming convention linting
+- `tests/testRunLinter.py` - Tests for the linter CLI interface
+- `tests/testIntegration.py` - End-to-end integration tests
+- `tests/testLogUtils.py` - Tests for logging utilities (including `drawBox`)
 - `tests/conftest.py` - Shared test fixtures and configuration
 
 **Note**: The `tests/` directory is for development and testing of this project itself. It is not included in the installed package, so end users won't get these test files when they install `organiseMyProjects`.

@@ -17,7 +17,6 @@ from typing import Optional
 _initialized_log_files: set[str] = set()
 
 _DRY_RUN_PREFIX = "[] "
-_MISSING = object()
 
 
 class _OrganiseLoggerAdapter(logging.LoggerAdapter):
@@ -46,12 +45,9 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         """Log a completed action: '...{prefix}message'"""
         self.logger.info(f"...{self._prefix}{message}")
 
-    def value(self, message: str, variable=_MISSING) -> None:
-        """Log a name-value pair: '...{prefix}message: variable', or just '...{prefix}message' when variable is omitted."""
-        if variable is _MISSING:
-            self.logger.info(f"...{self._prefix}{message}")
-        else:
-            self.logger.info(f"...{self._prefix}{message}: {variable}")
+    def value(self, message: str, variable) -> None:
+        """Log a name-value pair: '...{prefix}message: variable'"""
+        self.logger.info(f"...{self._prefix}{message}: {variable}")
 
 
 def _defaultLogDir() -> Path:
@@ -112,7 +108,7 @@ def getLogger(
       doing(message)           – logs '{prefix}message...'
       done(message)            – logs '...{prefix}message'
       info(message)            – logs '...{prefix}message'
-      value(message[, variable]) – logs '...{prefix}message: variable', or '...{prefix}message' when variable is omitted
+      value(message, variable) – logs '...{prefix}message: variable'
 
     Pass dryRun=True to insert '[] ' into every formatted message.
     """

@@ -222,26 +222,12 @@ class TestSemanticLogMethods:
         logger.value("file count", 42)
         assert records and records[0].getMessage() == "...file count: 42"
 
-    def testValueNoVariableLogsMessageOnly(self, tmp_path):
-        """Test that value() with a single string arg logs '...message' without a trailing colon."""
-        logger = getLogger("testValueNoVar", logDir=tmp_path)
-        records = self._captureRecords(logger)
-        logger.value("storage scan complete: 3 movie, 2 TV locations")
-        assert records and records[0].getMessage() == "...storage scan complete: 3 movie, 2 TV locations"
-
     def testValueDryRunPrefixInserted(self, tmp_path):
         """Test that value() with dryRun inserts '[] ' after the '...'."""
         logger = getLogger("testValueDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.value("file count", 42)
         assert records and records[0].getMessage() == "...[] file count: 42"
-
-    def testValueNoVariableDryRunPrefixInserted(self, tmp_path):
-        """Test that value() with single string arg and dryRun inserts '[] ' after '...'."""
-        logger = getLogger("testValueNoVarDry", logDir=tmp_path, dryRun=True)
-        records = self._captureRecords(logger)
-        logger.value("storage scan complete: 3 movie, 2 TV locations")
-        assert records and records[0].getMessage() == "...[] storage scan complete: 3 movie, 2 TV locations"
 
     def testInfoDryRunPrefixInserted(self, tmp_path):
         """Test that info() with dryRun inserts '[] ' after the '...'."""

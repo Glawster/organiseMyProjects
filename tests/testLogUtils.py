@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import drawBox
+from organiseMyProjects.logUtils import drawBox, getLogger
 
 
 class TestDrawBox:
@@ -132,3 +132,52 @@ class TestDrawBox:
         assert len(lines[0]) == 1 + len(message) + 4 * 2 + 1
         # Content line should have 4 spaces of padding on each side
         assert lines[1] == "│    X    │"
+
+
+
+
+class TestGetLoggerDryRun:
+    """Test that getLogger() respects the dryRun parameter."""
+
+    def testGetLoggerDryRunTrueReturnsAdapter(self, tmp_path):
+        """Test that getLogger with dryRun=True returns a LoggerAdapter."""
+        logger = getLogger("testDryRun", logDir=tmp_path, dryRun=True)
+        assert isinstance(logger, logging.LoggerAdapter)
+
+    def testGetLoggerDryRunFalseReturnsStandardLogger(self, tmp_path):
+        """Test that getLogger with dryRun=False returns a standard Logger."""
+        logger = getLogger("testLive", logDir=tmp_path, dryRun=False)
+        assert not isinstance(logger, logging.LoggerAdapter)
+        assert isinstance(logger, logging.Logger)
+
+    def testGetLoggerDryRunDefaultReturnsStandardLogger(self, tmp_path):
+        """Test that getLogger without dryRun returns a standard Logger."""
+        logger = getLogger("testDefault2", logDir=tmp_path)
+        assert not isinstance(logger, logging.LoggerAdapter)
+        assert isinstance(logger, logging.Logger)
+
+    def testGetLoggerDryRunPrefixApplied(self, tmp_path):
+        """Test that a logger from getLogger(dryRun=True) prefixes messages."""
+        logger = getLogger("testDryRunPrefix", logDir=tmp_path, dryRun=True)
+        records: list[logging.LogRecord] = []
+
+        class _Capture(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                records.append(record)
+
+        logger.logger.addHandler(_Capture())
+        logger.info("moving file")
+        assert records and "[] moving file" in records[0].getMessage()
+
+    def testGetLoggerLiveNoPrefixApplied(self, tmp_path):
+        """Test that a logger from getLogger(dryRun=False) does not prefix messages."""
+        logger = getLogger("testLivePrefix", logDir=tmp_path, dryRun=False)
+        records: list[logging.LogRecord] = []
+
+        class _Capture(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                records.append(record)
+
+        logger.addHandler(_Capture())
+        logger.info("moving file")
+        assert records and records[0].getMessage() == "moving file"

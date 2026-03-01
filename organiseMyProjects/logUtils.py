@@ -16,6 +16,15 @@ from typing import Optional
 
 _initialized_log_files: set[str] = set()
 
+_DRY_RUN_PREFIX = "[] "
+
+
+class _DryRunAdapter(logging.LoggerAdapter):
+    """Private adapter that prepends '[] ' to every log message."""
+
+    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
+        return f"{_DRY_RUN_PREFIX}{msg}", kwargs
+
 
 def _defaultLogDir() -> Path:
     """
@@ -28,67 +37,56 @@ def _defaultLogDir() -> Path:
     """
     return Path.home() / ".local" / "state" / "organiseMy" / "logs"
 
-
-def setupLogging(
-    title: str,
+def _setupLogging(
+    name: str,
     logDir: Optional[Path] = None,
     level: int = logging.INFO,
-    includeConsole: bool = False,
+    includeConsole: bool = False
 ) -> logging.Logger:
     """
-    Create/retrieve a logger with a FileHandler.
-
-    - Title spaces are removed (consistent with your existing usage).
-    - Log file name: <title>.<YYYYMMDD_HHMM>.log
-    - If includeConsole is True, also add a StreamHandler.
+    Internal helper to set up logging with file and optional console handlers.
     """
-    safeTitle = (title or "root").replace(" ", "")
-    logger = _getLogger(safeTitle)
-
-    if logger.handlers:
-        return logger
-
-    targetDir = (logDir or _defaultLogDir()).expanduser().resolve()
-    targetDir.mkdir(parents=True, exist_ok=True)
-
-    logDateTime = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-    logFilePath = targetDir / f"{safeTitle}.{logDateTime}.log"
-
-    fileHandler = logging.FileHandler(logFilePath, encoding="utf-8")
-    formatter = logging.Formatter(
-        "%(asctime)s [%(module)-20s] %(levelname)s %(message)s",
-        datefmt="%Y%m%d %H:%M:%S",
-    )
-    fileHandler.setFormatter(formatter)
-
+    logger = _getLogger(name)
     logger.setLevel(level)
-    logger.addHandler(fileHandler)
 
-    if includeConsole:
-        console = logging.StreamHandler()
-        console.setFormatter(formatter)
-        logger.addHandler(console)
+    if logDir is None:
+        logDir = _defaultLogDir()
 
-    # Separator line once per log file (not per logger call)
-    key = str(logFilePath)
-    if key not in _initialized_log_files:
-        logger.info("\n" + "=" * 80)
-        _initialized_log_files.add(key)
+    logDir.mkdir(parents=True, exist_ok=True)
+    logFile = logDir / f"{name}.log"
 
-    logger.info(f"... logging to file: {logFilePath}")
+    if str(logFile) not in _initialized_log_files:
+        fileHandler = logging.FileHandler(logFile, encoding="utf-8")
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        fileHandler.setFormatter(formatter)
+        logger.addHandler(fileHandler)
+        _initialized_log_files.add(str(logFile))
+
+    if includeConsole and not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        consoleHandler = logging.StreamHandler()
+        consoleFormatter = logging.Formatter("%(levelname)s - %(message)s")
+        consoleHandler.setFormatter(consoleFormatter)
+        logger.addHandler(consoleHandler)
+
     return logger
-
 
 def getLogger(
     name: str = "OrganiseMyTool",
     logDir: Optional[Path] = None,
     level: int = logging.INFO,
     includeConsole: bool = False,
-) -> logging.Logger:
+    dryRun: bool = False,
+) -> logging.Logger | logging.LoggerAdapter:
     """
     Convenience wrapper used by other scripts.
+
+    Pass dryRun=True to receive a logger that automatically prefixes
+    every log call with '[] '.
     """
-    return setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
+    logger = _setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
+    if dryRun:
+        return _DryRunAdapter(logger, {})
+    return logger
 
 
 def setLogLevel(level: int, targetLogger: Optional[logging.Logger] = None) -> None:

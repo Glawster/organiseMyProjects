@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import DryRunLogger, drawBox, dryRunLog, getLogger
+from organiseMyProjects.logUtils import drawBox, getLogger
 
 
 class TestDrawBox:
@@ -134,95 +134,50 @@ class TestDrawBox:
         assert lines[1] == "│    X    │"
 
 
-class TestDryRunLog:
-    """Test cases for the dryRunLog() helper function."""
-
-    def testDryRunLogWithDryRunTrue(self):
-        """Test that dryRunLog prefixes the message when dryRun=True."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        dryRunLog(mockLogger, "moving file", dryRun=True)
-        mockLogger.info.assert_called_once_with("[DRY RUN] moving file")
-
-    def testDryRunLogWithDryRunFalse(self):
-        """Test that dryRunLog does not prefix the message when dryRun=False."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        dryRunLog(mockLogger, "moving file", dryRun=False)
-        mockLogger.info.assert_called_once_with("moving file")
-
-    def testDryRunLogDefaultIsFalse(self):
-        """Test that the default dryRun value is False (no prefix)."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        dryRunLog(mockLogger, "moving file")
-        mockLogger.info.assert_called_once_with("moving file")
-
-
-class TestDryRunLogger:
-    """Test cases for the DryRunLogger class."""
-
-    def testInfoWithDryRunTrue(self):
-        """Test that info() prefixes the message when dryRun=True."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        drl = DryRunLogger(mockLogger, dryRun=True)
-        drl.info("processing item")
-        mockLogger.info.assert_called_once_with("[DRY RUN] processing item")
-
-    def testInfoWithDryRunFalse(self):
-        """Test that info() does not prefix the message when dryRun=False."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        drl = DryRunLogger(mockLogger, dryRun=False)
-        drl.info("processing item")
-        mockLogger.info.assert_called_once_with("processing item")
-
-    def testWarningWithDryRunTrue(self):
-        """Test that warning() prefixes the message when dryRun=True."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        drl = DryRunLogger(mockLogger, dryRun=True)
-        drl.warning("skipping file")
-        mockLogger.warning.assert_called_once_with("[DRY RUN] skipping file")
-
-    def testWarningWithDryRunFalse(self):
-        """Test that warning() does not prefix the message when dryRun=False."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        drl = DryRunLogger(mockLogger, dryRun=False)
-        drl.warning("skipping file")
-        mockLogger.warning.assert_called_once_with("skipping file")
-
-    def testErrorWithDryRunTrue(self):
-        """Test that error() prefixes the message when dryRun=True."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        drl = DryRunLogger(mockLogger, dryRun=True)
-        drl.error("unexpected condition")
-        mockLogger.error.assert_called_once_with("[DRY RUN] unexpected condition")
-
-    def testErrorWithDryRunFalse(self):
-        """Test that error() does not prefix the message when dryRun=False."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        drl = DryRunLogger(mockLogger, dryRun=False)
-        drl.error("unexpected condition")
-        mockLogger.error.assert_called_once_with("unexpected condition")
-
-    def testDefaultDryRunIsFalse(self):
-        """Test that the default dryRun is False (no prefix)."""
-        mockLogger = MagicMock(spec=logging.Logger)
-        drl = DryRunLogger(mockLogger)
-        drl.info("default behaviour")
-        mockLogger.info.assert_called_once_with("default behaviour")
 
 
 class TestGetLoggerDryRun:
     """Test that getLogger() respects the dryRun parameter."""
 
-    def testGetLoggerDryRunTrueReturnsDryRunLogger(self, tmp_path):
-        """Test that getLogger with dryRun=True returns a DryRunLogger."""
+    def testGetLoggerDryRunTrueReturnsAdapter(self, tmp_path):
+        """Test that getLogger with dryRun=True returns a LoggerAdapter."""
         logger = getLogger("testDryRun", logDir=tmp_path, dryRun=True)
-        assert isinstance(logger, DryRunLogger)
+        assert isinstance(logger, logging.LoggerAdapter)
 
     def testGetLoggerDryRunFalseReturnsStandardLogger(self, tmp_path):
         """Test that getLogger with dryRun=False returns a standard Logger."""
         logger = getLogger("testLive", logDir=tmp_path, dryRun=False)
+        assert not isinstance(logger, logging.LoggerAdapter)
         assert isinstance(logger, logging.Logger)
 
     def testGetLoggerDryRunDefaultReturnsStandardLogger(self, tmp_path):
         """Test that getLogger without dryRun returns a standard Logger."""
-        logger = getLogger("testDefault", logDir=tmp_path)
+        logger = getLogger("testDefault2", logDir=tmp_path)
+        assert not isinstance(logger, logging.LoggerAdapter)
         assert isinstance(logger, logging.Logger)
+
+    def testGetLoggerDryRunPrefixApplied(self, tmp_path):
+        """Test that a logger from getLogger(dryRun=True) prefixes messages."""
+        logger = getLogger("testDryRunPrefix", logDir=tmp_path, dryRun=True)
+        records: list[logging.LogRecord] = []
+
+        class _Capture(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                records.append(record)
+
+        logger.logger.addHandler(_Capture())
+        logger.info("moving file")
+        assert records and "[DRY RUN] moving file" in records[0].getMessage()
+
+    def testGetLoggerLiveNoPrefixApplied(self, tmp_path):
+        """Test that a logger from getLogger(dryRun=False) does not prefix messages."""
+        logger = getLogger("testLivePrefix", logDir=tmp_path, dryRun=False)
+        records: list[logging.LogRecord] = []
+
+        class _Capture(logging.Handler):
+            def emit(self, record: logging.LogRecord) -> None:
+                records.append(record)
+
+        logger.addHandler(_Capture())
+        logger.info("moving file")
+        assert records and records[0].getMessage() == "moving file"

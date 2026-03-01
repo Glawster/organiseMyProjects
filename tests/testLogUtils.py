@@ -222,6 +222,13 @@ class TestSemanticLogMethods:
         logger.value("file count", 42)
         assert records and records[0].getMessage() == "...file count: 42"
 
+    def testValueDryRunPrefixInserted(self, tmp_path):
+        """Test that value() with dryRun inserts '[] ' after the '...'."""
+        logger = getLogger("testValueDry", logDir=tmp_path, dryRun=True)
+        records = self._captureRecords(logger)
+        logger.value("file count", 42)
+        assert records and records[0].getMessage() == "...[] file count: 42"
+
     def testInfoDryRunPrefixInserted(self, tmp_path):
         """Test that info() with dryRun inserts '[] ' after the '...'."""
         logger = getLogger("testInfoDry", logDir=tmp_path, dryRun=True)
@@ -242,11 +249,4 @@ class TestSemanticLogMethods:
         records = self._captureRecords(logger)
         logger.done("processing files")
         assert records and records[0].getMessage() == "...[] processing files"
-
-    def testValueDryRunPrefixInserted(self, tmp_path):
-        """Test that value() with dryRun inserts '[] ' after the '...'."""
-        logger = getLogger("testValueDry", logDir=tmp_path, dryRun=True)
-        records = self._captureRecords(logger)
-        logger.value("file count", 42)
-        assert records and records[0].getMessage() == "...[] file count: 42"
 

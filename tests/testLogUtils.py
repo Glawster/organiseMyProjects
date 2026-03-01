@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import DryRunLogger, drawBox, dryRunLog
+from organiseMyProjects.logUtils import DryRunLogger, drawBox, dryRunLog, getLogger
 
 
 class TestDrawBox:
@@ -207,3 +207,22 @@ class TestDryRunLogger:
         drl = DryRunLogger(mockLogger)
         drl.info("default behaviour")
         mockLogger.info.assert_called_once_with("default behaviour")
+
+
+class TestGetLoggerDryRun:
+    """Test that getLogger() respects the dryRun parameter."""
+
+    def testGetLoggerDryRunTrueReturnsDryRunLogger(self, tmp_path):
+        """Test that getLogger with dryRun=True returns a DryRunLogger."""
+        logger = getLogger("testDryRun", logDir=tmp_path, dryRun=True)
+        assert isinstance(logger, DryRunLogger)
+
+    def testGetLoggerDryRunFalseReturnsStandardLogger(self, tmp_path):
+        """Test that getLogger with dryRun=False returns a standard Logger."""
+        logger = getLogger("testLive", logDir=tmp_path, dryRun=False)
+        assert isinstance(logger, logging.Logger)
+
+    def testGetLoggerDryRunDefaultReturnsStandardLogger(self, tmp_path):
+        """Test that getLogger without dryRun returns a standard Logger."""
+        logger = getLogger("testDefault", logDir=tmp_path)
+        assert isinstance(logger, logging.Logger)

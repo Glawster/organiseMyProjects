@@ -131,11 +131,18 @@ def getLogger(
     logDir: Optional[Path] = None,
     level: int = logging.INFO,
     includeConsole: bool = False,
-) -> logging.Logger:
+    dryRun: bool = False,
+) -> logging.Logger | DryRunLogger:
     """
     Convenience wrapper used by other scripts.
+
+    Pass dryRun=True to receive a DryRunLogger that automatically prefixes
+    every info/warning/error call with '[DRY RUN] '.
     """
-    return setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
+    logger = setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
+    if dryRun:
+        return DryRunLogger(logger, dryRun=True)
+    return logger
 
 
 def setLogLevel(level: int, targetLogger: Optional[logging.Logger] = None) -> None:

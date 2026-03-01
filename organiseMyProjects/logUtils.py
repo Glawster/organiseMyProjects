@@ -4,7 +4,7 @@ import datetime
 import logging
 from logging import getLogger as _getLogger
 from pathlib import Path
-from typing import Optional
+from typing import Any, MutableMapping, Optional
 
 # logging guidelines:
 # all messages in lowercase
@@ -27,7 +27,7 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         self._dryRun = dryRun
         self._prefix = _DRY_RUN_PREFIX if dryRun else ""
 
-    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
+    def process(self, msg: str, kwargs: MutableMapping[str, Any]) -> tuple[str, MutableMapping[str, Any]]:
         """For non-semantic calls (warning, error, debug), add dryRun prefix."""
         if self._dryRun:
             return f"{_DRY_RUN_PREFIX}{msg}", kwargs

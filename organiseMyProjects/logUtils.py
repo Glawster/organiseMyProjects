@@ -34,20 +34,24 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         return msg, kwargs
 
     def info(self, message: str, *args, **kwargs) -> None:
-        """Log general information: '...{prefix}message'"""
-        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
+        """Log general information: '...message'"""
+        self.logger.info(f"...{message}", *args, **kwargs)
 
     def doing(self, message: str) -> None:
-        """Log a major action being taken: '{prefix}message...'"""
-        self.logger.info(f"{self._prefix}{message}...")
+        """Log a major action being taken: 'message...'"""
+        self.logger.info(f"{message}...")
 
     def done(self, message: str) -> None:
-        """Log a completed action: '...{prefix}message'"""
-        self.logger.info(f"...{self._prefix}{message}")
+        """Log a completed action: '...message'"""
+        self.logger.info(f"...{message}")
 
     def value(self, message: str, variable) -> None:
-        """Log a name-value pair: '...{prefix}message: variable'"""
-        self.logger.info(f"...{self._prefix}{message}: {variable}")
+        """Log a name-value pair: '...message: variable'"""
+        self.logger.info(f"...{message}: {variable}")
+
+    def action(self, message: str, *args, **kwargs) -> None:
+        """Log a name-value pair: '...{prefix}message'"""
+        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
 
 
 def _defaultLogDir() -> Path:

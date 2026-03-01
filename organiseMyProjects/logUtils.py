@@ -19,11 +19,35 @@ _initialized_log_files: set[str] = set()
 _DRY_RUN_PREFIX = "[] "
 
 
-class _DryRunAdapter(logging.LoggerAdapter):
-    """Private adapter that prepends '[] ' to every log message."""
+class _OrganiseLoggerAdapter(logging.LoggerAdapter):
+    """Logger adapter providing semantic log methods with optional dry-run prefixing."""
+
+    def __init__(self, logger: logging.Logger, dryRun: bool = False):
+        super().__init__(logger, {})
+        self._dryRun = dryRun
+        self._prefix = _DRY_RUN_PREFIX if dryRun else ""
 
     def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
-        return f"{_DRY_RUN_PREFIX}{msg}", kwargs
+        """For non-semantic calls (warning, error, debug), add dryRun prefix."""
+        if self._dryRun:
+            return f"{_DRY_RUN_PREFIX}{msg}", kwargs
+        return msg, kwargs
+
+    def info(self, message: str, *args, **kwargs) -> None:
+        """Log general information: '...{prefix}message'"""
+        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
+
+    def doing(self, message: str) -> None:
+        """Log a major action being taken: '{prefix}message...'"""
+        self.logger.info(f"{self._prefix}{message}...")
+
+    def done(self, message: str) -> None:
+        """Log a completed action: '...{prefix}message'"""
+        self.logger.info(f"...{self._prefix}{message}")
+
+    def value(self, message: str, variable) -> None:
+        """Log a name-value pair: '...{prefix}message: variable'"""
+        self.logger.info(f"...{self._prefix}{message}: {variable}")
 
 
 def _defaultLogDir() -> Path:
@@ -76,17 +100,20 @@ def getLogger(
     level: int = logging.INFO,
     includeConsole: bool = False,
     dryRun: bool = False,
-) -> logging.Logger | logging.LoggerAdapter:
+) -> _OrganiseLoggerAdapter:
     """
     Convenience wrapper used by other scripts.
 
-    Pass dryRun=True to receive a logger that automatically prefixes
-    every log call with '[] '.
+    Returns an _OrganiseLoggerAdapter with semantic log methods:
+      doing(message)           – logs '{prefix}message...'
+      done(message)            – logs '...{prefix}message'
+      info(message)            – logs '...{prefix}message'
+      value(message, variable) – logs '...{prefix}message: variable'
+
+    Pass dryRun=True to insert '[] ' into every formatted message.
     """
     logger = _setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
-    if dryRun:
-        return _DryRunAdapter(logger, {})
-    return logger
+    return _OrganiseLoggerAdapter(logger, dryRun=dryRun)
 
 
 def setLogLevel(level: int, targetLogger: Optional[logging.Logger] = None) -> None:
@@ -98,7 +125,10 @@ def setLogLevel(level: int, targetLogger: Optional[logging.Logger] = None) -> No
 
     targetLogger.setLevel(level)
     levelName = logging.getLevelName(level)
-    targetLogger.info(f"...logging level changed to: {levelName}")
+    if isinstance(targetLogger, _OrganiseLoggerAdapter):
+        targetLogger.done(f"logging level changed to: {levelName}")
+    else:
+        targetLogger.info(f"...logging level changed to: {levelName}")
 
 
 def cleanOldLogFiles(logDir: Path, daysToKeep: int) -> tuple[int, list[str]]:
@@ -188,8 +218,9 @@ def drawBox(
     ]
 
     if logger is not None:
+        rawLogger = logger.logger if isinstance(logger, logging.LoggerAdapter) else logger
         for outLine in output_lines:
-            logger.info(outLine)
+            rawLogger.info(outLine)
     else:
         for outLine in output_lines:
             print(outLine)

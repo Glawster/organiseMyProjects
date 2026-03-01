@@ -133,7 +133,7 @@ class TestFrame:
         ]
         
         expectedCopiedModules = [
-            "src/logUtils.py", "ui/styleUtils.py", "ui/mainMenu.py",
+            "ui/styleUtils.py", "ui/mainMenu.py",
             "ui/baseFrame.py", "ui/frameTemplate.py", "ui/statusFrame.py",
             "tests/runLinter.py", "tests/guiNamingLinter.py"
         ]
@@ -222,7 +222,7 @@ class TestModuleImports:
         """Test importing runLinter module."""
         from organiseMyProjects import runLinter
         assert hasattr(runLinter, 'main')
-        assert hasattr(runLinter, '_lint_target')
+        assert hasattr(runLinter, '_lintTarget')
     
     def testPackageMetadata(self):
         """Test that package metadata is accessible."""

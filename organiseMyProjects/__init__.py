@@ -26,14 +26,13 @@ Usage:
 __version__ = "0.1"
 
 # Expose main functionality for programmatic use
-from .createProject import createProject, updateProject
+from . import createProject
 from .guiNamingLinter import lintFile, lintGuiNaming
-from .runLinter import main as runLinter
+from . import runLinter
 from . import logUtils
 
 __all__ = [
     'createProject',
-    'updateProject',
     'lintFile',
     'lintGuiNaming',
     'runLinter',

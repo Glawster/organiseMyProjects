@@ -16,6 +16,53 @@ from typing import Optional
 
 _initialized_log_files: set[str] = set()
 
+DRY_RUN_PREFIX = "[DRY RUN] "
+
+
+def dryRunLog(logger: logging.Logger, message: str, dryRun: bool = False) -> None:
+    """
+    Log a message with an optional dry-run prefix.
+
+    Args:
+        logger: The logger instance to use.
+        message: The message to log.
+        dryRun: If True, prepends the DRY_RUN_PREFIX to the message.
+    """
+    prefix = DRY_RUN_PREFIX if dryRun else ""
+    logger.info(f"{prefix}{message}")
+
+
+class DryRunLogger:
+    """
+    Wraps a logging.Logger and automatically prefixes messages when in dry-run mode.
+
+    Set dryRun once at construction to avoid repeating it on every call.
+    """
+
+    DRY_RUN_PREFIX = DRY_RUN_PREFIX  # module-level constant
+    LIVE_PREFIX = ""
+
+    def __init__(self, logger: logging.Logger, dryRun: bool = False) -> None:
+        self._logger = logger
+        self._dryRun = dryRun
+
+    @property
+    def prefix(self) -> str:
+        """Return the appropriate prefix based on the dry-run state."""
+        return self.DRY_RUN_PREFIX if self._dryRun else self.LIVE_PREFIX
+
+    def info(self, message: str) -> None:
+        """Log an info message with the dry-run prefix if applicable."""
+        self._logger.info(f"{self.prefix}{message}")
+
+    def warning(self, message: str) -> None:
+        """Log a warning message with the dry-run prefix if applicable."""
+        self._logger.warning(f"{self.prefix}{message}")
+
+    def error(self, message: str) -> None:
+        """Log an error message with the dry-run prefix if applicable."""
+        self._logger.error(f"{self.prefix}{message}")
+
 
 def _defaultLogDir() -> Path:
     """

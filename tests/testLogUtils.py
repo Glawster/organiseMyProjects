@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import drawBox
+from organiseMyProjects.logUtils import DryRunLogger, drawBox, dryRunLog
 
 
 class TestDrawBox:
@@ -132,3 +132,78 @@ class TestDrawBox:
         assert len(lines[0]) == 1 + len(message) + 4 * 2 + 1
         # Content line should have 4 spaces of padding on each side
         assert lines[1] == "│    X    │"
+
+
+class TestDryRunLog:
+    """Test cases for the dryRunLog() helper function."""
+
+    def testDryRunLogWithDryRunTrue(self):
+        """Test that dryRunLog prefixes the message when dryRun=True."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        dryRunLog(mockLogger, "moving file", dryRun=True)
+        mockLogger.info.assert_called_once_with("[DRY RUN] moving file")
+
+    def testDryRunLogWithDryRunFalse(self):
+        """Test that dryRunLog does not prefix the message when dryRun=False."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        dryRunLog(mockLogger, "moving file", dryRun=False)
+        mockLogger.info.assert_called_once_with("moving file")
+
+    def testDryRunLogDefaultIsFalse(self):
+        """Test that the default dryRun value is False (no prefix)."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        dryRunLog(mockLogger, "moving file")
+        mockLogger.info.assert_called_once_with("moving file")
+
+
+class TestDryRunLogger:
+    """Test cases for the DryRunLogger class."""
+
+    def testInfoWithDryRunTrue(self):
+        """Test that info() prefixes the message when dryRun=True."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        drl = DryRunLogger(mockLogger, dryRun=True)
+        drl.info("processing item")
+        mockLogger.info.assert_called_once_with("[DRY RUN] processing item")
+
+    def testInfoWithDryRunFalse(self):
+        """Test that info() does not prefix the message when dryRun=False."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        drl = DryRunLogger(mockLogger, dryRun=False)
+        drl.info("processing item")
+        mockLogger.info.assert_called_once_with("processing item")
+
+    def testWarningWithDryRunTrue(self):
+        """Test that warning() prefixes the message when dryRun=True."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        drl = DryRunLogger(mockLogger, dryRun=True)
+        drl.warning("skipping file")
+        mockLogger.warning.assert_called_once_with("[DRY RUN] skipping file")
+
+    def testWarningWithDryRunFalse(self):
+        """Test that warning() does not prefix the message when dryRun=False."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        drl = DryRunLogger(mockLogger, dryRun=False)
+        drl.warning("skipping file")
+        mockLogger.warning.assert_called_once_with("skipping file")
+
+    def testErrorWithDryRunTrue(self):
+        """Test that error() prefixes the message when dryRun=True."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        drl = DryRunLogger(mockLogger, dryRun=True)
+        drl.error("unexpected condition")
+        mockLogger.error.assert_called_once_with("[DRY RUN] unexpected condition")
+
+    def testErrorWithDryRunFalse(self):
+        """Test that error() does not prefix the message when dryRun=False."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        drl = DryRunLogger(mockLogger, dryRun=False)
+        drl.error("unexpected condition")
+        mockLogger.error.assert_called_once_with("unexpected condition")
+
+    def testDefaultDryRunIsFalse(self):
+        """Test that the default dryRun is False (no prefix)."""
+        mockLogger = MagicMock(spec=logging.Logger)
+        drl = DryRunLogger(mockLogger)
+        drl.info("default behaviour")
+        mockLogger.info.assert_called_once_with("default behaviour")

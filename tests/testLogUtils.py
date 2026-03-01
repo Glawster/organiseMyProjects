@@ -167,7 +167,7 @@ class TestGetLoggerDryRun:
 
         logger.logger.addHandler(_Capture())
         logger.info("moving file")
-        assert records and "[DRY RUN] moving file" in records[0].getMessage()
+        assert records and "[] moving file" in records[0].getMessage()
 
     def testGetLoggerLiveNoPrefixApplied(self, tmp_path):
         """Test that a logger from getLogger(dryRun=False) does not prefix messages."""

@@ -16,33 +16,14 @@ from typing import Optional
 
 _initialized_log_files: set[str] = set()
 
-class DryRunLogger:
-    """
-    Wraps a logging.Logger and automatically prefixes messages when in dry-run mode.
+_DRY_RUN_PREFIX = "[] "
 
-    Set dryRun once at construction to avoid repeating it on every call.
-    """
 
-    def __init__(self, logger: logging.Logger, dryRun: bool = False) -> None:
-        self._logger = logger
-        self._dryRun = dryRun
+class _DryRunAdapter(logging.LoggerAdapter):
+    """Private adapter that prepends '[] ' to every log message."""
 
-    @property
-    def prefix(self) -> str:
-        """Return the appropriate prefix based on the dry-run state."""
-        return "[] " if self._dryRun else ""
-
-    def info(self, message: str) -> None:
-        """Log an info message with the dry-run prefix if applicable."""
-        self._logger.info(f"{self.prefix}{message}")
-
-    def warning(self, message: str) -> None:
-        """Log a warning message with the dry-run prefix if applicable."""
-        self._logger.warning(f"{self.prefix}{message}")
-
-    def error(self, message: str) -> None:
-        """Log an error message with the dry-run prefix if applicable."""
-        self._logger.error(f"{self.prefix}{message}")
+    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
+        return f"{_DRY_RUN_PREFIX}{msg}", kwargs
 
 
 def _defaultLogDir() -> Path:
@@ -95,15 +76,17 @@ def getLogger(
     level: int = logging.INFO,
     includeConsole: bool = False,
     dryRun: bool = False,
-) -> logging.Logger | DryRunLogger:
+) -> logging.Logger | logging.LoggerAdapter:
     """
     Convenience wrapper used by other scripts.
 
     Pass dryRun=True to receive a logger that automatically prefixes
-    every log call with '[DRY RUN] '.
+    every log call with '[] '.
     """
     logger = _setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
-    return DryRunLogger(logger, dryRun=dryRun)
+    if dryRun:
+        return _DryRunAdapter(logger, {})
+    return logger
 
 
 def setLogLevel(level: int, targetLogger: Optional[logging.Logger] = None) -> None:

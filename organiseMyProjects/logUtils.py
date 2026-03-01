@@ -99,8 +99,8 @@ def getLogger(
     """
     Convenience wrapper used by other scripts.
 
-    Pass dryRun=True to receive a DryRunLogger that automatically prefixes
-    every info/warning/error call with '[DRY RUN] '.
+    Pass dryRun=True to receive a logger that automatically prefixes
+    every log call with '[DRY RUN] '.
     """
     logger = _setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
     return DryRunLogger(logger, dryRun=dryRun)

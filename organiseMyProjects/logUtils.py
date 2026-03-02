@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from logging import getLogger as _getLogger
+from logging import getLogger as _getLogger, log
 from pathlib import Path
 from typing import Any, MutableMapping, Optional
 
@@ -53,6 +53,11 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         """Log a name-value pair: '...{prefix}message'"""
         self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
 
+    # how do we use this prefix, for dry run should be applied when we have an action that would not be performed under dry run
+    # so we would have
+    #    log.action (f"message {variable}")
+    #    if not dryRun:
+    #       do the action
 
 def _defaultLogDir() -> Path:
     """

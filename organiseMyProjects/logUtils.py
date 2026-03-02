@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import datetime
 import logging
-from logging import getLogger as _getLogger
+from logging import getLogger as _getLogger, log
 from pathlib import Path
-from typing import Optional
+from typing import Any, MutableMapping, Optional
 
 # logging guidelines:
 # all messages in lowercase
@@ -27,28 +27,37 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         self._dryRun = dryRun
         self._prefix = _DRY_RUN_PREFIX if dryRun else ""
 
-    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
+    def process(self, msg: str, kwargs: MutableMapping[str, Any]) -> tuple[str, MutableMapping[str, Any]]:
         """For non-semantic calls (warning, error, debug), add dryRun prefix."""
         if self._dryRun:
             return f"{_DRY_RUN_PREFIX}{msg}", kwargs
         return msg, kwargs
 
     def info(self, message: str, *args, **kwargs) -> None:
-        """Log general information: '...{prefix}message'"""
-        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
+        """Log general information: '...message'"""
+        self.logger.info(f"...{message}", *args, **kwargs)
 
     def doing(self, message: str) -> None:
-        """Log a major action being taken: '{prefix}message...'"""
-        self.logger.info(f"{self._prefix}{message}...")
+        """Log a major action being taken: 'message...'"""
+        self.logger.info(f"{message}...")
 
     def done(self, message: str) -> None:
-        """Log a completed action: '...{prefix}message'"""
-        self.logger.info(f"...{self._prefix}{message}")
+        """Log a completed action: '...message'"""
+        self.logger.info(f"...{message}")
 
     def value(self, message: str, variable) -> None:
-        """Log a name-value pair: '...{prefix}message: variable'"""
-        self.logger.info(f"...{self._prefix}{message}: {variable}")
+        """Log a name-value pair: '...message: variable'"""
+        self.logger.info(f"...{message}: {variable}")
 
+    def action(self, message: str, *args, **kwargs) -> None:
+        """Log a name-value pair: '...{prefix}message'"""
+        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
+
+    # how do we use this prefix, for dry run should be applied when we have an action that would not be performed under dry run
+    # so we would have
+    #    log.action (f"message {variable}")
+    #    if not dryRun:
+    #       do the action
 
 def _defaultLogDir() -> Path:
     """

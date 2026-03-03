@@ -64,11 +64,12 @@ def _defaultLogDir() -> Path:
     Default log directory for shared tools.
 
     Prefer a stable per-user location:
-      ~/.local/state/organiseMy/logs
+      ~/.local/state
 
+    Log files are named after the tool, e.g. ~/.local/state/{name}.log
     (This keeps logs out of repos and out of ~/.config)
     """
-    return Path.home() / ".local" / "state" / "organiseMy" / "logs"
+    return Path.home() / ".local" / "state"
 
 def _setupLogging(
     name: str,

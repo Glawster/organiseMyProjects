@@ -10,11 +10,19 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import drawBox, getLogger
+from organiseMyProjects.logUtils import _defaultLogDir, drawBox, getLogger
+
+
+class TestDefaultLogDir:
+    """Test that the default log directory is ~/.local/state."""
+
+    def testDefaultLogDirIsLocalState(self):
+        """Test that _defaultLogDir returns ~/.local/state."""
+        expected = Path.home() / ".local" / "state"
+        assert _defaultLogDir() == expected
 
 
 class TestDrawBox:
-    """Test cases for the drawBox function."""
 
     def testDrawBoxSingleLine(self, capsys):
         """Test that a single-line message produces a correctly structured box."""

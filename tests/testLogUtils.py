@@ -1,6 +1,7 @@
 """
 Tests for logUtils.py functionality.
 """
+import datetime
 import logging
 import sys
 from pathlib import Path
@@ -10,11 +11,29 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import drawBox, getLogger
+from organiseMyProjects.logUtils import _defaultLogDir, drawBox, getLogger
+
+
+class TestDefaultLogDir:
+    """Test that the default log directory is ~/.local/state."""
+
+    def testDefaultLogDirIsLocalState(self):
+        """Test that _defaultLogDir returns ~/.local/state base directory."""
+        expected = Path.home() / ".local" / "state"
+        assert _defaultLogDir() == expected
+
+    def testGetLoggerCreatesNameSubdirAndDateFile(self, tmp_path, monkeypatch):
+        """Test that getLogger uses ~/.local/state/{name}/{name}-{date}.log structure."""
+        import organiseMyProjects.logUtils as logUtils
+        monkeypatch.setattr(logUtils, "_defaultLogDir", lambda: tmp_path)
+        name = "testAppName"
+        logger = getLogger(name)
+        expectedDate = datetime.date.today().isoformat()
+        expectedFile = tmp_path / name / f"{name}-{expectedDate}.log"
+        assert expectedFile.exists(), f"Expected log file {expectedFile} was not created"
 
 
 class TestDrawBox:
-    """Test cases for the drawBox function."""
 
     def testDrawBoxSingleLine(self, capsys):
         """Test that a single-line message produces a correctly structured box."""

@@ -61,12 +61,12 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
 
 def _defaultLogDir() -> Path:
     """
-    Default log directory for shared tools.
+    Default base log directory for shared tools.
 
     Prefer a stable per-user location:
       ~/.local/state
 
-    Log files are named after the tool, e.g. ~/.local/state/{name}.log
+    Log files are stored under ~/.local/state/{name}/{name}-{date}.log
     (This keeps logs out of repos and out of ~/.config)
     """
     return Path.home() / ".local" / "state"
@@ -84,10 +84,11 @@ def _setupLogging(
     logger.setLevel(level)
 
     if logDir is None:
-        logDir = _defaultLogDir()
+        logDir = _defaultLogDir() / name
 
     logDir.mkdir(parents=True, exist_ok=True)
-    logFile = logDir / f"{name}.log"
+    date = datetime.date.today().isoformat()
+    logFile = logDir / f"{name}-{date}.log"
 
     if str(logFile) not in _initialized_log_files:
         fileHandler = logging.FileHandler(logFile, encoding="utf-8")

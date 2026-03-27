@@ -31,13 +31,11 @@ SYNC_COMMENT = "<!-- synced from Glawster/organiseMyProjects -- do not edit dire
 TARGET_REPOS = [
     "Glawster/organiseMyPhotos",
     "Glawster/linuxMigration",
-    "Glawster/layoutSketcher",
     "Glawster/organiseMyVideo",
-    "Glawster/organiseMyOutlook",
-    "Glawster/renameToCamelCase",
     "Glawster/createDirPerFile",
     "Glawster/b2-backup-scripts",
-    "Glawster/kohyaTools",
+    "Glawster/sidecarEditor",
+    "Glawster/myDavinciScripts"
 ]
 
 API_BASE = "https://api.github.com"

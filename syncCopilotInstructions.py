@@ -23,7 +23,7 @@ from organiseMyProjects.logUtils import getLogger
 # Configuration
 # ---------------------------------------------------------------------------
 
-SOURCE_FILE = Path(__file__).resolve().parent / "organiseMyProjects" / "copilot-instructions.md"
+SOURCE_FILE = Path(__file__).resolve().parent / ".github" / "copilot-instructions.md"
 TARGET_PATH = ".github/copilot-instructions.md"
 COMMIT_MESSAGE = "sync: update copilot-instructions.md from organiseMyProjects template"
 SYNC_COMMENT = "<!-- synced from Glawster/organiseMyProjects -- do not edit directly -->\n"

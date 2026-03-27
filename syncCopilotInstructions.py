@@ -35,7 +35,14 @@ TARGET_REPOS = [
     "Glawster/createDirPerFile",
     "Glawster/b2-backup-scripts",
     "Glawster/sidecarEditor",
-    "Glawster/myDavinciScripts"
+    "Glawster/myDavinciScripts",
+    "Glawster/directPayments",
+    "Glawster/imageRecognition",
+    "Glawster/comfyuiWorkflows",
+    "Glawster/batchImageProcessing",
+    "Glawster/AbilityUsageTracker",
+    "Glawster/OutdatedItemCleaner",
+    "Glawster/wheresItAt"
 ]
 
 API_BASE = "https://api.github.com"

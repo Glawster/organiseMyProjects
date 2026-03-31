@@ -132,15 +132,28 @@ All projects must use centralized logging.
 **Module-level initialisation** (bare logger, no dryRun yet):
 
 ``` python
+from pathlib import Path
 from organiseMyProjects.logUtils import getLogger
-logger = getLogger("projectName")
+logger = getLogger(Path(__file__).stem)
 ```
+
+The inline form is acceptable at module level because `logger.doing()` is not called until `main()` re-initialises the logger.
 
 **Re-initialise in `main()` with full parameters** (logDir, includeConsole, dryRun):
 
 ``` python
-logger = getLogger("projectName", logDir=logDir, includeConsole=True, dryRun=dryRun)
+_name = Path(__file__).stem
+logger = getLogger(_name, logDir=logDir, includeConsole=True, dryRun=dryRun)
+logger.doing(_name)
 ```
+
+The `_name` local variable avoids calling `Path(__file__).stem` twice in `main()` and feeds both `getLogger()` and `logger.doing()`, keeping both uses consistent.
+
+> **Exception:** `__init__.py` and `__main__.py` are special — `Path(__file__).stem` evaluates to the meaningless strings `"__init__"` and `"__main__"`. In these files, keep an explicit package name and add a comment:
+> ```python
+> logger = getLogger("myPackage")  # __init__.py: use explicit name as stem would be '__init__'
+> ```
+> For `__main__.py` in `main()`, use `_name = "myPackage"` with the same comment.
 
 **Semantic log methods:**
 
@@ -168,12 +181,15 @@ from organiseMyProjects.logUtils import getLogger, drawBox
 drawBox("Sync complete\n3 updated, 0 failed", logger=logger)
 ```
 
--   Initialize logging at module level with `getLogger("projectName")`\
+-   Initialize logging at module level with `getLogger(Path(__file__).stem)`\
+-   Re-initialize in `main()` using `_name = Path(__file__).stem`; pass `_name` to both `getLogger()` and `logger.doing()`\
 -   Re-initialize in `main()` passing `logDir`, `includeConsole`, and `dryRun`\
 -   Use `logger.doing()` / `logger.done()` to bracket major operations\
 -   Use `logger.action()` for operations that are skipped in dry-run — never construct a manual `prefix = "[] "` string\
 -   Use lowercase messages\
--   Use consistent message patterns
+-   Use consistent message patterns\
+-   Use `Path(__file__).stem` for the logger name — never hardcode the filename as a string\
+-   Exception: for `__init__.py` and `__main__.py`, keep an explicit package name with an explanatory comment since `.stem` would yield the meaningless strings `"__init__"` or `"__main__"`
 
 ------------------------------------------------------------------------
 

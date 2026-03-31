@@ -200,7 +200,8 @@ def main() -> None:
     dryRun = not args.confirm
     prefix = "[] " if dryRun else ""
 
-    logger = getLogger("syncCopilotInstructions", includeConsole=False)
+    _name = Path(__file__).stem
+    logger = getLogger(_name, includeConsole=False)
 
     # Resolve the GitHub token
     token = args.token or os.environ.get("GITHUB_TOKEN", "")

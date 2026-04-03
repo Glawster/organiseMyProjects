@@ -266,7 +266,7 @@ def updateProject(projectName, dryRun: bool = False):
 
 def main():
     global logger
-    _name = Path(__file__).stem
+    thisApplication = Path(__file__).stem
     
     parser = argparse.ArgumentParser(
         description="Create or update a project scaffold"
@@ -292,8 +292,8 @@ def main():
 
     args = parser.parse_args()
     dryRun = not args.confirm
-    logger = getLogger(_name, includeConsole=True, dryRun=dryRun)
-    logger.doing(_name)
+    logger = getLogger(thisApplication, includeConsole=True, dryRun=dryRun)
+    logger.doing(thisApplication)
 
     if args.update:
         project_path = args.project or Path.cwd()

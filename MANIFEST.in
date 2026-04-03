@@ -1,1 +1,2 @@
 include .github/copilot-instructions.md
+include organiseMyProjects/logUtils.sh

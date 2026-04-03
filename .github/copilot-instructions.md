@@ -132,9 +132,8 @@ All projects must use centralized logging.
 **Module-level initialisation** (bare logger, no dryRun yet):
 
 ``` python
-from pathlib import Path
-from organiseMyProjects.logUtils import getLogger
-logger = getLogger(Path(__file__).stem)
+from organiseMyProjects.logUtils import getLogger, thisApplication
+logger = getLogger(thisApplication, includeConsole=False)
 ```
 
 The inline form is acceptable at module level because `logger.doing()` is not called until `main()` re-initialises the logger.
@@ -142,9 +141,7 @@ The inline form is acceptable at module level because `logger.doing()` is not ca
 **Re-initialise in `main()` with full parameters** (logDir, includeConsole, dryRun):
 
 ``` python
-_name = Path(__file__).stem
-logger = getLogger(_name, logDir=logDir, includeConsole=True, dryRun=dryRun)
-logger.doing(_name)
+logger = getLogger(thisApplication, logDir=logDir, includeConsole=True, dryRun=dryRun)
 ```
 
 The `_name` local variable avoids calling `Path(__file__).stem` twice in `main()` and feeds both `getLogger()` and `logger.doing()`, keeping both uses consistent.
@@ -177,12 +174,11 @@ if not dryRun:
 **`drawBox()` for prominent log entries:**
 
 ``` python
-from organiseMyProjects.logUtils import getLogger, drawBox
+from organiseMyProjects.logUtils import getLogger, thisApplication, drawBox
 drawBox("Sync complete\n3 updated, 0 failed", logger=logger)
 ```
 
--   Initialize logging at module level with `getLogger(Path(__file__).stem)`\
--   Re-initialize in `main()` using `_name = Path(__file__).stem`; pass `_name` to both `getLogger()` and `logger.doing()`\
+-   Initialize logging at module level with `getLogger(thisApplication)`\
 -   Re-initialize in `main()` passing `logDir`, `includeConsole`, and `dryRun`\
 -   Use `logger.doing()` / `logger.done()` to bracket major operations\
 -   Use `logger.action()` for operations that are skipped in dry-run — never construct a manual `prefix = "[] "` string\

@@ -11,7 +11,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import _defaultLogDir, drawBox, getLogger
+from organiseMyProjects.logUtils import _defaultLogDir, drawBox, getLogger, thisApplication
 
 
 class TestDefaultLogDir:
@@ -26,10 +26,10 @@ class TestDefaultLogDir:
         """Test that getLogger uses ~/.local/state/{name}/{name}-{date}.log structure."""
         import organiseMyProjects.logUtils as logUtils
         monkeypatch.setattr(logUtils, "_defaultLogDir", lambda: tmp_path)
-        name = "testAppName"
-        logger = getLogger(name)
+        monkeypatch.setattr(logUtils, "thisApplication", "testAppName")
+        logger = getLogger(logUtils.thisApplication)
         expectedDate = datetime.date.today().isoformat()
-        expectedFile = tmp_path / name / f"{name}-{expectedDate}.log"
+        expectedFile = tmp_path / logUtils.thisApplication / f"{logUtils.thisApplication}-{expectedDate}.log"
         assert expectedFile.exists(), f"Expected log file {expectedFile} was not created"
 
 
@@ -174,7 +174,7 @@ class TestGetLoggerDryRun:
         assert isinstance(logger, logging.LoggerAdapter)
 
     def testGetLoggerDryRunPrefixApplied(self, tmp_path):
-        """Test that a logger from getLogger(dryRun=True) prefixes messages."""
+        """Test that a logger from getLogger(dryRun=True) prefixes action() messages."""
         logger = getLogger("testDryRunPrefix", logDir=tmp_path, dryRun=True)
         records: list[logging.LogRecord] = []
 
@@ -183,7 +183,7 @@ class TestGetLoggerDryRun:
                 records.append(record)
 
         logger.logger.addHandler(_Capture())
-        logger.info("moving file")
+        logger.action("moving file")
         assert records and "[] moving file" in records[0].getMessage()
 
     def testGetLoggerLiveNoPrefixApplied(self, tmp_path):
@@ -241,31 +241,45 @@ class TestSemanticLogMethods:
         logger.value("file count", 42)
         assert records and records[0].getMessage() == "...file count: 42"
 
-    def testValueDryRunPrefixInserted(self, tmp_path):
-        """Test that value() with dryRun inserts '[] ' after the '...'."""
+    def testValueDryRunNoPrefix(self, tmp_path):
+        """Test that value() does not insert dry-run prefix even when dryRun=True."""
         logger = getLogger("testValueDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.value("file count", 42)
-        assert records and records[0].getMessage() == "...[] file count: 42"
+        assert records and records[0].getMessage() == "...file count: 42"
 
-    def testInfoDryRunPrefixInserted(self, tmp_path):
-        """Test that info() with dryRun inserts '[] ' after the '...'."""
+    def testInfoDryRunNoPrefix(self, tmp_path):
+        """Test that info() does not insert dry-run prefix even when dryRun=True."""
         logger = getLogger("testInfoDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.info("moving file")
-        assert records and records[0].getMessage() == "...[] moving file"
+        assert records and records[0].getMessage() == "...moving file"
 
-    def testDoingDryRunPrefixInserted(self, tmp_path):
-        """Test that doing() with dryRun inserts '[] ' before the message."""
+    def testDoingDryRunNoPrefix(self, tmp_path):
+        """Test that doing() does not insert dry-run prefix even when dryRun=True."""
         logger = getLogger("testDoingDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.doing("processing files")
-        assert records and records[0].getMessage() == "[] processing files..."
+        assert records and records[0].getMessage() == "processing files..."
 
-    def testDoneDryRunPrefixInserted(self, tmp_path):
-        """Test that done() with dryRun inserts '[] ' after the '...'."""
+    def testDoneDryRunNoPrefix(self, tmp_path):
+        """Test that done() does not insert dry-run prefix even when dryRun=True."""
         logger = getLogger("testDoneDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.done("processing files")
-        assert records and records[0].getMessage() == "...[] processing files"
+        assert records and records[0].getMessage() == "...processing files"
+
+    def testActionDryRunPrefixInserted(self, tmp_path):
+        """Test that action() inserts '[] ' prefix when dryRun=True."""
+        logger = getLogger("testActionDry", logDir=tmp_path, dryRun=True)
+        records = self._captureRecords(logger)
+        logger.action("moving file")
+        assert records and records[0].getMessage() == "...[] moving file"
+
+    def testActionLiveNoPrefixInserted(self, tmp_path):
+        """Test that action() does not insert '[] ' prefix when dryRun=False."""
+        logger = getLogger("testActionLive", logDir=tmp_path, dryRun=False)
+        records = self._captureRecords(logger)
+        logger.action("moving file")
+        assert records and records[0].getMessage() == "...moving file"
 

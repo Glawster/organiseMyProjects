@@ -2,6 +2,7 @@
 Tests for createProject.py functionality.
 """
 import datetime
+import logging
 import pytest
 import os
 import sys
@@ -128,15 +129,15 @@ class TestCreateProject:
         assert not (projectPath / "src" / "logUtils.py").exists(), "logUtils.py should NOT be copied to new projects"
         assert not (projectPath / "createProject.py").exists(), "createProject.py should NOT be copied to new projects"
     
-    def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, capsys):
+    def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, caplog):
         """Test behavior when project directory already exists."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()  # Create directory first
         
-        createProject(str(projectPath))
+        with caplog.at_level(logging.INFO):
+            createProject(str(projectPath))
         
-        captured = capsys.readouterr()
-        assert "already exists" in captured.out
+        assert "already exists" in caplog.text
     
     def testCreateProjectCopilotInstructions(self, temp_dir, sample_project_name):
         """Test that copilot instructions are copied from the .github/ directory."""
@@ -168,14 +169,14 @@ class TestUpdateProject:
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
     
-    def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, capsys):
+    def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
         projectPath = temp_dir / sample_project_name
         
-        updateProject(str(projectPath))
+        with caplog.at_level(logging.INFO):
+            updateProject(str(projectPath))
         
-        captured = capsys.readouterr()
-        assert "does not exist" in captured.out
+        assert "does not exist" in caplog.text
 
     def testUpdateProjectPytestIni(self, temp_dir, sample_project_name):
         """Test that updateProject creates/updates pytest.ini with the correct content."""
@@ -358,3 +359,75 @@ class TestBackupFile:
         stamp = datetime.date.today().strftime("%y%m%d")
         backup = temp_dir / f"config.{stamp}.txt"
         assert not backup.exists(), "No backup should be created when content is unchanged"
+
+
+class TestDryRun:
+    """Test that dry-run mode logs actions without writing any files."""
+
+    def testCreateProjectDryRunNoFilesCreated(self, temp_dir, sample_project_name):
+        """Test that createProject in dry-run mode does not create the project directory."""
+        projectPath = temp_dir / sample_project_name
+
+        createProject(str(projectPath), dryRun=True)
+
+        assert not projectPath.exists(), "Project directory must not be created in dry-run mode"
+
+    def testCreateProjectDryRunLogsActions(self, temp_dir, sample_project_name, caplog):
+        """Test that createProject in dry-run mode logs the actions it would take."""
+        projectPath = temp_dir / sample_project_name
+
+        with caplog.at_level(logging.INFO):
+            createProject(str(projectPath), dryRun=True)
+
+        assert "creating project" in caplog.text
+        assert "creating directories" in caplog.text
+        assert "writing core files" in caplog.text
+
+    def testUpdateProjectDryRunNoFilesModified(self, temp_dir, sample_project_name):
+        """Test that updateProject in dry-run mode does not modify existing files."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        (projectPath / "src").mkdir()
+        sentinel = projectPath / "src" / "globalVars.py"
+        sentinel.write_text("original content")
+
+        updateProject(str(projectPath), dryRun=True)
+
+        assert sentinel.read_text() == "original content", "File must not be modified in dry-run mode"
+
+    def testUpdateProjectDryRunLogsActions(self, temp_dir, sample_project_name, caplog):
+        """Test that updateProject in dry-run mode logs the actions it would take."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        with caplog.at_level(logging.INFO):
+            updateProject(str(projectPath), dryRun=True)
+
+        assert "updating project" in caplog.text
+
+    def testBackupFileDryRunNoRename(self, temp_dir):
+        """Test that _backup_file in dry-run mode does not rename the original file."""
+        dest = temp_dir / "config.txt"
+        dest.write_text("original")
+
+        _backup_file(dest, dryRun=True)
+
+        assert dest.exists(), "Original file must not be renamed in dry-run mode"
+
+    def testCopyIfNewerDryRunNoWrite(self, temp_dir):
+        """Test that _copy_if_newer in dry-run mode does not write the destination file."""
+        src = temp_dir / "source.txt"
+        dest = temp_dir / "dest.txt"
+        src.write_text("new content")
+
+        _copy_if_newer(src, dest, dryRun=True)
+
+        assert not dest.exists(), "Destination file must not be created in dry-run mode"
+
+    def testUpdateTextFileDryRunNoWrite(self, temp_dir):
+        """Test that _update_text_file in dry-run mode does not write the file."""
+        dest = temp_dir / "output.txt"
+
+        _update_text_file(dest, "some content", dryRun=True)
+
+        assert not dest.exists(), "File must not be created in dry-run mode"

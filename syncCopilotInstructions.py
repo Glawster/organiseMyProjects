@@ -17,7 +17,7 @@ from typing import Optional
 
 import requests
 
-from organiseMyProjects.logUtils import getLogger
+from organiseMyProjects.logUtils import getLogger, thisApplication
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -200,8 +200,8 @@ def main() -> None:
     dryRun = not args.confirm
     prefix = "[] " if dryRun else ""
 
-    _name = Path(__file__).stem
-    logger = getLogger(_name, includeConsole=False)
+    thisApplication = Path(__file__).stem
+    logger = getLogger(thisApplication, includeConsole=False)
 
     # Resolve the GitHub token
     token = args.token or os.environ.get("GITHUB_TOKEN", "")

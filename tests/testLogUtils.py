@@ -11,7 +11,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import _defaultLogDir, drawBox, getLogger
+from organiseMyProjects.logUtils import _defaultLogDir, drawBox, getLogger, thisApplication
 
 
 class TestDefaultLogDir:
@@ -26,10 +26,10 @@ class TestDefaultLogDir:
         """Test that getLogger uses ~/.local/state/{name}/{name}-{date}.log structure."""
         import organiseMyProjects.logUtils as logUtils
         monkeypatch.setattr(logUtils, "_defaultLogDir", lambda: tmp_path)
-        name = "testAppName"
-        logger = getLogger(name)
+        monkeypatch.setattr(logUtils, "thisApplication", "testAppName")
+        logger = getLogger(logUtils.thisApplication)
         expectedDate = datetime.date.today().isoformat()
-        expectedFile = tmp_path / name / f"{name}-{expectedDate}.log"
+        expectedFile = tmp_path / logUtils.thisApplication / f"{logUtils.thisApplication}-{expectedDate}.log"
         assert expectedFile.exists(), f"Expected log file {expectedFile} was not created"
 
 

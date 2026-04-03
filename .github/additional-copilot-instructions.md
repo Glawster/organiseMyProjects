@@ -102,7 +102,7 @@ organiseMyProjects/
 
 **[PACKAGE]** - Package utilities that remain in organiseMyProjects and are NOT copied to new projects:
 - `createProject.py` - The scaffolding tool itself
-- `logUtils.py` - Package-level logging utility (accessible via `from organiseMyProjects.logUtils import getLogger`)
+- `logUtils.py` - Package-level logging utility (accessible via `from organiseMyProjects.logUtils import getLogger, thisApplication`)
 - `HELP.md` - Documentation
 
 **[TEMPLATE]** - Template files that are copied to new projects:
@@ -164,11 +164,12 @@ organiseMyProjects/
 - **Purpose**: Package-level logging utility
 - **Type**: PACKAGE UTILITY (NOT copied to new projects, but accessible via package import)
 - **Key Functions**:
+  - `thisApplication` - name of the current application (derived from caller module) and passed to `getLogger` for consistent logger naming
   - `getLogger(name)` - Get a logger instance (from standard logging module)
   - `setupLogging(title)` - Configure logging with file handler
 - **Usage**: 
-  - From package: `from organiseMyProjects.logUtils import getLogger`
-  - Example: `logger = getLogger('myApp')`
+  - From package: `from organiseMyProjects.logUtils import getLogger, thisApplication`
+  - Example: `logger = getLogger(thisApplication)`
 - **Note**: New projects should implement their own logging based on their needs, but can reference this utility for setup patterns
 
 ### globalVars.py
@@ -229,9 +230,9 @@ lintGuiNaming("path/to/directory")
 runLinter()  # CLI interface
 
 # Use logging utility
-from organiseMyProjects.logUtils import getLogger
-logger = getLogger("myApp")
-logger.info("Application started")
+from organiseMyProjects.logUtils import getLogger, thisApplication
+logger = getLogger(thisApplication)
+logger.info("This is a log message")
 ```
 
 ## Development Workflow

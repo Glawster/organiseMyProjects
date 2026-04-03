@@ -17,7 +17,7 @@ from typing import Any, MutableMapping, Optional
 _initialized_log_files: set[str] = set()
 
 _DRY_RUN_PREFIX = "[] "
-
+thisApplication = "dummy" # this will be overridden by users to set the application name in logs, e.g. "myTool" or "createProject"
 
 class _OrganiseLoggerAdapter(logging.LoggerAdapter):
     """Logger adapter providing semantic log methods with optional dry-run prefixing."""

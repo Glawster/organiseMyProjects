@@ -132,14 +132,14 @@ All projects must use centralized logging.
 **Module-level initialisation** (bare logger, no dryRun yet):
 
 ``` python
-from organiseMyProjects.logUtils import getLogger
-logger = getLogger("projectName")
+from organiseMyProjects.logUtils import getLogger, thisApplication
+logger = getLogger(thisApplication, includeConsole=False)
 ```
 
 **Re-initialise in `main()` with full parameters** (logDir, includeConsole, dryRun):
 
 ``` python
-logger = getLogger("projectName", logDir=logDir, includeConsole=True, dryRun=dryRun)
+logger = getLogger(thisApplication, logDir=logDir, includeConsole=True, dryRun=dryRun)
 ```
 
 **Semantic log methods:**
@@ -164,11 +164,11 @@ if not dryRun:
 **`drawBox()` for prominent log entries:**
 
 ``` python
-from organiseMyProjects.logUtils import getLogger, drawBox
+from organiseMyProjects.logUtils import getLogger, thisApplication, drawBox
 drawBox("Sync complete\n3 updated, 0 failed", logger=logger)
 ```
 
--   Initialize logging at module level with `getLogger("projectName")`\
+-   Initialize logging at module level with `getLogger(thisApplication)`\
 -   Re-initialize in `main()` passing `logDir`, `includeConsole`, and `dryRun`\
 -   Use `logger.doing()` / `logger.done()` to bracket major operations\
 -   Use `logger.action()` for operations that are skipped in dry-run — never construct a manual `prefix = "[] "` string\

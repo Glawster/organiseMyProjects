@@ -20,10 +20,10 @@ Template files (copied to new projects):
 
 Usage:
     from organiseMyProjects import createProject, runLinter
-    from organiseMyProjects.logUtils import getLogger
+    from organiseMyProjects.logUtils import getLogger, thisApplication
 """
 
-__version__ = "0.1"
+__version__ = "0.2"
 
 # Expose main functionality for programmatic use
 from . import createProject

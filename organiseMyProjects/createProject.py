@@ -292,6 +292,7 @@ def main():
 
     args = parser.parse_args()
     dryRun = not args.confirm
+    print (thisApplication)
     logger = getLogger(thisApplication, includeConsole=True, dryRun=dryRun)
     logger.doing(thisApplication)
 

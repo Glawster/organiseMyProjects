@@ -35,19 +35,19 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
 
     def info(self, message: str, *args, **kwargs) -> None:
         """Log general information: '...message'"""
-        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
+        self.logger.info(f"...{message}", *args, **kwargs)
 
     def doing(self, message: str) -> None:
         """Log a major action being taken: 'message...'"""
-        self.logger.info(f"{self._prefix}{message}...")
+        self.logger.info(f"{message}...")
 
     def done(self, message: str) -> None:
         """Log a completed action: '...message'"""
-        self.logger.info(f"...{self._prefix}{message}")
+        self.logger.info(f"...{message}")
 
     def value(self, message: str, variable) -> None:
         """Log a name-value pair: '...message: variable'"""
-        self.logger.info(f"...{self._prefix}{message}: {variable}")
+        self.logger.info(f"...{message}: {variable}")
 
     def action(self, message: str, *args, **kwargs) -> None:
         """Log a name-value pair: '...{prefix}message'"""
@@ -116,12 +116,12 @@ def getLogger(
     Convenience wrapper used by other scripts.
 
     Returns an _OrganiseLoggerAdapter with semantic log methods:
-      doing(message)           – logs '{prefix}message...'
-      done(message)            – logs '...{prefix}message'
-      info(message)            – logs '...{prefix}message'
-      value(message, variable) – logs '...{prefix}message: variable'
-
-    Pass dryRun=True to insert '[] ' into every formatted message.
+      doing(message)           – logs 'message...'
+      done(message)            – logs '...message'
+      info(message)            – logs '...message'
+      value(message, variable) – logs '...message: variable'
+      action(message)          – logs '...{prefix}message'
+    Pass dryRun=True to insert '[] ' only for action
     """
     logger = _setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
     return _OrganiseLoggerAdapter(logger, dryRun=dryRun)

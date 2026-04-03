@@ -28,9 +28,7 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         self._prefix = _DRY_RUN_PREFIX if dryRun else ""
 
     def process(self, msg: str, kwargs: MutableMapping[str, Any]) -> tuple[str, MutableMapping[str, Any]]:
-        """For non-semantic calls (warning, error, debug), add dryRun prefix."""
-        if self._dryRun:
-            return f"{_DRY_RUN_PREFIX}{msg}", kwargs
+        """Pass through non-semantic calls (warning, error, debug) unchanged."""
         return msg, kwargs
 
     def info(self, message: str, *args, **kwargs) -> None:
@@ -97,7 +95,7 @@ def _setupLogging(
         logger.addHandler(fileHandler)
         _initialized_log_files.add(str(logFile))
 
-    if includeConsole and not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+    if includeConsole and not any(type(h) is logging.StreamHandler for h in logger.handlers):
         consoleHandler = logging.StreamHandler()
         consoleFormatter = logging.Formatter("%(levelname)s - %(message)s")
         consoleHandler.setFormatter(consoleFormatter)

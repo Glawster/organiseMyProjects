@@ -35,19 +35,19 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
 
     def info(self, message: str, *args, **kwargs) -> None:
         """Log general information: '...message'"""
-        self.logger.info(f"...{message}", *args, **kwargs)
+        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
 
     def doing(self, message: str) -> None:
         """Log a major action being taken: 'message...'"""
-        self.logger.info(f"{message}...")
+        self.logger.info(f"{self._prefix}{message}...")
 
     def done(self, message: str) -> None:
         """Log a completed action: '...message'"""
-        self.logger.info(f"...{message}")
+        self.logger.info(f"...{self._prefix}{message}")
 
     def value(self, message: str, variable) -> None:
         """Log a name-value pair: '...message: variable'"""
-        self.logger.info(f"...{message}: {variable}")
+        self.logger.info(f"...{self._prefix}{message}: {variable}")
 
     def action(self, message: str, *args, **kwargs) -> None:
         """Log a name-value pair: '...{prefix}message'"""

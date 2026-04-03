@@ -29,8 +29,9 @@ The main module responsible for project scaffolding functionality.
 Centralised logging utilities shared across organiseMyProjects tooling.
 
 **Key Functions:**
-- `setupLogging(title, logDir, level, includeConsole)` - Create/retrieve a named logger with a `FileHandler`
-- `getLogger(name, logDir, level, includeConsole)` - Convenience wrapper around `setupLogging`
+- `thisApplication` - Name of the application 
+- `setupLogging(thisApplication, logDir, level, includeConsole)` - Create/retrieve a named logger with a `FileHandler`
+- `getLogger(thisApplication, logDir, level, includeConsole)` - Convenience wrapper around `setupLogging`
 - `setLogLevel(level, targetLogger)` - Change the log level of a logger at runtime
 - `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than the specified number of days
 - `drawBox(message, border_char, corner_char, side_char, padding, logger)` - Print or log a text message surrounded by a Unicode box
@@ -58,13 +59,13 @@ Draws an ASCII/Unicode box around a (potentially multi-line) message to make it 
 **Usage Examples:**
 
 ```python
-from organiseMyProjects.logUtils import drawBox, getLogger
+from organiseMyProjects.logUtils import drawBox, getLogger, thisApplication
 
 # Print to stdout
 drawBox("Deployment complete")
 
 # Log via a logger instance
-log = getLogger("MyApp")
+log = getLogger(thisApplication)
 drawBox("[ERROR] Database connection failed\nAttempted 3 retries.", logger=log)
 
 # Custom box characters

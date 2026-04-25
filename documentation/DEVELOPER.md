@@ -276,16 +276,18 @@ The project uses pre-commit hooks to ensure code quality:
 ```yaml
 repos:
   - repo: https://github.com/psf/black
-    rev: stable
+    rev: 25.1.0
     hooks:
       - id: black
-        language: system
+
   - repo: local
     hooks:
       - id: gui-naming-linter
         name: GUI Naming Linter
-        entry: python tests/runLinter.py
-        language: system
+        entry: python -m organiseMyProjects.runLinter
+        language: python
+        additional_dependencies:
+          - -e .
         types: [python]
 ```
 

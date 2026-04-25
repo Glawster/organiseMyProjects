@@ -24,18 +24,23 @@ if __name__ == "__main__":
     main()
 """
 
-PRECOMMIT_CONTENT = """repos:
+PRECOMMIT_CONTENT = """default_language_version:
+  python: python3
+
+repos:
   - repo: https://github.com/psf/black
-    rev: stable
+    rev: 25.1.0
     hooks:
       - id: black
-        language: system
+
   - repo: local
     hooks:
       - id: gui-naming-linter
         name: GUI Naming Linter
-        entry: python tests/runLinter.py
-        language: system
+        entry: python -m organiseMyProjects.runLinter
+        language: python
+        additional_dependencies:
+          - -e .
         types: [python]
 """
 

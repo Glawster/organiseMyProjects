@@ -37,10 +37,8 @@ repos:
     hooks:
       - id: gui-naming-linter
         name: GUI Naming Linter
-        entry: python -m organiseMyProjects.runLinter
+        entry: runLinter
         language: python
-        additional_dependencies:
-          - -e .
         types: [python]
 """
 

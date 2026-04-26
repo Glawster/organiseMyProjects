@@ -99,7 +99,7 @@ Larger applications may also use `src/` and `ui/` folders:
 Rules:
 
 -   `main.py` lives at the project root and is the application entry point\
--   `main.py` defines the application identity (`thisApplication`)\
+-   `main.py` sets the application logging context with `setApplication()`\
 -   `src/` is optional and should be used for larger apps, reusable core logic, or UI-based apps\
 -   `ui/` is optional and should contain UI orchestration/assets where useful\
 -   Core/business logic must remain testable without the UI
@@ -157,9 +157,9 @@ Never expose `--dry-run` as the CLI flag. Use `dryRun` only as the internal bool
 
 All projects must use centralized logging from `organiseMyProjects.logUtils`.
 
-### Application identity
+### Application context
 
-Each project defines its application name once in the root entry point:
+Each project sets its application context once in the root entry point:
 
 ```text
 <projectName>/main.py
@@ -169,37 +169,63 @@ Use the project folder name unless there is a deliberate reason to override it:
 
 ``` python
 from pathlib import Path
-from organiseMyProjects.logUtils import getLogger
+from organiseMyProjects.logUtils import getLogger, setApplication
 
 thisApplication = Path(__file__).parent.name
-logger = getLogger(thisApplication, includeConsole=False)
+setApplication(thisApplication)
+
+logger = getLogger(includeConsole=False)
 ```
 
-`thisApplication` is the application identity. It controls the shared log file grouping and log directory. It must not be redefined in helper modules.
+`setApplication(thisApplication)` stores the active application name and creates the default log directory:
 
-Helper modules import the application identity from `main.py`:
+```text
+~/.local/state/<thisApplication>/
+```
+
+After `setApplication()` has run, do not pass `name` or `logDir` to `getLogger()` for normal application logging. `logUtils` owns that context.
+
+### Helper modules
+
+Helper modules must not import `thisApplication` from `main.py` and must not redefine it.
+
+Use this pattern everywhere outside the entry point:
 
 ``` python
 from organiseMyProjects.logUtils import getLogger
-from main import thisApplication
 
-logger = getLogger(thisApplication, includeConsole=False)
+logger = getLogger()
 ```
 
-For package-style projects where imports use a package name, the helper import may be:
-
-``` python
-from organiseMyProjects.logUtils import getLogger
-from myProject.main import thisApplication
-
-logger = getLogger(thisApplication, includeConsole=False)
-```
+This works because the entry point sets the application context before importing modules that call `getLogger()`.
 
 ### Entry-point initialisation
 
-Re-initialise logging in `main()` after parsing arguments and resolving `dryRun`:
+Initialise the application context before importing modules that rely on logging. Re-initialise console/dry-run behaviour in `main()` after parsing arguments:
 
 ``` python
+from pathlib import Path
+from organiseMyProjects.logUtils import getLogger, setApplication
+
+thisApplication = Path(__file__).parent.name
+setApplication(thisApplication)
+logger = getLogger(includeConsole=False)
+
+# Import app modules after setApplication() when they call getLogger().
+from ui.mainMenu import mainMenu
+
+
+def buildParser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--confirm",
+        dest="confirm",
+        action="store_true",
+        help="execute changes (default is dry-run)",
+    )
+    return parser
+
+
 def main() -> None:
     global logger
 
@@ -208,29 +234,23 @@ def main() -> None:
     dryRun = not args.confirm
 
     _name = Path(__file__).stem
-    logDir = Path.home() / ".local" / "state" / thisApplication
-    logDir.mkdir(parents=True, exist_ok=True)
-
-    logger = getLogger(
-        thisApplication,
-        logDir=logDir,
-        includeConsole=True,
-        dryRun=dryRun,
-    )
+    logger = getLogger(includeConsole=True, dryRun=dryRun)
 
     logger.doing(_name)
     # work here
     logger.done(_name)
 ```
 
-`_name = Path(__file__).stem` identifies the entry-point module for messages such as `logger.doing(_name)`. It must not be used as the application identity in helper modules.
+`_name = Path(__file__).stem` identifies the entry-point module for messages such as `logger.doing(_name)`. It is not the application identity.
 
 ### Required logging rules
 
--   Define `thisApplication` once in root `main.py`\
--   Import `thisApplication` into helper modules\
--   Re-initialise logging in `main()` with `logDir`, `includeConsole`, and `dryRun`\
--   Write logs under `~/.local/state/<thisApplication>/`\
+-   Call `setApplication(thisApplication)` once in root `main.py`\
+-   Call `setApplication()` before importing modules that call `getLogger()`\
+-   Use `logger = getLogger()` in helper modules\
+-   Do not import `thisApplication` into helper modules\
+-   Do not pass `name` or `logDir` to `getLogger()` for normal application logging\
+-   Let `logUtils` write logs under `~/.local/state/<thisApplication>/`\
 -   Use `logger.doing()` / `logger.done()` to bracket major operations\
 -   Use `logger.action()` for operations that are skipped in dry-run\
 -   Use lowercase messages\
@@ -275,6 +295,8 @@ Use this instead:
 ``` python
 from organiseMyProjects.logUtils import getLogger
 ```
+
+If `setApplication()` has not been called before `getLogger()` is used without an explicit name, the program must raise a `RuntimeError`. This is intentional.
 
 ### `drawBox()` for prominent log entries
 

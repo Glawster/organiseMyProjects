@@ -17,8 +17,7 @@
 11. [Testing Standards](#testing-standards)\
 12. [Performance Guidelines](#performance-guidelines)\
 13. [Refactoring Guidelines](#refactoring-guidelines)\
-14. [Common Principles to Always
-    Follow](#common-principles-to-always-follow)
+14. [Common Principles to Always Follow](#common-principles-to-always-follow)
 
 ------------------------------------------------------------------------
 
@@ -69,21 +68,41 @@ This document defines universal rules.
 
 # Project Structure Standard
 
+All applications must have a root entry point:
+
     projectName/
+    ├── main.py
+    ├── tests/
+    ├── requirements.txt
+    ├── README.md
+    └── .github/
+        └── additional-copilot-instructions.md
+
+Larger applications may also use `src/` and `ui/` folders:
+
+    projectName/
+    ├── main.py
     ├── src/
     │   └── projectName/
     │       ├── __init__.py
-    │       ├── main.py
     │       ├── core/
-    │       ├── ui/
     │       ├── utils/
     │       └── patterns/
+    ├── ui/
     ├── Qt/ui
     ├── tests/
     ├── requirements.txt
     ├── README.md
     └── .github/
         └── additional-copilot-instructions.md
+
+Rules:
+
+-   `main.py` lives at the project root and is the application entry point\
+-   `main.py` defines the application identity (`thisApplication`)\
+-   `src/` is optional and should be used for larger apps, reusable core logic, or UI-based apps\
+-   `ui/` is optional and should contain UI orchestration/assets where useful\
+-   Core/business logic must remain testable without the UI
 
 ------------------------------------------------------------------------
 
@@ -111,6 +130,15 @@ parser.add_argument(
 dryRun = not args.confirm
 ```
 
+Command behaviour:
+
+| Command | Behaviour |
+| --- | --- |
+| `python main.py` | dry-run / safe preview |
+| `python main.py --confirm` | execute changes |
+
+Never expose `--dry-run` as the CLI flag. Use `dryRun` only as the internal boolean.
+
 ------------------------------------------------------------------------
 
 # Environment & Dependency Policy
@@ -127,32 +155,92 @@ dryRun = not args.confirm
 
 ## Logging Pattern (logUtils)
 
-All projects must use centralized logging.
+All projects must use centralized logging from `organiseMyProjects.logUtils`.
 
-**Module-level initialisation** (bare logger, no dryRun yet):
+### Application identity
+
+Each project defines its application name once in the root entry point:
+
+```text
+<projectName>/main.py
+```
+
+Use the project folder name unless there is a deliberate reason to override it:
 
 ``` python
-from organiseMyProjects.logUtils import getLogger, thisApplication
+from pathlib import Path
+from organiseMyProjects.logUtils import getLogger
+
+thisApplication = Path(__file__).parent.name
 logger = getLogger(thisApplication, includeConsole=False)
 ```
 
-The inline form is acceptable at module level because `logger.doing()` is not called until `main()` re-initialises the logger.
+`thisApplication` is the application identity. It controls the shared log file grouping and log directory. It must not be redefined in helper modules.
 
-**Re-initialise in `main()` with full parameters** (logDir, includeConsole, dryRun):
+Helper modules import the application identity from `main.py`:
 
 ``` python
-logger = getLogger(thisApplication, logDir=logDir, includeConsole=True, dryRun=dryRun)
+from organiseMyProjects.logUtils import getLogger
+from main import thisApplication
+
+logger = getLogger(thisApplication, includeConsole=False)
 ```
 
-The `_name` local variable avoids calling `Path(__file__).stem` twice in `main()` and feeds both `getLogger()` and `logger.doing()`, keeping both uses consistent.
+For package-style projects where imports use a package name, the helper import may be:
 
-> **Exception:** `__init__.py` and `__main__.py` are special — `Path(__file__).stem` evaluates to the meaningless strings `"__init__"` and `"__main__"`. In these files, keep an explicit package name and add a comment:
-> ```python
-> logger = getLogger("myPackage")  # __init__.py: use explicit name as stem would be '__init__'
-> ```
-> For `__main__.py` in `main()`, use `_name = "myPackage"` with the same comment.
+``` python
+from organiseMyProjects.logUtils import getLogger
+from myProject.main import thisApplication
 
-**Semantic log methods:**
+logger = getLogger(thisApplication, includeConsole=False)
+```
+
+### Entry-point initialisation
+
+Re-initialise logging in `main()` after parsing arguments and resolving `dryRun`:
+
+``` python
+def main() -> None:
+    global logger
+
+    parser = buildParser()
+    args = parser.parse_args()
+    dryRun = not args.confirm
+
+    _name = Path(__file__).stem
+    logDir = Path.home() / ".local" / "state" / thisApplication
+    logDir.mkdir(parents=True, exist_ok=True)
+
+    logger = getLogger(
+        thisApplication,
+        logDir=logDir,
+        includeConsole=True,
+        dryRun=dryRun,
+    )
+
+    logger.doing(_name)
+    # work here
+    logger.done(_name)
+```
+
+`_name = Path(__file__).stem` identifies the entry-point module for messages such as `logger.doing(_name)`. It must not be used as the application identity in helper modules.
+
+### Required logging rules
+
+-   Define `thisApplication` once in root `main.py`\
+-   Import `thisApplication` into helper modules\
+-   Re-initialise logging in `main()` with `logDir`, `includeConsole`, and `dryRun`\
+-   Write logs under `~/.local/state/<thisApplication>/`\
+-   Use `logger.doing()` / `logger.done()` to bracket major operations\
+-   Use `logger.action()` for operations that are skipped in dry-run\
+-   Use lowercase messages\
+-   Use consistent message patterns\
+-   Do not add stdlib logging fallbacks\
+-   Do not call `logging.basicConfig()` in application modules\
+-   Do not pass module names such as `"myProject.exporter"` to `getLogger()`\
+-   Do not construct a manual dry-run prefix for logging
+
+### Semantic log methods
 
 ``` python
 logger.doing("scanning files")           # → scanning files...
@@ -162,42 +250,57 @@ logger.value("source dir", path)         # → ...source dir: /path
 logger.action("moving file: src → dest") # → ...[] moving file: src → dest  (when dryRun=True)
 ```
 
-**The `action()` / dry-run guard pattern:**
+### The `action()` / dry-run guard pattern
 
 ``` python
-# Preferred: use logger.action() for operations guarded by dryRun
 logger.action(f"moving file: {src} → {dest}")
 if not dryRun:
     shutil.move(src, dest)
 ```
 
-**`drawBox()` for prominent log entries:**
+### No fallback logging
+
+External dependencies must fail fast. Never silently replace `logUtils`:
 
 ``` python
-from organiseMyProjects.logUtils import getLogger, thisApplication, drawBox
-drawBox("Sync complete\n3 updated, 0 failed", logger=logger)
+# Do not do this
+try:
+    from organiseMyProjects.logUtils import getLogger
+except Exception:
+    import logging
 ```
 
--   Initialize logging at module level with `getLogger(thisApplication)`\
--   Re-initialize in `main()` passing `logDir`, `includeConsole`, and `dryRun`\
--   Use `logger.doing()` / `logger.done()` to bracket major operations\
--   Use `logger.action()` for operations that are skipped in dry-run — never construct a manual `prefix = "[] "` string\
--   Use lowercase messages\
--   Use consistent message patterns\
--   Use `Path(__file__).stem` for the logger name — never hardcode the filename as a string\
--   Exception: for `__init__.py` and `__main__.py`, keep an explicit package name with an explanatory comment since `.stem` would yield the meaningless strings `"__init__"` or `"__main__"`
+Use this instead:
+
+``` python
+from organiseMyProjects.logUtils import getLogger
+```
+
+### `drawBox()` for prominent log entries
+
+``` python
+from organiseMyProjects.logUtils import drawBox
+
+drawBox("Sync complete\n3 updated, 0 failed", logger=logger)
+```
 
 ------------------------------------------------------------------------
 
 ## Dry-Run Pattern
 
-Use --confirm (never --dry-run).
+Use `--confirm` as the CLI flag. Never expose `--dry-run` as the user-facing flag.
 
 ``` python
-prefix = "[] " if dryRun else ""
+parser.add_argument(
+    "--confirm",
+    dest="confirm",
+    action="store_true",
+    help="execute changes (default is dry-run)",
+)
+dryRun = not args.confirm
 ```
 
-The `prefix` string is only used for `print()` console output. For logging, use `logger.action()` instead (see Logging Pattern above).
+The `prefix` string is only used for `print()` console output. For logging, use `logger.action()` instead.
 
 Guard operations:
 
@@ -208,6 +311,7 @@ if not dryRun:
     shutil.move(src, dest)
 
 # For print() console output only:
+prefix = "[] " if dryRun else ""
 print(f"{prefix}moving file: {src}")
 if not dryRun:
     shutil.move(src, dest)

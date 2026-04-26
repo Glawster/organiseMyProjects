@@ -17,8 +17,9 @@ from typing import Any, MutableMapping, Optional
 _initialized_log_files: set[str] = set()
 
 _DRY_RUN_PREFIX = "[] "
-thisApplication: str | None = None
 
+thisApplication: str | None = None
+_applicationLogDir: Path | None = None
 
 class _OrganiseLoggerAdapter(logging.LoggerAdapter):
     """Logger adapter providing semantic log methods with optional dry-run prefixing."""
@@ -55,15 +56,17 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
 
 
-def setApplication(name: str) -> None:
+def setApplication(name: str, logDir: Optional[Path] = None) -> None:
     """Set the active application context for subsequent getLogger() calls."""
-    global thisApplication
+    global thisApplication, _applicationLogDir
 
     cleanedName = name.strip()
     if not cleanedName:
         raise ValueError("Application name must not be empty.")
 
     thisApplication = cleanedName
+    _applicationLogDir = logDir or (Path.home() / ".local" / "state" / cleanedName)
+    _applicationLogDir.mkdir(parents=True, exist_ok=True)
 
 
 def getApplication() -> str:
@@ -76,6 +79,12 @@ def getApplication() -> str:
         )
     return thisApplication
 
+
+def getApplicationLogDir() -> Path:
+    """Return the active application log directory or fail fast if unset."""
+    if _applicationLogDir is None:
+        raise RuntimeError("Application log directory has not been initialised.")
+    return _applicationLogDir
 
 def _resolveLoggerName(name: Optional[str]) -> str:
     """Resolve an explicit logger name or the active application context."""
@@ -107,7 +116,10 @@ def _setupLogging(
     logger.setLevel(level)
 
     if logDir is None:
-        logDir = _defaultLogDir() / name
+        if name == getApplication():
+            logDir = getApplicationLogDir()
+        else:
+            logDir = _defaultLogDir() / name
 
     logDir.mkdir(parents=True, exist_ok=True)
     date = datetime.date.today().isoformat()

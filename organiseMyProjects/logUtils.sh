@@ -7,8 +7,11 @@
 #   source "$(python3 -c 'import organiseMyProjects, os; print(os.path.dirname(organiseMyProjects.__file__))')/logUtils.sh"
 #
 # Then initialise logging once per script:
-#   log_init "myScript"              # → ~/.local/state/myScript/myScript-<date>.log
-#   log_init "myScript" "/tmp/logs"  # → /tmp/logs/myScript-<date>.log
+#   setApplication "myScript"          # → ~/.local/state/myScript/myScript-<date>.log
+#   setApplication "myScript" /tmp/logs # → /tmp/logs/myScript-<date>.log
+#
+# Compatibility wrapper:
+#   log_init "myScript"                # calls setApplication "myScript"
 #
 # Semantic log functions (mirror Python logUtils conventions):
 #   log_doing "scanning files"           →  scanning files...
@@ -33,13 +36,26 @@
 [[ -n "${_LOG_UTILS_LOADED:-}" ]] && return 0
 _LOG_UTILS_LOADED=1
 
-# logFile is set by log_init; default to /dev/null until initialised
+# Application context is set by setApplication.
+thisApplication="${thisApplication:-}"
+applicationLogDir="${applicationLogDir:-}"
 logFile="${logFile:-/dev/null}"
 logDir="${logDir:-}"
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+_require_application() {
+  if [[ -z "${thisApplication:-}" ]]; then
+    echo "Application logging context has not been set. Call setApplication first." >&2
+    return 1
+  fi
+}
+
+_current_date() {
+  date +%Y-%m-%d
+}
 
 # Write a timestamped line to logFile only (no console output)
 _log_to_file() {
@@ -49,6 +65,7 @@ _log_to_file() {
 
 # Write a timestamped line to both console and logFile
 _log() {
+  _require_application || return 1
   local msg="[$(date +"%Y-%m-%d %H:%M:%S")] $*"
   echo "$msg"
   [[ "$logFile" != "/dev/null" ]] && echo "$msg" >> "$logFile"
@@ -58,19 +75,51 @@ _log() {
 # Public API
 # ---------------------------------------------------------------------------
 
-# log_init <scriptName> [logBaseDir]
-#   Sets logDir and logFile, creates the directory, prints the log path.
-#   If logBaseDir is empty or not provided, defaults to ~/.local/state/<scriptName>
-log_init() {
-  local scriptName="$1"
+# setApplication <applicationName> [logBaseDir]
+#   Sets the active application context and creates the log directory.
+#   If logBaseDir is empty or not provided, defaults to ~/.local/state/<applicationName>
+setApplication() {
+  local appName="${1:-}"
   local baseDir="${2:-}"
-  [[ -z "$baseDir" ]] && baseDir="$HOME/.local/state/$scriptName"
-  local dateStr
-  dateStr=$(date +%Y-%m-%d)
-  logDir="$baseDir"
+
+  if [[ -z "$appName" ]]; then
+    echo "Application name must not be empty." >&2
+    return 1
+  fi
+
+  [[ -z "$baseDir" ]] && baseDir="$HOME/.local/state/$appName"
+
+  thisApplication="$appName"
+  applicationLogDir="$baseDir"
+  logDir="$applicationLogDir"
   mkdir -p "$logDir"
-  logFile="$logDir/${scriptName}-${dateStr}.log"
+
+  logFile="$logDir/${thisApplication}-$(_current_date).log"
   _log "logging to: $logFile"
+}
+
+# getApplication
+#   Prints the active application name, or fails if unset.
+getApplication() {
+  _require_application || return 1
+  echo "$thisApplication"
+}
+
+# getApplicationLogDir
+#   Prints the active application log directory, or fails if unset.
+getApplicationLogDir() {
+  _require_application || return 1
+  if [[ -z "${applicationLogDir:-}" ]]; then
+    echo "Application log directory has not been initialised." >&2
+    return 1
+  fi
+  echo "$applicationLogDir"
+}
+
+# log_init <scriptName> [logBaseDir]
+#   Backwards-compatible wrapper around setApplication.
+log_init() {
+  setApplication "$@"
 }
 
 # log_doing <message>  →  message...
@@ -111,6 +160,7 @@ log_warn() {
 
 # log_error <message>  →  ERROR: message  (also to stderr)
 log_error() {
+  _require_application || return 1
   local msg="[$(date +"%Y-%m-%d %H:%M:%S")] ERROR: $1"
   echo "$msg" | tee -a "$logFile" >&2
 }
@@ -120,6 +170,7 @@ log_error() {
 #   (separate lines with \n or actual newlines).
 #   Output goes to both console and logFile.
 log_box() {
+  _require_application || return 1
   local message="$1"
   local pad=2
   local maxLen=0

@@ -5,20 +5,52 @@ import subprocess
 import argparse
 from pathlib import Path
 
-from organiseMyProjects.logUtils import getLogger, thisApplication
+from organiseMyProjects.logUtils import getLogger, setApplication
 
-logger = getLogger(thisApplication, includeConsole=False)  # placeholder; re-initialised with Path(__file__).stem in main()
+thisApplication = Path(__file__).stem
+setApplication(thisApplication)
+logger = getLogger(includeConsole=False)
 
 # text templates used when creating or updating projects
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
 REQUIREMENTS_CONTENT = "pywin32\n"
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\n"
 ENV_CONTENT = "PYTHONPATH=src;ui\n"
-MAIN_PY_CONTENT = """from ui.mainMenu import mainMenu
+MAIN_PY_CONTENT = """from pathlib import Path
+from organiseMyProjects.logUtils import getLogger, setApplication
+
+thisApplication = Path(__file__).parent.name
+setApplication(thisApplication)
+
+logger = getLogger(includeConsole=False)
+
+from ui.mainMenu import mainMenu
+
 
 def main():
-    print("Starting application...")
+    global logger
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--confirm", action="store_true")
+    args = parser.parse_args()
+
+    dryRun = not args.confirm
+
+    logDir = Path.home() / ".local" / "state" / thisApplication
+    logDir.mkdir(parents=True, exist_ok=True)
+
+    logger = getLogger(
+        logDir=logDir,
+        includeConsole=True,
+        dryRun=dryRun,
+    )
+
+    logger.doing("main")
     mainMenu()
+    logger.done("main")
+
 
 if __name__ == "__main__":
     main()
@@ -69,6 +101,7 @@ VSCODE_SETTINGS_CONTENT = """{
 """
 
 TEMPLATE_DIR = Path(__file__).resolve().parent
+
 
 def createProject(projectName, dryRun: bool = False):
 
@@ -164,7 +197,6 @@ def createProject(projectName, dryRun: bool = False):
 
 
 def _backup_file(dest: Path, dryRun: bool = False) -> None:
-    """Rename dest to {stem}.YYMMDD{suffix} before overwriting."""
     if dest.exists():
         stamp = datetime.date.today().strftime("%y%m%d")
         backup = dest.with_name(f"{dest.stem}.{stamp}{dest.suffix}")
@@ -174,8 +206,6 @@ def _backup_file(dest: Path, dryRun: bool = False) -> None:
 
 
 def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
-
-    """Copy src to dest if dest doesn't exist or src is newer."""
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
@@ -186,13 +216,6 @@ def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
 
 
 def _update_text_file(dest: Path, content: str, dryRun: bool = False):
-
-    """Write *content* to *dest* if the file is missing or differs.
-
-    Uses binary comparison to avoid encoding issues on Windows where
-    the default text encoding may not be UTF-8.
-    """
-
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     new_bytes = content.encode("utf-8")
@@ -267,10 +290,13 @@ def updateProject(projectName, dryRun: bool = False):
 
     logger.done(f"project '{projectName}' updated")
 
+
 def main():
     global logger
+
     thisApplication = Path(__file__).stem
-    
+    setApplication(thisApplication)
+
     parser = argparse.ArgumentParser(
         description="Create or update a project scaffold"
     )
@@ -295,8 +321,15 @@ def main():
 
     args = parser.parse_args()
     dryRun = not args.confirm
-    print (thisApplication)
-    logger = getLogger(thisApplication, includeConsole=True, dryRun=dryRun)
+
+    logDir = Path.home() / ".local" / "state" / thisApplication
+    logDir.mkdir(parents=True, exist_ok=True)
+
+    logger = getLogger(
+        logDir=logDir,
+        includeConsole=True,
+        dryRun=dryRun,
+    )
     logger.doing(thisApplication)
 
     if args.update:

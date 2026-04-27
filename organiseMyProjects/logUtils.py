@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from logging import getLogger as _getLogger, log
+from logging import getLogger as _getLogger
 from pathlib import Path
 from typing import Any, MutableMapping, Optional
 
@@ -17,7 +17,9 @@ from typing import Any, MutableMapping, Optional
 _initialized_log_files: set[str] = set()
 
 _DRY_RUN_PREFIX = "[] "
-thisApplication = "dummy" # this will be overridden by users to set the application name in logs, e.g. "myTool" or "createProject"
+
+thisApplication: str | None = None
+_applicationLogDir: Path | None = None
 
 class _OrganiseLoggerAdapter(logging.LoggerAdapter):
     """Logger adapter providing semantic log methods with optional dry-run prefixing."""
@@ -27,35 +29,69 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         self._dryRun = dryRun
         self._prefix = _DRY_RUN_PREFIX if dryRun else ""
 
-    def process(self, msg: str, kwargs: MutableMapping[str, Any]) -> tuple[str, MutableMapping[str, Any]]:
+    def process(
+        self, msg: str, kwargs: MutableMapping[str, Any]
+    ) -> tuple[str, MutableMapping[str, Any]]:
         """Pass through non-semantic calls (warning, error, debug) unchanged."""
         return msg, kwargs
 
     def info(self, message: str, *args, **kwargs) -> None:
-        """Log general information: '...message'"""
+        """Log general information: '...message'."""
         self.logger.info(f"...{message}", *args, **kwargs)
 
     def doing(self, message: str) -> None:
-        """Log a major action being taken: 'message...'"""
+        """Log a major action being taken: 'message...'."""
         self.logger.info(f"{message}...")
 
     def done(self, message: str) -> None:
-        """Log a completed action: '...message'"""
+        """Log a completed action: '...message'."""
         self.logger.info(f"...{message}")
 
     def value(self, message: str, variable) -> None:
-        """Log a name-value pair: '...message: variable'"""
+        """Log a name-value pair: '...message: variable'."""
         self.logger.info(f"...{message}: {variable}")
 
     def action(self, message: str, *args, **kwargs) -> None:
-        """Log a name-value pair: '...{prefix}message'"""
+        """Log a dry-run-aware action: '...{prefix}message'."""
         self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
 
-    # how do we use this prefix, for dry run should be applied when we have an action that would not be performed under dry run
-    # so we would have
-    #    log.action (f"message {variable}")
-    #    if not dryRun:
-    #       do the action
+
+def setApplication(name: str, logDir: Optional[Path] = None) -> None:
+    """Set the active application context for subsequent getLogger() calls."""
+    global thisApplication, _applicationLogDir
+
+    cleanedName = name.strip()
+    if not cleanedName:
+        raise ValueError("Application name must not be empty.")
+
+    thisApplication = cleanedName
+    _applicationLogDir = logDir or (Path.home() / ".local" / "state" / cleanedName)
+    _applicationLogDir.mkdir(parents=True, exist_ok=True)
+
+
+def getApplication() -> str:
+    """Return the active application context or fail fast if it was not set."""
+    if not thisApplication:
+        raise RuntimeError(
+            "Application logging context has not been set. "
+            "Call setApplication(name) in the entry point before importing modules "
+            "that call getLogger()."
+        )
+    return thisApplication
+
+
+def getApplicationLogDir() -> Path:
+    """Return the active application log directory or fail fast if unset."""
+    if _applicationLogDir is None:
+        raise RuntimeError("Application log directory has not been initialised.")
+    return _applicationLogDir
+
+def _resolveLoggerName(name: Optional[str]) -> str:
+    """Resolve an explicit logger name or the active application context."""
+    if name:
+        return name
+    return getApplication()
+
 
 def _defaultLogDir() -> Path:
     """
@@ -64,25 +100,26 @@ def _defaultLogDir() -> Path:
     Prefer a stable per-user location:
       ~/.local/state
 
-    Log files are stored under ~/.local/state/{name}/{name}-{date}.log
-    (This keeps logs out of repos and out of ~/.config)
+    Log files are stored under ~/.local/state/{name}/{name}-{date}.log.
     """
     return Path.home() / ".local" / "state"
+
 
 def _setupLogging(
     name: str,
     logDir: Optional[Path] = None,
     level: int = logging.INFO,
-    includeConsole: bool = False
+    includeConsole: bool = False,
 ) -> logging.Logger:
-    """
-    Internal helper to set up logging with file and optional console handlers.
-    """
+    """Set up logging with file and optional console handlers."""
     logger = _getLogger(name)
     logger.setLevel(level)
 
     if logDir is None:
-        logDir = _defaultLogDir() / name
+        if name == getApplication():
+            logDir = getApplicationLogDir()
+        else:
+            logDir = _defaultLogDir() / name
 
     logDir.mkdir(parents=True, exist_ok=True)
     date = datetime.date.today().isoformat()
@@ -103,8 +140,9 @@ def _setupLogging(
 
     return logger
 
+
 def getLogger(
-    name: str = "OrganiseMyTool",
+    name: Optional[str] = None,
     logDir: Optional[Path] = None,
     level: int = logging.INFO,
     includeConsole: bool = False,
@@ -113,22 +151,29 @@ def getLogger(
     """
     Convenience wrapper used by other scripts.
 
+    If name is omitted, the active application context set by setApplication()
+    is used. Passing name explicitly remains supported for specialised tools.
+
     Returns an _OrganiseLoggerAdapter with semantic log methods:
       doing(message)           – logs 'message...'
       done(message)            – logs '...message'
       info(message)            – logs '...message'
       value(message, variable) – logs '...message: variable'
       action(message)          – logs '...{prefix}message'
-    Pass dryRun=True to insert '[] ' only for action
+    Pass dryRun=True to insert '[] ' only for action.
     """
-    logger = _setupLogging(name, logDir=logDir, level=level, includeConsole=includeConsole)
+    loggerName = _resolveLoggerName(name)
+    logger = _setupLogging(
+        loggerName,
+        logDir=logDir,
+        level=level,
+        includeConsole=includeConsole,
+    )
     return _OrganiseLoggerAdapter(logger, dryRun=dryRun)
 
 
 def setLogLevel(level: int, targetLogger: Optional[logging.Logger] = None) -> None:
-    """
-    Set logging level for the specified logger.
-    """
+    """Set logging level for the specified logger."""
     if targetLogger is None:
         targetLogger = _getLogger()
 
@@ -143,7 +188,8 @@ def setLogLevel(level: int, targetLogger: Optional[logging.Logger] = None) -> No
 def cleanOldLogFiles(logDir: Path, daysToKeep: int) -> tuple[int, list[str]]:
     """
     Remove log files older than specified days.
-    Returns (count_removed, list_of_removed_files)
+
+    Returns (count_removed, list_of_removed_files).
     """
     targetDir = logDir.expanduser().resolve()
     if not targetDir.exists():
@@ -161,12 +207,10 @@ def cleanOldLogFiles(logDir: Path, daysToKeep: int) -> tuple[int, list[str]]:
                 removedCount += 1
                 removedFiles.append(logFile.name)
         except (OSError, ValueError):
-            # keep going; callers can log if they care
             continue
 
     return removedCount, removedFiles
 
-# logUtils.py
 
 def drawBox(
     message: str,
@@ -174,62 +218,37 @@ def drawBox(
     corner_char: str = "+",
     side_char: str = "│",
     padding: int = 2,
-    logger=None
+    logger=None,
 ) -> None:
-    """
-    Print a nicely formatted ASCII box around a log message.
-    
-    Useful for making important log entries stand out:
-    
-    +──────────────────────────────────────────────────────────┐
-    │  [ERROR] Database connection failed                      │
-    │  Attempted 3 retries. Check credentials and network.     │
-    └──────────────────────────────────────────────────────────┘
-
-    Args:
-        message: The text to display inside the box (can be multi-line)
-        border_char: Character for horizontal lines
-        corner_char: Corner characters
-        side_char: Vertical bar character
-        padding: Spaces between text and sides
-        logger: Optional logger instance (e.g. logging.getLogger())
-                If provided, uses logger instead of print()
-    """
-
-    # Split into lines and calculate content width
+    """Print or log a formatted ASCII box around a message."""
     lines = message.splitlines()
     if not lines:
         lines = ["(empty message)"]
 
     contentWidth = max(len(line) for line in lines)
     innerWidth = contentWidth + padding * 2
+    topBottom = corner_char + border_char * innerWidth + corner_char
 
-    # Build border
-    top_bottom = corner_char + border_char * innerWidth + corner_char
-
-    # Header line with level
     header = f"{lines[0]}"
     headerPadding = innerWidth - len(header) - padding
     headerLine = f"{side_char}{' ' * padding}{header}{' ' * headerPadding}{side_char}"
 
-    # Prepare body lines
     bodyLines = []
     for line in lines[1:]:
         padRight = innerWidth - len(line) - padding
         bodyLines.append(f"{side_char}{' ' * padding}{line}{' ' * padRight}{side_char}")
 
-    # Output
-    output_lines = [
-        top_bottom,
+    outputLines = [
+        topBottom,
         headerLine,
         *(bodyLines if len(lines) > 1 else []),
-        top_bottom
+        topBottom,
     ]
 
     if logger is not None:
         rawLogger = logger.logger if isinstance(logger, logging.LoggerAdapter) else logger
-        for outLine in output_lines:
+        for outLine in outputLines:
             rawLogger.info(outLine)
     else:
-        for outLine in output_lines:
+        for outLine in outputLines:
             print(outLine)

@@ -164,13 +164,21 @@ organiseMyProjects/
 - **Purpose**: Package-level logging utility
 - **Type**: PACKAGE UTILITY (NOT copied to new projects, but accessible via package import)
 - **Key Functions**:
-  - `thisApplication` - name of the current application (derived from caller module) and passed to `getLogger` for consistent logger naming
-  - `getLogger(name)` - Get a logger instance (from standard logging module)
-  - `setupLogging(title)` - Configure logging with file handler
-- **Usage**: 
-  - From package: `from organiseMyProjects.logUtils import getLogger, thisApplication`
-  - Example: `logger = getLogger(thisApplication)`
-- **Note**: New projects should implement their own logging based on their needs, but can reference this utility for setup patterns
+  - `setApplication(name, logDir=None)` - Set the active application context and create the log directory (`~/.local/state/<name>/` by default)
+  - `getApplication()` - Return the active application name (raises `RuntimeError` if not set)
+  - `getApplicationLogDir()` - Return the active application log directory (raises `RuntimeError` if not set)
+  - `getLogger(name=None, logDir=None, includeConsole=False, dryRun=False)` - Return a logger adapter with semantic methods (`doing`, `done`, `info`, `value`, `action`)
+  - `drawBox(message, logger=None)` - Print or log a formatted ASCII box
+  - `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than specified days
+- **Usage**:
+  - Entry point: `from organiseMyProjects.logUtils import getLogger, setApplication`
+  - Helper modules: `from organiseMyProjects.logUtils import getLogger`
+  - Example entry point setup:
+    ```python
+    thisApplication = Path(__file__).parent.name
+    setApplication(thisApplication)
+    logger = getLogger(includeConsole=True, dryRun=dryRun)
+    ```
 
 ### globalVars.py
 - **Purpose**: Global constants and configuration
@@ -230,9 +238,12 @@ lintGuiNaming("path/to/directory")
 runLinter()  # CLI interface
 
 # Use logging utility
-from organiseMyProjects.logUtils import getLogger, thisApplication
-logger = getLogger(thisApplication)
-logger.info("This is a log message")
+from pathlib import Path
+from organiseMyProjects.logUtils import getLogger, setApplication
+thisApplication = Path(__file__).parent.name
+setApplication(thisApplication)
+logger = getLogger(includeConsole=True)
+logger.doing("starting work")
 ```
 
 ## Development Workflow

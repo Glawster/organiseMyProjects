@@ -10,14 +10,13 @@
 4.  [Project Structure Standard](#project-structure-standard)\
 5.  [CLI Design Standards](#cli-design-standards)\
 6.  [Environment & Dependency Policy](#environment--dependency-policy)\
-7.  [Framework Guidelines](#framework-guidelines)\
-8.  [Patterns](#patterns)\
-9.  [Error Handling & Logging](#error-handling--logging)\
-10. [Security Standards](#security-standards)\
-11. [Testing Standards](#testing-standards)\
-12. [Performance Guidelines](#performance-guidelines)\
-13. [Refactoring Guidelines](#refactoring-guidelines)\
-14. [Common Principles to Always Follow](#common-principles-to-always-follow)
+7.  [Patterns](#patterns)\
+8.  [Error Handling & Logging](#error-handling--logging)\
+9.  [Security Standards](#security-standards)\
+10. [Testing Standards](#testing-standards)\
+11. [Performance Guidelines](#performance-guidelines)\
+12. [Refactoring Guidelines](#refactoring-guidelines)\
+13. [Common Principles to Always Follow](#common-principles-to-always-follow)
 
 ------------------------------------------------------------------------
 
@@ -183,6 +182,12 @@ logger = getLogger(includeConsole=False)
 ~/.local/state/<thisApplication>/
 ```
 
+An optional `logDir` path can override the default log directory:
+
+``` python
+setApplication(thisApplication, logDir=Path("/custom/log/dir"))
+```
+
 After `setApplication()` has run, do not pass `name` or `logDir` to `getLogger()` for normal application logging. `logUtils` owns that context.
 
 ### Helper modules
@@ -268,6 +273,7 @@ logger.done("scan complete")             # → ...scan complete
 logger.info("found n items")             # → ...found n items
 logger.value("source dir", path)         # → ...source dir: /path
 logger.action("moving file: src → dest") # → ...[] moving file: src → dest  (when dryRun=True)
+                                         # → ...moving file: src → dest     (when dryRun=False)
 ```
 
 ### The `action()` / dry-run guard pattern
@@ -326,6 +332,51 @@ If `setApplication()` has not been called before `getLogger()` is used without a
 from organiseMyProjects.logUtils import drawBox
 
 drawBox("Sync complete\n3 updated, 0 failed", logger=logger)
+```
+
+------------------------------------------------------------------------
+
+### Bash Logging (logUtils.sh)
+
+Bash scripts must source `logUtils.sh` from the `organiseMyProjects` package.
+
+#### Sourcing and initialisation
+
+``` bash
+source "$(python3 -c 'import organiseMyProjects, os; print(os.path.dirname(organiseMyProjects.__file__))')/logUtils.sh"
+setApplication "myScript"
+```
+
+`setApplication "myScript"` writes logs to `~/.local/state/myScript/myScript-<date>.log`.
+
+An optional base directory can be supplied:
+
+``` bash
+setApplication "myScript" "/tmp/logs"
+```
+
+#### Semantic log functions
+
+``` bash
+log_doing "scanning files"           #  →  scanning files...
+log_done  "scan complete"            #  →  ...scan complete
+log_info  "found 5 items"            #  →  ...found 5 items
+log_value "source dir" "/home/andy"  #  →  ...source dir: /home/andy
+log_action "moving file: a → b"      #  →  ...[] moving file: a → b  (when dryRun is non-empty)
+                                     #  →  ...moving file: a → b     (when dryRun is unset/empty)
+log_warn  "file not found"           #  →  WARNING: file not found
+log_error "fatal problem"            #  →  ERROR: fatal problem  (stderr)
+```
+
+#### The `log_action()` / dry-run guard pattern (bash)
+
+``` bash
+dryRun=1  # non-empty = dry-run; unset or empty = live
+
+log_action "moving file: $src → $dest"
+if [[ -z "${dryRun:-}" ]]; then
+    mv "$src" "$dest"
+fi
 ```
 
 ------------------------------------------------------------------------

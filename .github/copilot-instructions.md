@@ -277,6 +277,28 @@ logger.action(f"moving file: {src} → {dest}")
 if not dryRun:
     shutil.move(src, dest)
 ```
+### What not to do
+
+#### Do not do this:
+``` python
+logger.info("...writing file")
+logger.info("would write file")
+logger.info ("[] writing file")
+``` 
+#### Do not branch logging:
+``` python
+if dryRun:
+    logger.info("would write file")
+else:
+    logger.info("writing file")
+```
+#### Correct Pattern
+``` python
+logger.action("write polls.csv: %s rows", count)
+
+if not dryRun:
+    writeCsv(...)
+```
 
 ### No fallback logging
 
@@ -314,6 +336,7 @@ Use `--confirm` as the CLI flag. Never expose `--dry-run` as the user-facing fla
 
 ``` python
 parser.add_argument(
+    "-y",
     "--confirm",
     dest="confirm",
     action="store_true",
@@ -329,12 +352,6 @@ Guard operations:
 ``` python
 # For logging: use logger.action()
 logger.action(f"moving file: {src} → {dest}")
-if not dryRun:
-    shutil.move(src, dest)
-
-# For print() console output only:
-prefix = "[] " if dryRun else ""
-print(f"{prefix}moving file: {src}")
 if not dryRun:
     shutil.move(src, dest)
 ```

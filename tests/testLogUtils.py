@@ -1,6 +1,7 @@
 """
 Tests for logUtils.py functionality.
 """
+
 import datetime
 import logging
 import sys
@@ -11,7 +12,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.logUtils import _defaultLogDir, drawBox, getLogger, thisApplication
+from organiseMyProjects.logUtils import (
+    _defaultLogDir,
+    drawBox,
+    getLogger,
+    thisApplication,
+)
 
 
 class TestDefaultLogDir:
@@ -25,12 +31,19 @@ class TestDefaultLogDir:
     def testGetLoggerCreatesNameSubdirAndDateFile(self, tmp_path, monkeypatch):
         """Test that getLogger uses ~/.local/state/{name}/{name}-{date}.log structure."""
         import organiseMyProjects.logUtils as logUtils
+
         monkeypatch.setattr(logUtils, "_defaultLogDir", lambda: tmp_path)
         monkeypatch.setattr(logUtils, "thisApplication", "testAppName")
         logger = getLogger(logUtils.thisApplication)
         expectedDate = datetime.date.today().isoformat()
-        expectedFile = tmp_path / logUtils.thisApplication / f"{logUtils.thisApplication}-{expectedDate}.log"
-        assert expectedFile.exists(), f"Expected log file {expectedFile} was not created"
+        expectedFile = (
+            tmp_path
+            / logUtils.thisApplication
+            / f"{logUtils.thisApplication}-{expectedDate}.log"
+        )
+        assert (
+            expectedFile.exists()
+        ), f"Expected log file {expectedFile} was not created"
 
 
 class TestDrawBox:
@@ -107,7 +120,9 @@ class TestDrawBox:
         lines = captured.out.splitlines()
 
         widths = {len(line) for line in lines}
-        assert len(widths) == 1, f"All lines should have equal width, got widths: {widths}"
+        assert (
+            len(widths) == 1
+        ), f"All lines should have equal width, got widths: {widths}"
 
     def testDrawBoxWithLogger(self):
         """Test that when a logger is provided, output goes to it instead of stdout."""
@@ -151,8 +166,6 @@ class TestDrawBox:
         assert len(lines[0]) == 1 + len(message) + 4 * 2 + 1
         # Content line should have 4 spaces of padding on each side
         assert lines[1] == "│    X    │"
-
-
 
 
 class TestGetLoggerDryRun:
@@ -274,12 +287,11 @@ class TestSemanticLogMethods:
         logger = getLogger("testActionDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.action("moving file")
-        assert records and records[0].getMessage() == "...[] moving file"
+        assert records and records[0].getMessage() == "[] moving file..."
 
     def testActionLiveNoPrefixInserted(self, tmp_path):
         """Test that action() does not insert '[] ' prefix when dryRun=False."""
         logger = getLogger("testActionLive", logDir=tmp_path, dryRun=False)
         records = self._captureRecords(logger)
         logger.action("moving file")
-        assert records and records[0].getMessage() == "...moving file"
-
+        assert records and records[0].getMessage() == "moving file..."

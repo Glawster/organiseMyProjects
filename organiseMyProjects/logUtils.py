@@ -21,6 +21,7 @@ _DRY_RUN_PREFIX = "[] "
 thisApplication: str | None = None
 _applicationLogDir: Path | None = None
 
+
 class _OrganiseLoggerAdapter(logging.LoggerAdapter):
     """Logger adapter providing semantic log methods with optional dry-run prefixing."""
 
@@ -52,8 +53,8 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         self.logger.info(f"...{message}: {variable}")
 
     def action(self, message: str, *args, **kwargs) -> None:
-        """Log a dry-run-aware action: '...{prefix}message'."""
-        self.logger.info(f"...{self._prefix}{message}", *args, **kwargs)
+        """Log a dry-run-aware action: '{prefix}message...'."""
+        self.logger.info(f"{self._prefix}{message}...", *args, **kwargs)
 
 
 def setApplication(name: str, logDir: Optional[Path] = None) -> None:
@@ -85,6 +86,7 @@ def getApplicationLogDir() -> Path:
     if _applicationLogDir is None:
         raise RuntimeError("Application log directory has not been initialised.")
     return _applicationLogDir
+
 
 def _resolveLoggerName(name: Optional[str]) -> str:
     """Resolve an explicit logger name or the active application context."""
@@ -132,7 +134,9 @@ def _setupLogging(
         logger.addHandler(fileHandler)
         _initialized_log_files.add(str(logFile))
 
-    if includeConsole and not any(type(h) is logging.StreamHandler for h in logger.handlers):
+    if includeConsole and not any(
+        type(h) is logging.StreamHandler for h in logger.handlers
+    ):
         consoleHandler = logging.StreamHandler()
         consoleFormatter = logging.Formatter("%(levelname)s - %(message)s")
         consoleHandler.setFormatter(consoleFormatter)
@@ -159,7 +163,7 @@ def getLogger(
       done(message)            – logs '...message'
       info(message)            – logs '...message'
       value(message, variable) – logs '...message: variable'
-      action(message)          – logs '...{prefix}message'
+            action(message)          – logs '{prefix}message...'
     Pass dryRun=True to insert '[] ' only for action.
     """
     loggerName = _resolveLoggerName(name)
@@ -246,7 +250,9 @@ def drawBox(
     ]
 
     if logger is not None:
-        rawLogger = logger.logger if isinstance(logger, logging.LoggerAdapter) else logger
+        rawLogger = (
+            logger.logger if isinstance(logger, logging.LoggerAdapter) else logger
+        )
         for outLine in outputLines:
             rawLogger.info(outLine)
     else:

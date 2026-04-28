@@ -29,21 +29,17 @@ class TestDefaultLogDir:
         assert _defaultLogDir() == expected
 
     def testGetLoggerCreatesNameSubdirAndDateFile(self, tmp_path, monkeypatch):
-        """Test that getLogger uses ~/.local/state/{name}/{name}-{date}.log structure."""
+        """Test that getLogger uses applicationLogDir/{name}-{date}.log when name matches the application context."""
         import organiseMyProjects.logUtils as logUtils
-
-        monkeypatch.setattr(logUtils, "_defaultLogDir", lambda: tmp_path)
-        monkeypatch.setattr(logUtils, "thisApplication", "testAppName")
-        logger = getLogger(logUtils.thisApplication)
+        appName = "testAppName"
+        appLogDir = tmp_path / appName
+        appLogDir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(logUtils, "thisApplication", appName)
+        monkeypatch.setattr(logUtils, "_applicationLogDir", appLogDir)
+        logger = getLogger(appName)
         expectedDate = datetime.date.today().isoformat()
-        expectedFile = (
-            tmp_path
-            / logUtils.thisApplication
-            / f"{logUtils.thisApplication}-{expectedDate}.log"
-        )
-        assert (
-            expectedFile.exists()
-        ), f"Expected log file {expectedFile} was not created"
+        expectedFile = appLogDir / f"{appName}-{expectedDate}.log"
+        assert expectedFile.exists(), f"Expected log file {expectedFile} was not created"
 
 
 class TestDrawBox:

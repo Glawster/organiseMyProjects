@@ -34,19 +34,21 @@ SYNC_COMMENT = (
     "<!-- synced from Glawster/organiseMyProjects -- do not edit directly -->\n"
 )
 
+# keep these in alphabetical order for easier maintenance
 TARGET_REPOS = [
-    "Glawster/organiseMyPhotos",
-    "Glawster/linuxMigration",
-    "Glawster/organiseMyFooty",
-    "Glawster/organiseMyVideo",
-    "Glawster/createDirPerFile",
-    "Glawster/b2-backup-scripts",
-    "Glawster/sidecarEditor",
+    "Glawster/organiseMyAlts",
     "Glawster/myDavinciScripts",
+    "Glawster/organiseMyFooty",
+    "Glawster/organiseMyPhotos",
+    "Glawster/organiseMyVideo",
+    "Glawster/b2-backup-scripts",
+    "Glawster/batchImageProcessing",
+    "Glawster/comfyuiWorkflows",
+    "Glawster/createDirPerFile",
     "Glawster/directPayments",
     "Glawster/imageRecognition",
-    "Glawster/comfyuiWorkflows",
-    "Glawster/batchImageProcessing",
+    "Glawster/linuxMigration",
+    "Glawster/sidecarEditor",
     "Glawster/AbilityUsageTracker",
     "Glawster/OutdatedItemCleaner",
     "Glawster/wheresItAt",

@@ -32,7 +32,7 @@ from organiseMyProjects.createProject import (
 
 def assertNoUiScaffolds(projectPath: Path):
     assert not (projectPath / "ui").exists()
-    assert not (projectPath / "Qt").exists()
+    assert not (projectPath / "qt").exists()
 
 
 class TestCreateProject:
@@ -152,13 +152,13 @@ class TestCreateProject:
         with patch('organiseMyProjects.createProject.subprocess.run'):
             createProject(str(projectPath), includeQt=True)
 
-        assert (projectPath / "Qt" / "__init__.py").exists()
+        assert (projectPath / "qt" / "__init__.py").exists()
         assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
-        assert (projectPath / "Qt" / "styleUtils.py").exists()
-        assert (projectPath / "Qt" / "mainMenu.py").exists()
-        assert (projectPath / "Qt" / "baseFrame.py").exists()
-        assert (projectPath / "Qt" / "frameTemplate.py").exists()
-        assert (projectPath / "Qt" / "statusFrame.py").exists()
+        assert (projectPath / "qt" / "styleUtils.py").exists()
+        assert (projectPath / "qt" / "mainMenu.py").exists()
+        assert (projectPath / "qt" / "baseFrame.py").exists()
+        assert (projectPath / "qt" / "frameTemplate.py").exists()
+        assert (projectPath / "qt" / "statusFrame.py").exists()
     
     def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, caplog):
         """Test behavior when project directory already exists."""
@@ -275,8 +275,8 @@ class TestUpdateProject:
             updateProject(str(projectPath), includeQt=True)
 
         assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
-        assert (projectPath / "Qt" / "__init__.py").exists()
-        assert (projectPath / "Qt" / "mainMenu.py").exists()
+        assert (projectPath / "qt" / "__init__.py").exists()
+        assert (projectPath / "qt" / "mainMenu.py").exists()
 
 
 class TestUtilityFunctions:

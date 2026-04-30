@@ -31,9 +31,9 @@ except ModuleNotFoundError as exc:
     tkinterMainMenu = None
 
 try:
-    from Qt.mainMenu import mainMenu as qtMainMenu
+    from qt.mainMenu import mainMenu as qtMainMenu
 except ModuleNotFoundError as exc:
-    if exc.name not in {"Qt", "PySide6"}:
+    if exc.name not in {"qt", "PySide6"}:
         raise
     qtMainMenu = None
 
@@ -121,7 +121,7 @@ VSCODE_SETTINGS_CONTENT = """{
 
 TEMPLATE_DIR = Path(__file__).resolve().parent
 UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
-QT_TEMPLATE_DIR = TEMPLATE_DIR / "Qt"
+QT_TEMPLATE_DIR = TEMPLATE_DIR / "qt"
 UI_TEMPLATE_FILES = [
     "styleUtils.py",
     "mainMenu.py",
@@ -143,7 +143,7 @@ def _build_env_content(includeUi: bool = False, includeQt: bool = False) -> str:
     if includeUi:
         pythonPaths.append("ui")
     if includeQt:
-        pythonPaths.append("Qt")
+        pythonPaths.append("qt")
     return f"PYTHONPATH={';'.join(pythonPaths)}\n"
 
 
@@ -160,7 +160,7 @@ def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
         )
     if includeQt:
         modules.extend(
-            (QT_TEMPLATE_DIR / src_name, Path("Qt") / src_name)
+            (QT_TEMPLATE_DIR / src_name, Path("qt") / src_name)
             for src_name in QT_TEMPLATE_FILES
         )
     return modules
@@ -190,14 +190,14 @@ def createProject(
         if includeUi:
             (basePath / "ui").mkdir()
         if includeQt:
-            (basePath / "Qt").mkdir()
+            (basePath / "qt").mkdir()
 
         # Make directories importable packages
         (basePath / "src" / "__init__.py").touch()
         if includeUi:
             (basePath / "ui" / "__init__.py").touch()
         if includeQt:
-            (basePath / "Qt" / "__init__.py").touch()
+            (basePath / "qt" / "__init__.py").touch()
 
     # Create core files
     logger.action("writing core files")
@@ -313,14 +313,14 @@ def updateProject(
 
     logger.doing(f"updating project at {basePath}")
     installUi = includeUi or (basePath / "ui").exists()
-    installQt = includeQt or (basePath / "Qt").exists()
+    installQt = includeQt or (basePath / "qt").exists()
     logger.action("ensuring directories and packages")
     if not dryRun:
         folders = ["src", "tests", "logs", ".github"]
         if installUi:
             folders.append("ui")
         if installQt:
-            folders.append("Qt")
+            folders.append("qt")
         for folder in folders:
             (basePath / folder).mkdir(parents=True, exist_ok=True)
 
@@ -328,7 +328,7 @@ def updateProject(
         if installUi:
             (basePath / "ui" / "__init__.py").touch(exist_ok=True)
         if installQt:
-            (basePath / "Qt" / "__init__.py").touch(exist_ok=True)
+            (basePath / "qt" / "__init__.py").touch(exist_ok=True)
 
     _update_text_file(basePath / ".gitignore", GITIGNORE_CONTENT, dryRun)
     _update_text_file(basePath / "requirements.txt", REQUIREMENTS_CONTENT, dryRun)
@@ -394,7 +394,7 @@ def main():
         "-qt",
         "--qt",
         action="store_true",
-        help="install Qt UI templates in a Qt package",
+        help="install Qt UI templates in a qt package",
     )
     parser.add_argument(
         "--confirm",

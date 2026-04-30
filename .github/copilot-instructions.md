@@ -88,7 +88,7 @@ Larger applications may also use `src/` and `ui/` folders:
     │       ├── utils/
     │       └── patterns/
     ├── ui/
-    ├── Qt/ui
+    ├── qt/ui
     ├── tests/
     ├── requirements.txt
     ├── README.md

@@ -25,12 +25,16 @@ logger = getLogger(includeConsole=False)
 
 try:
     from ui.mainMenu import mainMenu as tkinterMainMenu
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name != "ui":
+        raise
     tkinterMainMenu = None
 
 try:
     from Qt.mainMenu import mainMenu as qtMainMenu
-except ImportError:
+except ModuleNotFoundError as exc:
+    if exc.name not in {"Qt", "PySide6"}:
+        raise
     qtMainMenu = None
 
 
@@ -60,7 +64,10 @@ def main():
     elif qtMainMenu is not None:
         qtMainMenu()
     else:
-        logger.info("No UI scaffold installed. Run `createProject --update --ui` and/or `createProject --update -qt` to add GUI templates.")
+        logger.info(
+            "No UI scaffold installed. Run `createProject --update --ui` "
+            "and/or `createProject --update -qt` to add GUI templates."
+        )
     logger.done("main")
 
 

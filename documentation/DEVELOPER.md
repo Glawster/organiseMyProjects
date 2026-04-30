@@ -12,7 +12,7 @@ The `organiseMyProjects` package consists of several key components:
 The main module responsible for project scaffolding functionality.
 
 **Key Functions:**
-- `createProject(projectName, includeUi=False, includeQt=False)` - Creates a new project with optional tkinter and lowercase `qt` scaffolds
+- `createProject(projectName, includeUi=False, includeQt=False)` - Creates a new project with optional tkinter and Qt scaffolds
 - `updateProject(projectName)` - Updates existing project with latest templates
 - `_copy_if_newer(src, dest)` - Utility for conditional file copying
 - `_update_text_file(dest, content)` - Utility for updating text files with binary comparison

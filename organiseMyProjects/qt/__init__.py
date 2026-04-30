@@ -1,1 +1,1 @@
-"""qt scaffolding templates for createProject."""
+"""Qt scaffolding templates for createProject."""

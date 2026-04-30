@@ -29,6 +29,7 @@ Project-specific details belong in:
 .github/additional-copilot-instructions.md
 
 This document defines universal rules.
+If any other repository guidance contradicts this file, this file takes precedence and the conflicting guidance should be removed or aligned.
 
 ------------------------------------------------------------------------
 

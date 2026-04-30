@@ -111,7 +111,7 @@ Command-line interface for the GUI naming linter.
 
 The package includes template files that are distributed with the package:
 
-- `copilot-instructions.md` - GitHub Copilot development guidelines
+- `.github/copilot-instructions.md` - Master GitHub Copilot development guidelines
 - Template Python modules (copied to new projects)
 
 ## Resource Access Pattern
@@ -125,9 +125,9 @@ except ImportError:
     # Fallback for Python < 3.9
     from importlib_resources import files
 
-# Access package resources
-package_files = files('organiseMyProjects')
-copilot_file = package_files / 'copilot-instructions.md'
+# Access packaged resources
+repo_root = files('organiseMyProjects').parent
+copilot_file = repo_root / '.github' / 'copilot-instructions.md'
 content = copilot_file.read_text()
 ```
 

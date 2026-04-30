@@ -63,6 +63,17 @@ This document defines universal rules.
 -   Utilities isolated in dedicated modules\
 -   Tests mirror source structure
 
+## Code Organisation & Function Naming Pattern
+
+-   Group functions by domain or purpose\
+-   Use clear `##` section headers with short lowercase names\
+-   Keep public workflow near the top and low-level utilities near the bottom\
+-   Keep functions alphabetically ordered within sections when practical\
+-   Use camelCase function names with an `action + Domain` pattern such as `loadConfig`, `waitForPageLoaded`, and `extractContactName`\
+-   Start function names with a verb and avoid vague names or unclear abbreviations\
+-   Prefer standard sections where applicable: `lifecycle`, `workflow`, `setup`, `waits`, `extraction`, `validation`, `persistence`, `utilities`\
+-   Place private helpers in `utilities` or the relevant section and prefix them with `_`
+
 ------------------------------------------------------------------------
 
 # Project Structure Standard

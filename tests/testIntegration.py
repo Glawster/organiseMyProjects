@@ -246,4 +246,4 @@ class TestResourceAccess:
         assert len(content) > 0
         assert "GitHub Copilot Instructions" in content
         assert "Code Organisation & Function Naming Pattern" in content
-        assert "action + Domain" in content
+        assert "Domain + Action" in content

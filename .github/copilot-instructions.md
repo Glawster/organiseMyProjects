@@ -69,8 +69,8 @@ This document defines universal rules.
 -   Use clear `##` section headers with short lowercase names\
 -   Keep public workflow near the top and low-level utilities near the bottom\
 -   Keep functions alphabetically ordered within sections when practical\
--   Use camelCase function names with an `action + Domain` pattern such as `loadConfig`, `waitForPageLoaded`, and `extractContactName`\
--   Start function names with a verb and avoid vague names or unclear abbreviations\
+-   Use camelCase function names with a `Domain + Action` pattern such as `configLoad`, `configSave`, and `contactNameExtract`\
+-   Start function names with the domain or context, keep the action clear, and avoid vague names or unclear abbreviations\
 -   Prefer standard sections where applicable: `lifecycle`, `workflow`, `setup`, `waits`, `extraction`, `validation`, `persistence`, `utilities`\
 -   Place private helpers in `utilities` or the relevant section and prefix them with `_`
 

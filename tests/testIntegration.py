@@ -247,3 +247,4 @@ class TestResourceAccess:
         assert "GitHub Copilot Instructions" in content
         assert "Code Organisation & Function Naming Pattern" in content
         assert "Domain + Action" in content
+        assert "Determine the functional domains on an ongoing basis" in content

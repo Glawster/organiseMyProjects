@@ -66,6 +66,7 @@ This document defines universal rules.
 ## Code Organisation & Function Naming Pattern
 
 -   Group functions by domain or purpose\
+-   Determine the functional domains on an ongoing basis while editing the file\
 -   Use clear `##` section headers with short lowercase names\
 -   Keep public workflow near the top and low-level utilities near the bottom\
 -   Keep functions alphabetically ordered within sections when practical\

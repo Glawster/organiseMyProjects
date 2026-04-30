@@ -30,6 +30,11 @@ from organiseMyProjects.createProject import (
 )
 
 
+def assertNoUiScaffolds(projectPath: Path):
+    assert not (projectPath / "ui").exists()
+    assert not (projectPath / "Qt").exists()
+
+
 class TestCreateProject:
     """Test cases for createProject function."""
     
@@ -50,8 +55,7 @@ class TestCreateProject:
         
         # Verify package init files
         assert (projectPath / "src" / "__init__.py").exists()
-        assert not (projectPath / "ui").exists()
-        assert not (projectPath / "Qt").exists()
+        assertNoUiScaffolds(projectPath)
     
     def testCreateProjectCoreFiles(self, temp_dir, sample_project_name):
         """Test that createProject creates core configuration files."""
@@ -120,8 +124,7 @@ class TestCreateProject:
         assert (projectPath / "src" / "globalVars.py").exists(), "globalVars.py should be copied to new projects"
         assert (projectPath / "tests" / "runLinter.py").exists()
         assert (projectPath / "tests" / "guiNamingLinter.py").exists()
-        assert not (projectPath / "ui").exists()
-        assert not (projectPath / "Qt").exists()
+        assertNoUiScaffolds(projectPath)
         
         # Verify package utilities are NOT copied
         assert not (projectPath / "src" / "logUtils.py").exists(), "logUtils.py should NOT be copied to new projects"
@@ -195,8 +198,7 @@ class TestUpdateProject:
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
-        assert not (projectPath / "ui").exists()
-        assert not (projectPath / "Qt").exists()
+        assertNoUiScaffolds(projectPath)
     
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""

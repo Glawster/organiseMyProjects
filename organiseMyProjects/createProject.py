@@ -60,7 +60,7 @@ def main():
     elif qtMainMenu is not None:
         qtMainMenu()
     else:
-        logger.info("No UI scaffold installed. Run createProject --update --ui and/or createProject --update -qt to add GUI templates.")
+        logger.info("No UI scaffold installed. Run `createProject --update --ui` and/or `createProject --update -qt` to add GUI templates.")
     logger.done("main")
 
 
@@ -379,7 +379,6 @@ def main():
         help="Refresh an existing project instead of creating a new one",
     )
     parser.add_argument(
-        "-ui",
         "--ui",
         action="store_true",
         help="install tkinter UI templates in a ui package",

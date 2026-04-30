@@ -13,11 +13,13 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from organiseMyProjects.createProject import (
-    createProject, 
-    updateProject, 
+    createProject,
+    updateProject,
+    main as createProjectMain,
     _backup_file,
-    _copy_if_newer, 
+    _copy_if_newer,
     _update_text_file,
+    _build_env_content,
     GITIGNORE_CONTENT,
     REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
@@ -43,14 +45,14 @@ class TestCreateProject:
         # Verify directory structure
         assert projectPath.exists()
         assert (projectPath / "src").exists()
-        assert (projectPath / "ui").exists() 
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
         
         # Verify package init files
         assert (projectPath / "src" / "__init__.py").exists()
-        assert (projectPath / "ui" / "__init__.py").exists()
+        assert not (projectPath / "ui").exists()
+        assert not (projectPath / "Qt").exists()
     
     def testCreateProjectCoreFiles(self, temp_dir, sample_project_name):
         """Test that createProject creates core configuration files."""
@@ -79,7 +81,7 @@ class TestCreateProject:
         assert (projectPath / ".gitignore").read_text() == GITIGNORE_CONTENT
         assert (projectPath / "requirements.txt").read_text() == REQUIREMENTS_CONTENT
         assert (projectPath / "dev-requirements.txt").read_text() == DEV_REQUIREMENTS_CONTENT
-        assert (projectPath / ".env").read_text() == ENV_CONTENT
+        assert (projectPath / ".env").read_text() == _build_env_content()
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (projectPath / ".pre-commit-config.yaml").read_text() == PRECOMMIT_CONTENT
         
@@ -109,7 +111,7 @@ class TestCreateProject:
         assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
     
     def testCreateProjectTemplateFiles(self, temp_dir, sample_project_name):
-        """Test that only template files (not package utilities) are copied."""
+        """Test that only non-UI template files are copied by default."""
         projectPath = temp_dir / sample_project_name
         
         with patch('organiseMyProjects.createProject.subprocess.run'):
@@ -117,17 +119,44 @@ class TestCreateProject:
         
         # Verify template files are copied
         assert (projectPath / "src" / "globalVars.py").exists(), "globalVars.py should be copied to new projects"
+        assert (projectPath / "tests" / "runLinter.py").exists()
+        assert (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert not (projectPath / "ui").exists()
+        assert not (projectPath / "Qt").exists()
+        
+        # Verify package utilities are NOT copied
+        assert not (projectPath / "src" / "logUtils.py").exists(), "logUtils.py should NOT be copied to new projects"
+        assert not (projectPath / "createProject.py").exists(), "createProject.py should NOT be copied to new projects"
+
+    def testCreateProjectUiTemplates(self, temp_dir, sample_project_name):
+        """Test that tkinter UI templates are copied only when requested."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            createProject(str(projectPath), includeUi=True)
+
+        assert (projectPath / "ui" / "__init__.py").exists()
+        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
         assert (projectPath / "ui" / "styleUtils.py").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
         assert (projectPath / "ui" / "baseFrame.py").exists()
         assert (projectPath / "ui" / "frameTemplate.py").exists()
         assert (projectPath / "ui" / "statusFrame.py").exists()
-        assert (projectPath / "tests" / "runLinter.py").exists()
-        assert (projectPath / "tests" / "guiNamingLinter.py").exists()
-        
-        # Verify package utilities are NOT copied
-        assert not (projectPath / "src" / "logUtils.py").exists(), "logUtils.py should NOT be copied to new projects"
-        assert not (projectPath / "createProject.py").exists(), "createProject.py should NOT be copied to new projects"
+
+    def testCreateProjectQtTemplates(self, temp_dir, sample_project_name):
+        """Test that Qt templates are copied only when requested."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            createProject(str(projectPath), includeQt=True)
+
+        assert (projectPath / "Qt" / "__init__.py").exists()
+        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
+        assert (projectPath / "Qt" / "styleUtils.py").exists()
+        assert (projectPath / "Qt" / "mainMenu.py").exists()
+        assert (projectPath / "Qt" / "baseFrame.py").exists()
+        assert (projectPath / "Qt" / "frameTemplate.py").exists()
+        assert (projectPath / "Qt" / "statusFrame.py").exists()
     
     def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, caplog):
         """Test behavior when project directory already exists."""
@@ -164,10 +193,11 @@ class TestUpdateProject:
         
         # Verify directories are created
         assert (projectPath / "src").exists()
-        assert (projectPath / "ui").exists()
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
+        assert not (projectPath / "ui").exists()
+        assert not (projectPath / "Qt").exists()
     
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
@@ -222,6 +252,30 @@ class TestUpdateProject:
             updateProject(str(projectPath))
 
         assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
+
+    def testUpdateProjectExistingUiTemplates(self, temp_dir, sample_project_name):
+        """Test that updateProject preserves and refreshes existing tkinter scaffolds."""
+        projectPath = temp_dir / sample_project_name
+        (projectPath / "ui").mkdir(parents=True)
+        (projectPath / "ui" / "__init__.py").touch()
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            updateProject(str(projectPath))
+
+        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
+        assert (projectPath / "ui" / "mainMenu.py").exists()
+
+    def testUpdateProjectCanAddQtTemplates(self, temp_dir, sample_project_name):
+        """Test that updateProject can add Qt scaffolding when requested."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        with patch('organiseMyProjects.createProject.subprocess.run'):
+            updateProject(str(projectPath), includeQt=True)
+
+        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
+        assert (projectPath / "Qt" / "__init__.py").exists()
+        assert (projectPath / "Qt" / "mainMenu.py").exists()
 
 
 class TestUtilityFunctions:
@@ -431,3 +485,36 @@ class TestDryRun:
         _update_text_file(dest, "some content", dryRun=True)
 
         assert not dest.exists(), "File must not be created in dry-run mode"
+
+
+class TestCliFlags:
+    """Test CLI flag handling for createProject."""
+
+    def testMainPassesUiAndQtFlagsToCreateProject(self):
+        with patch("organiseMyProjects.createProject.createProject") as mockCreate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "demo", "--ui", "-qt", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockCreate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=True,
+            includeQt=True,
+        )
+
+    def testMainPassesQtFlagToUpdateProject(self):
+        with patch("organiseMyProjects.createProject.updateProject") as mockUpdate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "--update", "-qt", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockUpdate.assert_called_once()
+        _, kwargs = mockUpdate.call_args
+        assert kwargs["dryRun"] is False
+        assert kwargs["includeUi"] is False
+        assert kwargs["includeQt"] is True

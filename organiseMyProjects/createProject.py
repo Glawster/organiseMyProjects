@@ -26,14 +26,14 @@ logger = getLogger(includeConsole=False)
 try:
     from ui.mainMenu import mainMenu as tkinterMainMenu
 except ModuleNotFoundError as exc:
-    if exc.name != "ui":
+    if exc.name is None or exc.name != "ui":
         raise
     tkinterMainMenu = None
 
 try:
     from qt.mainMenu import mainMenu as qtMainMenu
 except ModuleNotFoundError as exc:
-    if exc.name not in {"qt", "PySide6"}:
+    if exc.name is None or exc.name not in {"qt", "PySide6"}:
         raise
     qtMainMenu = None
 

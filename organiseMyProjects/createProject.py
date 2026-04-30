@@ -15,7 +15,6 @@ logger = getLogger(includeConsole=False)
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
 REQUIREMENTS_CONTENT = "pywin32\n"
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\n"
-ENV_CONTENT = "PYTHONPATH=src\n"
 MAIN_PY_CONTENT = """from pathlib import Path
 from organiseMyProjects.logUtils import getLogger, setApplication
 
@@ -61,7 +60,7 @@ def main():
     elif qtMainMenu is not None:
         qtMainMenu()
     else:
-        logger.info("No UI scaffold installed. Re-run createProject with --ui and/or --qt to add GUI templates.")
+        logger.info("No UI scaffold installed. Run createProject --update --ui and/or createProject --update -qt to add GUI templates.")
     logger.done("main")
 
 

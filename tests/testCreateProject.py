@@ -23,7 +23,6 @@ from organiseMyProjects.createProject import (
     GITIGNORE_CONTENT,
     REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
-    ENV_CONTENT,
     MAIN_PY_CONTENT,
     PRECOMMIT_CONTENT,
     PYTEST_INI_CONTENT,
@@ -513,8 +512,9 @@ class TestCliFlags:
             ):
                 createProjectMain()
 
-        mockUpdate.assert_called_once()
-        _, kwargs = mockUpdate.call_args
-        assert kwargs["dryRun"] is False
-        assert kwargs["includeUi"] is False
-        assert kwargs["includeQt"] is True
+        mockUpdate.assert_called_once_with(
+            Path.cwd(),
+            dryRun=False,
+            includeUi=False,
+            includeQt=True,
+        )

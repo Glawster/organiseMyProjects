@@ -42,6 +42,7 @@ class TestEndToEndWorkflow:
         # Verify project was created
         assert projectPath.exists()
         assert (projectPath / ".github" / "copilot-instructions.md").exists()
+        assert (projectPath / "ui" / "mainMenu.py").exists()
         
         # Step 2: Add some Python code with violations to the project
         uiDir = projectPath / "ui"

@@ -15,7 +15,6 @@ logger = getLogger(includeConsole=False)
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
 REQUIREMENTS_CONTENT = "pywin32\n"
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\n"
-ENV_CONTENT = "PYTHONPATH=src;ui\n"
 MAIN_PY_CONTENT = """from pathlib import Path
 from organiseMyProjects.logUtils import getLogger, setApplication
 
@@ -24,7 +23,19 @@ setApplication(thisApplication)
 
 logger = getLogger(includeConsole=False)
 
-from ui.mainMenu import mainMenu
+try:
+    from ui.mainMenu import mainMenu as tkinterMainMenu
+except ModuleNotFoundError as exc:
+    if exc.name != "ui":
+        raise
+    tkinterMainMenu = None
+
+try:
+    from qt.mainMenu import mainMenu as qtMainMenu
+except ModuleNotFoundError as exc:
+    if exc.name not in {"qt", "PySide6"}:
+        raise
+    qtMainMenu = None
 
 
 def main():
@@ -48,7 +59,15 @@ def main():
     )
 
     logger.doing("main")
-    mainMenu()
+    if tkinterMainMenu is not None:
+        tkinterMainMenu()
+    elif qtMainMenu is not None:
+        qtMainMenu()
+    else:
+        logger.info(
+            "No UI scaffold installed. Run `createProject --update --ui` "
+            "and/or `createProject --update -qt` to add GUI templates."
+        )
     logger.done("main")
 
 
@@ -101,9 +120,58 @@ VSCODE_SETTINGS_CONTENT = """{
 """
 
 TEMPLATE_DIR = Path(__file__).resolve().parent
+UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
+QT_TEMPLATE_DIR = TEMPLATE_DIR / "qt"
+UI_TEMPLATE_FILES = [
+    "styleUtils.py",
+    "mainMenu.py",
+    "baseFrame.py",
+    "frameTemplate.py",
+    "statusFrame.py",
+]
+QT_TEMPLATE_FILES = [
+    "styleUtils.py",
+    "mainMenu.py",
+    "baseFrame.py",
+    "frameTemplate.py",
+    "statusFrame.py",
+]
 
 
-def createProject(projectName, dryRun: bool = False):
+def _build_env_content(includeUi: bool = False, includeQt: bool = False) -> str:
+    pythonPaths = ["src"]
+    if includeUi:
+        pythonPaths.append("ui")
+    if includeQt:
+        pythonPaths.append("qt")
+    return f"PYTHONPATH={';'.join(pythonPaths)}\n"
+
+
+def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
+    modules = [
+        (TEMPLATE_DIR / "globalVars.py", Path("src") / "globalVars.py"),
+        (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
+        (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
+    ]
+    if includeUi:
+        modules.extend(
+            (UI_TEMPLATE_DIR / src_name, Path("ui") / src_name)
+            for src_name in UI_TEMPLATE_FILES
+        )
+    if includeQt:
+        modules.extend(
+            (QT_TEMPLATE_DIR / src_name, Path("qt") / src_name)
+            for src_name in QT_TEMPLATE_FILES
+        )
+    return modules
+
+
+def createProject(
+    projectName,
+    dryRun: bool = False,
+    includeUi: bool = False,
+    includeQt: bool = False,
+):
 
     basePath = Path(projectName)
     if basePath.exists():
@@ -116,14 +184,20 @@ def createProject(projectName, dryRun: bool = False):
     logger.action("creating directories")
     if not dryRun:
         (basePath / "src").mkdir(parents=True)
-        (basePath / "ui").mkdir()
         (basePath / "tests").mkdir()
         (basePath / "logs").mkdir()
         (basePath / ".github").mkdir()
+        if includeUi:
+            (basePath / "ui").mkdir()
+        if includeQt:
+            (basePath / "qt").mkdir()
 
         # Make directories importable packages
         (basePath / "src" / "__init__.py").touch()
-        (basePath / "ui" / "__init__.py").touch()
+        if includeUi:
+            (basePath / "ui" / "__init__.py").touch()
+        if includeQt:
+            (basePath / "qt" / "__init__.py").touch()
 
     # Create core files
     logger.action("writing core files")
@@ -131,7 +205,7 @@ def createProject(projectName, dryRun: bool = False):
         (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
-        (basePath / ".env").write_text(ENV_CONTENT)
+        (basePath / ".env").write_text(_build_env_content(includeUi, includeQt))
         (basePath / "README.md").write_text(
             f"# {projectName}\n\nProject scaffold created by createProject.py\n"
         )
@@ -153,14 +227,8 @@ def createProject(projectName, dryRun: bool = False):
     # Copy template modules into the new project
     logger.action("copying template modules")
     if not dryRun:
-        shutil.copy(TEMPLATE_DIR / "globalVars.py", basePath / "src" / "globalVars.py")
-        shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
-        shutil.copy(TEMPLATE_DIR / "mainMenu.py", basePath / "ui" / "mainMenu.py")
-        shutil.copy(TEMPLATE_DIR / "baseFrame.py", basePath / "ui" / "baseFrame.py")
-        shutil.copy(TEMPLATE_DIR / "frameTemplate.py", basePath / "ui" / "frameTemplate.py")
-        shutil.copy(TEMPLATE_DIR / "statusFrame.py", basePath / "ui" / "statusFrame.py")
-        shutil.copy(TEMPLATE_DIR / "runLinter.py", basePath / "tests" / "runLinter.py")
-        shutil.copy(TEMPLATE_DIR / "guiNamingLinter.py", basePath / "tests" / "guiNamingLinter.py")
+        for src, destRel in _iter_template_modules(includeUi, includeQt):
+            shutil.copy(src, basePath / destRel)
 
     # Create main.py starter
     logger.action("writing main.py")
@@ -231,7 +299,12 @@ def _update_text_file(dest: Path, content: str, dryRun: bool = False):
             dest.write_bytes(new_bytes)
 
 
-def updateProject(projectName, dryRun: bool = False):
+def updateProject(
+    projectName,
+    dryRun: bool = False,
+    includeUi: bool = False,
+    includeQt: bool = False,
+):
 
     basePath = Path(projectName)
     if not basePath.exists():
@@ -239,18 +312,28 @@ def updateProject(projectName, dryRun: bool = False):
         return
 
     logger.doing(f"updating project at {basePath}")
+    installUi = includeUi or (basePath / "ui").exists()
+    installQt = includeQt or (basePath / "qt").exists()
     logger.action("ensuring directories and packages")
     if not dryRun:
-        for folder in ["src", "ui", "tests", "logs", ".github"]:
+        folders = ["src", "tests", "logs", ".github"]
+        if installUi:
+            folders.append("ui")
+        if installQt:
+            folders.append("qt")
+        for folder in folders:
             (basePath / folder).mkdir(parents=True, exist_ok=True)
 
         (basePath / "src" / "__init__.py").touch(exist_ok=True)
-        (basePath / "ui" / "__init__.py").touch(exist_ok=True)
+        if installUi:
+            (basePath / "ui" / "__init__.py").touch(exist_ok=True)
+        if installQt:
+            (basePath / "qt" / "__init__.py").touch(exist_ok=True)
 
     _update_text_file(basePath / ".gitignore", GITIGNORE_CONTENT, dryRun)
     _update_text_file(basePath / "requirements.txt", REQUIREMENTS_CONTENT, dryRun)
     _update_text_file(basePath / "dev-requirements.txt", DEV_REQUIREMENTS_CONTENT, dryRun)
-    _update_text_file(basePath / ".env", ENV_CONTENT, dryRun)
+    _update_text_file(basePath / ".env", _build_env_content(installUi, installQt), dryRun)
     _update_text_file(
         basePath / "README.md",
         f"# {projectName}\n\nProject scaffold created by createProject.py\n",
@@ -268,18 +351,8 @@ def updateProject(projectName, dryRun: bool = False):
         _copy_if_newer(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md", dryRun)
 
     logger.info("checking template modules")
-    modules = [
-        ("globalVars.py", "src/globalVars.py"),
-        ("styleUtils.py", "ui/styleUtils.py"),
-        ("mainMenu.py", "ui/mainMenu.py"),
-        ("baseFrame.py", "ui/baseFrame.py"),
-        ("frameTemplate.py", "ui/frameTemplate.py"),
-        ("statusFrame.py", "ui/statusFrame.py"),
-        ("runLinter.py", "tests/runLinter.py"),
-        ("guiNamingLinter.py", "tests/guiNamingLinter.py"),
-    ]
-    for src_name, dest_rel in modules:
-        _copy_if_newer(TEMPLATE_DIR / src_name, basePath / dest_rel, dryRun)
+    for src, destRel in _iter_template_modules(installUi, installQt):
+        _copy_if_newer(src, basePath / destRel, dryRun)
 
     _update_text_file(basePath / "main.py", MAIN_PY_CONTENT, dryRun)
     _update_text_file(basePath / ".pre-commit-config.yaml", PRECOMMIT_CONTENT, dryRun)
@@ -313,6 +386,17 @@ def main():
         help="Refresh an existing project instead of creating a new one",
     )
     parser.add_argument(
+        "--ui",
+        action="store_true",
+        help="install tkinter UI templates in a ui package",
+    )
+    parser.add_argument(
+        "-qt",
+        "--qt",
+        action="store_true",
+        help="install Qt UI templates in a qt package",
+    )
+    parser.add_argument(
         "--confirm",
         dest="confirm",
         action="store_true",
@@ -334,11 +418,21 @@ def main():
 
     if args.update:
         project_path = args.project or Path.cwd()
-        updateProject(project_path, dryRun=dryRun)
+        updateProject(
+            project_path,
+            dryRun=dryRun,
+            includeUi=args.ui,
+            includeQt=args.qt,
+        )
     else:
         if args.project is None:
             parser.error("the following arguments are required: project")
-        createProject(args.project, dryRun=dryRun)
+        createProject(
+            args.project,
+            dryRun=dryRun,
+            includeUi=args.ui,
+            includeQt=args.qt,
+        )
 
 
 if __name__ == '__main__':

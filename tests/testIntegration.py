@@ -37,11 +37,12 @@ class TestEndToEndWorkflow:
         from organiseMyProjects.createProject import createProject
         
         with patch('organiseMyProjects.createProject.subprocess.run'):
-            createProject(str(projectPath))
+            createProject(str(projectPath), includeUi=True)
         
         # Verify project was created
         assert projectPath.exists()
         assert (projectPath / ".github" / "copilot-instructions.md").exists()
+        assert (projectPath / "ui" / "mainMenu.py").exists()
         
         # Step 2: Add some Python code with violations to the project
         uiDir = projectPath / "ui"
@@ -122,19 +123,17 @@ class TestFrame:
         
         # Define expected structure
         expectedDirs = [
-            "src", "ui", "tests", "logs", ".github"
+            "src", "tests", "logs", ".github"
         ]
         
         expectedFiles = [
             "main.py", ".gitignore", "requirements.txt", "dev-requirements.txt",
             ".env", "README.md", ".pre-commit-config.yaml",
-            "src/__init__.py", "ui/__init__.py",
+            "src/__init__.py",
             ".github/copilot-instructions.md"
         ]
         
         expectedCopiedModules = [
-            "ui/styleUtils.py", "ui/mainMenu.py",
-            "ui/baseFrame.py", "ui/frameTemplate.py", "ui/statusFrame.py",
             "tests/runLinter.py", "tests/guiNamingLinter.py"
         ]
         

@@ -114,9 +114,9 @@ The package includes template files that are distributed with the package:
 - `.github/copilot-instructions.md` - Master GitHub Copilot development guidelines
 - Template Python modules (copied to new projects)
 
-## Resource Access Pattern
+## Canonical Copilot Instructions Access
 
-The package uses `importlib.resources` for accessing packaged files:
+The canonical Copilot instructions live in the repository root `.github/` directory and are copied into generated projects from there:
 
 ```python
 try:

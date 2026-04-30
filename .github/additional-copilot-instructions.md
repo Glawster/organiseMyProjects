@@ -196,7 +196,7 @@ The package contains two types of files:
    - `globalVars.py` - Package constants
    
 2. **Template Files** - Copied to new projects via `createProject`:
-   - `.github/copilot-instructions.md` - Master Copilot guidelines copied to the project root `.github/` directory
+   - `.github/copilot-instructions.md` - Master Copilot guidelines copied to the generated project's `.github/` directory
    - `guiNamingLinter.py` - Naming checker for the project
    - `runLinter.py` - Linter CLI for the project
    - GUI framework files: `baseFrame.py`, `frameTemplate.py`, `statusFrame.py`, `mainMenu.py`, `styleUtils.py`

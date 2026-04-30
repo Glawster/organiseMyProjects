@@ -2,7 +2,7 @@
 
 ## Project-Specific Information
 
-This file contains project-specific details for the **organiseMyProjects** repository. For generic Python/Tkinter development guidelines, see `copilot-instructions.md`. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`.
+This file contains project-specific details for the **organiseMyProjects** repository. The master development guidelines live in `.github/copilot-instructions.md` and take precedence over any conflicting guidance here or elsewhere in the repository. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`.
 
 ## Installation
 
@@ -66,14 +66,13 @@ GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
 ```
 organiseMyProjects/
 ├── .github/
-│   ├── copilot-instructions.md           # Generic guidelines (template)
+│   ├── copilot-instructions.md           # Master guidelines template
 │   └── additional-copilot-instructions.md # Project-specific (this file, NOT template)
 ├── organiseMyProjects/                    # Main package
 │   ├── __init__.py                       # [PACKAGE] Package initialization with public API
 │   ├── createProject.py                   # [PACKAGE] Project scaffolding tool
 │   ├── logUtils.py                       # [PACKAGE] Centralized logging utility
 │   ├── globalVars.py                     # [TEMPLATE] Global constants
-│   ├── copilot-instructions.md           # [TEMPLATE] Generic guidelines
 │   ├── HELP.md                           # [PACKAGE] GUI linter documentation
 │   ├── guiNamingLinter.py                # [TEMPLATE + PACKAGE] Naming convention checker
 │   ├── runLinter.py                      # [TEMPLATE + PACKAGE] Linter CLI interface
@@ -107,7 +106,7 @@ organiseMyProjects/
 
 **[TEMPLATE]** - Template files that are copied to new projects:
 - `globalVars.py` - Global constants (copied to src/)
-- `copilot-instructions.md` - Generic development guidelines
+- `.github/copilot-instructions.md` - Master development guidelines copied into generated projects
 - `baseFrame.py`, `frameTemplate.py`, `statusFrame.py` - GUI framework
 - `styleUtils.py` - GUI styling utilities
 - `mainMenu.py` - Main menu framework
@@ -197,7 +196,7 @@ The package contains two types of files:
    - `globalVars.py` - Package constants
    
 2. **Template Files** - Copied to new projects via `createProject`:
-   - `copilot-instructions.md` - Generic Copilot guidelines
+   - `.github/copilot-instructions.md` - Master Copilot guidelines copied to the generated project's `.github/` directory
    - `guiNamingLinter.py` - Naming checker for the project
    - `runLinter.py` - Linter CLI for the project
    - GUI framework files: `baseFrame.py`, `frameTemplate.py`, `statusFrame.py`, `mainMenu.py`, `styleUtils.py`
@@ -491,12 +490,12 @@ The linter recognizes these Qt widget types:
 1. Add naming rule to `namingRules` dict in `guiNamingLinter.py`
 2. Add widget class to `widgetClasses` set
 3. Add parametrized test cases in `testGuiNamingLinter.py`
-4. Update HELP.md and copilot-instructions.md
+4. Update HELP.md and `.github/additional-copilot-instructions.md` (and `.github/copilot-instructions.md` only if the change affects universal guidance)
 
 **For Qt widgets:**
 1. Add widget type to `qtWidgetTypes` set in `guiNamingLinter.py`
 2. Add parametrized test cases in `testGuiNamingLinter.py`
-3. Update HELP.md and copilot-instructions.md
+3. Update HELP.md and `.github/additional-copilot-instructions.md` (and `.github/copilot-instructions.md` only if the change affects universal guidance)
 
 ### Modifying Project Structure
 1. Update `createProject()` function
@@ -531,7 +530,7 @@ The linter recognizes these Qt widget types:
 - Better handling of existing projects during updates
 
 ### Maintenance Notes
-- Keep `copilot-instructions.md` generic and reusable
+- Keep `.github/copilot-instructions.md` as the master guideline and keep this file aligned with it
 - Update this file for project-specific changes
 - Maintain backward compatibility in `updateProject()`
 - Keep test coverage above 90%

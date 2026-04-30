@@ -125,7 +125,7 @@ except ImportError:
     # Fallback for Python < 3.9
     from importlib_resources import files
 
-# Access packaged resources
+# Access repository root files
 repo_root = files('organiseMyProjects').parent
 copilot_file = repo_root / '.github' / 'copilot-instructions.md'
 content = copilot_file.read_text()

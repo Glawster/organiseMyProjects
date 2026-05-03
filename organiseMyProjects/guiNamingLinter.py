@@ -31,6 +31,17 @@ FUNCTION_NAME_EXCEPTIONS = {
     "visit_FunctionDef",
 }
 
+LOGGING_METHODS = {
+    "action",
+    "debug",
+    "doing",
+    "done",
+    "error",
+    "info",
+    "value",
+    "warning",
+}
+
 NAMING_RULES = {
     "Button": r"^btn[A-Z]\w+",
     "Entry": r"^entry[A-Z]\w+",
@@ -232,37 +243,24 @@ class GuiNamingVisitor(ast.NodeVisitor):
         elif func.attr == "grid":
             self.gridCalls += 1
 
-        if func.attr in {'info', 'warning', 'error', 'action', 'doing', 'done'}:
-            if node.value.args and isinstance(node.value.args[0], ast.Constant):
-                msg = node.value.args[0].value
-
-                # --- NEW RULE: forbid manual ellipsis ---
-                if isinstance(msg, str) and "..." in msg:
-                    self.violations.append(
-                        (msg, "Logging (ellipsis misuse)", node.lineno)
-                    )
-
-                # Existing rules
-                if func.attr in {'info', 'warning'}:
-                    if not msg.islower():
-                        self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
-                elif func.attr == 'error':
-                    if msg != msg.capitalize():
-                        self.violations.append((msg, 'Logging (error)', node.lineno))
+        if func.attr not in LOGGING_METHODS:
+            return
 
         if not node.value.args or not isinstance(node.value.args[0], ast.Constant):
             return
 
         msg = node.value.args[0].value
+        if not isinstance(msg, str):
+            return
 
-        if func.attr in {"info", "warning"}:
-            validInfoMessage = msg.islower() or re.match(r"[.]{3}.*|.*[.]{3}|[.]{3}.*:.*", msg)
-            if not validInfoMessage:
-                self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
+        if "..." in msg:
+            self.violations.append((msg, "Logging (ellipsis misuse)", node.lineno))
 
-        elif func.attr == "error":
-            if msg != msg.capitalize():
-                self.violations.append((msg, "Logging (error)", node.lineno))
+        if func.attr in {"info", "warning"} and not msg.islower():
+            self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
+
+        elif func.attr == "error" and msg != msg.capitalize():
+            self.violations.append((msg, "Logging (error)", node.lineno))
 
 
     ## spelling

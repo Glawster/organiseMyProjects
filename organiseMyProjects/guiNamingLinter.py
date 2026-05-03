@@ -223,7 +223,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
         lineAfterDef = self.lines[node.lineno].strip()
         if lineAfterDef:
             self.violations.append(
-                (node.name, "Function spacing (no blank line after def)", node.lineno)
+                (node.name, "Function spacing (missing blank line after def)", node.lineno)
             )
 
 
@@ -240,16 +240,63 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
         if func.attr == "pack":
             self.packCalls += 1
-        elif func.attr == "grid":
+            return
+
+        if func.attr == "grid":
             self.gridCalls += 1
-
-        if func.attr not in LOGGING_METHODS:
             return
 
-        if not node.value.args or not isinstance(node.value.args[0], ast.Constant):
+        isLoggerCall = (
+            isinstance(func.value, ast.Name)
+            and func.value.id == "logger"
+        ) or (
+            isinstance(func.value, ast.Attribute)
+            and func.value.attr == "logger"
+        )
+
+        if not isLoggerCall:
             return
 
-        msg = node.value.args[0].value
+        if func.attr not in {"debug", "info", "warning", "error", "action", "doing", "done", "value"}:
+            return
+
+        if not node.value.args:
+            return
+
+        messageNode = node.value.args[0]
+        variableCount = len(node.value.args) - 1
+
+        if variableCount > 0 and func.attr not in {"info", "value"}:
+            self.violations.append(
+                (
+                    func.attr,
+                    "Logging variables (only logger.info/logger.value accept variables)",
+                    node.lineno,
+                )
+            )
+
+        if func.attr == "info" and variableCount == 1:
+            self.violations.append(
+                (
+                    "logger.info",
+                    "Logging variables (use logger.value for a single variable)",
+                    node.lineno,
+                )
+            )
+
+        if func.attr == "value" and variableCount < 1:
+            self.violations.append(
+                (
+                    "logger.value",
+                    "Logging variables (logger.value requires a value argument)",
+                    node.lineno,
+                )
+            )
+
+        if not isinstance(messageNode, ast.Constant):
+            return
+
+        msg = messageNode.value
         if not isinstance(msg, str):
             return
 
@@ -261,6 +308,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
         elif func.attr == "error" and msg != msg.capitalize():
             self.violations.append((msg, "Logging (error)", node.lineno))
+
 
 
     ## spelling

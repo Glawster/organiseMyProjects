@@ -301,10 +301,11 @@ def updateProject(projectName, dryRun: bool = False):
         basePath / ".vscode" / "settings.json", VSCODE_SETTINGS_CONTENT, dryRun
     )
 
-    logger.done(f"project updated")
+    logger.done("project updated")
 
 
 def main():
+
     global logger
 
     thisApplication = Path(__file__).stem
@@ -312,6 +313,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Create or update a project scaffold")
     parser.add_argument(
+        "-p",
         "project",
         nargs="?",
         default=None,
@@ -324,6 +326,7 @@ def main():
         help="Refresh an existing project instead of creating a new one",
     )
     parser.add_argument(
+        "-y",
         "--confirm",
         dest="confirm",
         action="store_true",

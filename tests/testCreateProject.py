@@ -1,6 +1,7 @@
 """
 Tests for createProject.py functionality.
 """
+
 import datetime
 import logging
 import pytest
@@ -13,11 +14,11 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from organiseMyProjects.createProject import (
-    createProject, 
-    updateProject, 
-    _backup_file,
-    _copy_if_newer, 
-    _update_text_file,
+    createProject,
+    updateProject,
+    _backupFile,
+    _copyIfNewer,
+    _updateTextFile,
     GITIGNORE_CONTENT,
     REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
@@ -31,34 +32,34 @@ from organiseMyProjects.createProject import (
 
 class TestCreateProject:
     """Test cases for createProject function."""
-    
+
     def testCreateProjectBasicStructure(self, temp_dir, sample_project_name):
         """Test that createProject creates the basic directory structure."""
         projectPath = temp_dir / sample_project_name
-        
+
         # Mock subprocess to avoid git/pre-commit dependencies
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
-        
+
         # Verify directory structure
         assert projectPath.exists()
         assert (projectPath / "src").exists()
-        assert (projectPath / "ui").exists() 
+        assert (projectPath / "ui").exists()
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
-        
+
         # Verify package init files
         assert (projectPath / "src" / "__init__.py").exists()
         assert (projectPath / "ui" / "__init__.py").exists()
-    
+
     def testCreateProjectCoreFiles(self, temp_dir, sample_project_name):
         """Test that createProject creates core configuration files."""
         projectPath = temp_dir / sample_project_name
-        
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
-        
+
         # Verify core files exist
         assert (projectPath / ".gitignore").exists()
         assert (projectPath / "requirements.txt").exists()
@@ -67,22 +68,26 @@ class TestCreateProject:
         assert (projectPath / "README.md").exists()
         assert (projectPath / "main.py").exists()
         assert (projectPath / ".pre-commit-config.yaml").exists()
-    
+
     def testCreateProjectFileContents(self, temp_dir, sample_project_name):
         """Test that createProject creates files with correct content."""
         projectPath = temp_dir / sample_project_name
-        
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
-        
+
         # Verify file contents
         assert (projectPath / ".gitignore").read_text() == GITIGNORE_CONTENT
         assert (projectPath / "requirements.txt").read_text() == REQUIREMENTS_CONTENT
-        assert (projectPath / "dev-requirements.txt").read_text() == DEV_REQUIREMENTS_CONTENT
+        assert (
+            projectPath / "dev-requirements.txt"
+        ).read_text() == DEV_REQUIREMENTS_CONTENT
         assert (projectPath / ".env").read_text() == ENV_CONTENT
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
-        assert (projectPath / ".pre-commit-config.yaml").read_text() == PRECOMMIT_CONTENT
-        
+        assert (
+            projectPath / ".pre-commit-config.yaml"
+        ).read_text() == PRECOMMIT_CONTENT
+
         # Verify README content
         readmeContent = (projectPath / "README.md").read_text()
         assert sample_project_name in readmeContent
@@ -92,7 +97,7 @@ class TestCreateProject:
         """Test that createProject creates pytest.ini with the correct content."""
         projectPath = temp_dir / sample_project_name
 
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
 
         assert (projectPath / "pytest.ini").exists()
@@ -102,21 +107,25 @@ class TestCreateProject:
         """Test that createProject creates .vscode/settings.json with the correct content."""
         projectPath = temp_dir / sample_project_name
 
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
 
         assert (projectPath / ".vscode" / "settings.json").exists()
-        assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
-    
+        assert (
+            projectPath / ".vscode" / "settings.json"
+        ).read_text() == VSCODE_SETTINGS_CONTENT
+
     def testCreateProjectTemplateFiles(self, temp_dir, sample_project_name):
         """Test that only template files (not package utilities) are copied."""
         projectPath = temp_dir / sample_project_name
-        
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
-        
+
         # Verify template files are copied
-        assert (projectPath / "src" / "globalVars.py").exists(), "globalVars.py should be copied to new projects"
+        assert (
+            projectPath / "src" / "globalVars.py"
+        ).exists(), "globalVars.py should be copied to new projects"
         assert (projectPath / "ui" / "styleUtils.py").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
         assert (projectPath / "ui" / "baseFrame.py").exists()
@@ -124,26 +133,30 @@ class TestCreateProject:
         assert (projectPath / "ui" / "statusFrame.py").exists()
         assert (projectPath / "tests" / "runLinter.py").exists()
         assert (projectPath / "tests" / "guiNamingLinter.py").exists()
-        
+
         # Verify package utilities are NOT copied
-        assert not (projectPath / "src" / "logUtils.py").exists(), "logUtils.py should NOT be copied to new projects"
-        assert not (projectPath / "createProject.py").exists(), "createProject.py should NOT be copied to new projects"
-    
+        assert not (
+            projectPath / "src" / "logUtils.py"
+        ).exists(), "logUtils.py should NOT be copied to new projects"
+        assert not (
+            projectPath / "createProject.py"
+        ).exists(), "createProject.py should NOT be copied to new projects"
+
     def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, caplog):
         """Test behavior when project directory already exists."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()  # Create directory first
-        
+
         with caplog.at_level(logging.INFO):
             createProject(str(projectPath))
-        
+
         assert "already exists" in caplog.text
-    
+
     def testCreateProjectCopilotInstructions(self, temp_dir, sample_project_name):
         """Test that copilot instructions are copied from the .github/ directory."""
         projectPath = temp_dir / sample_project_name
 
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
 
         copilotFile = projectPath / ".github" / "copilot-instructions.md"
@@ -153,29 +166,29 @@ class TestCreateProject:
 
 class TestUpdateProject:
     """Test cases for updateProject function."""
-    
+
     def testUpdateProjectExisting(self, temp_dir, sample_project_name):
         """Test updating an existing project."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
-        
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             updateProject(str(projectPath))
-        
+
         # Verify directories are created
         assert (projectPath / "src").exists()
         assert (projectPath / "ui").exists()
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
-    
+
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
         projectPath = temp_dir / sample_project_name
-        
+
         with caplog.at_level(logging.INFO):
             updateProject(str(projectPath))
-        
+
         assert "does not exist" in caplog.text
 
     def testUpdateProjectPytestIni(self, temp_dir, sample_project_name):
@@ -183,7 +196,7 @@ class TestUpdateProject:
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
 
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (projectPath / "pytest.ini").exists()
@@ -194,11 +207,13 @@ class TestUpdateProject:
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
 
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (projectPath / ".vscode" / "settings.json").exists()
-        assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
+        assert (
+            projectPath / ".vscode" / "settings.json"
+        ).read_text() == VSCODE_SETTINGS_CONTENT
 
     def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
         """Test that updateProject updates pytest.ini if it is outdated."""
@@ -206,7 +221,7 @@ class TestUpdateProject:
         projectPath.mkdir()
         (projectPath / "pytest.ini").write_text("old content")
 
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (projectPath / "pytest.ini").read_text() == PYTEST_INI_CONTENT
@@ -218,80 +233,82 @@ class TestUpdateProject:
         (projectPath / ".vscode").mkdir()
         (projectPath / ".vscode" / "settings.json").write_text('{"old": true}')
 
-        with patch('organiseMyProjects.createProject.subprocess.run'):
+        with patch("organiseMyProjects.createProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        assert (projectPath / ".vscode" / "settings.json").read_text() == VSCODE_SETTINGS_CONTENT
+        assert (
+            projectPath / ".vscode" / "settings.json"
+        ).read_text() == VSCODE_SETTINGS_CONTENT
 
 
 class TestUtilityFunctions:
     """Test cases for utility functions."""
-    
+
     def testCopyIfNewerNewFile(self, temp_dir):
         """Test copying when destination doesn't exist."""
         src = temp_dir / "source.txt"
         dest = temp_dir / "dest.txt"
-        
+
         src.write_text("test content")
-        
-        _copy_if_newer(src, dest)
-        
+
+        _copyIfNewer(src, dest)
+
         assert dest.exists()
         assert dest.read_text() == "test content"
-    
+
     def testCopyIfNewerOlderDest(self, temp_dir):
         """Test copying when source is newer than destination."""
         import time
-        
+
         src = temp_dir / "source.txt"
         dest = temp_dir / "dest.txt"
-        
+
         # Create dest first (older)
         dest.write_text("old content")
-        
+
         # Wait a bit to ensure different modification times
         time.sleep(0.1)
-        
+
         # Create src after (newer)
         src.write_text("new content")
-        
-        _copy_if_newer(src, dest)
-        
+
+        _copyIfNewer(src, dest)
+
         assert dest.read_text() == "new content"
-    
+
     def testUpdateTextFileNew(self, temp_dir):
         """Test updating text file when it doesn't exist."""
         dest = temp_dir / "test.txt"
         content = "test content"
-        
-        _update_text_file(dest, content)
-        
+
+        _updateTextFile(dest, content)
+
         assert dest.exists()
         assert dest.read_text() == content
-    
+
     def testUpdateTextFileSameContent(self, temp_dir):
         """Test updating text file when content is the same."""
         dest = temp_dir / "test.txt"
         content = "test content"
-        
+
         dest.write_text(content)
         originalMtime = dest.stat().st_mtime
-        
-        _update_text_file(dest, content)
-        
+
+        _updateTextFile(dest, content)
+
         # File should not be modified if content is the same
         assert dest.stat().st_mtime == originalMtime
-    
+
     def testUpdateTextFileDifferentContent(self, temp_dir):
         """Test updating text file when content is different."""
         dest = temp_dir / "test.txt"
         oldContent = "old content"
         newContent = "new content"
-        
+
         dest.write_text(oldContent)
-        
-        _update_text_file(dest, newContent)
-        
+
+        _updateTextFile(dest, newContent)
+
         assert dest.read_text() == newContent
 
 
@@ -303,7 +320,7 @@ class TestBackupFile:
         dest = temp_dir / "globalVars.py"
         dest.write_text("original content")
 
-        _backup_file(dest)
+        _backupFile(dest)
 
         stamp = datetime.date.today().strftime("%y%m%d")
         backup = temp_dir / f"globalVars.{stamp}.py"
@@ -314,7 +331,7 @@ class TestBackupFile:
     def testBackupFileNoExistingFile(self, temp_dir):
         """Test that _backup_file does nothing when file doesn't exist."""
         dest = temp_dir / "nonexistent.py"
-        _backup_file(dest)  # Should not raise
+        _backupFile(dest)  # Should not raise
         assert not dest.exists()
 
     def testCopyIfNewerBacksUpBeforeOverwriting(self, temp_dir):
@@ -328,7 +345,7 @@ class TestBackupFile:
         time.sleep(0.05)
         src.write_text("new content")
 
-        _copy_if_newer(src, dest)
+        _copyIfNewer(src, dest)
 
         stamp = datetime.date.today().strftime("%y%m%d")
         backup = temp_dir / f"dest.{stamp}.py"
@@ -341,7 +358,7 @@ class TestBackupFile:
         dest = temp_dir / "config.txt"
         dest.write_text("old")
 
-        _update_text_file(dest, "new content")
+        _updateTextFile(dest, "new content")
 
         stamp = datetime.date.today().strftime("%y%m%d")
         backup = temp_dir / f"config.{stamp}.txt"
@@ -354,11 +371,13 @@ class TestBackupFile:
         dest = temp_dir / "config.txt"
         dest.write_text("same content")
 
-        _update_text_file(dest, "same content")
+        _updateTextFile(dest, "same content")
 
         stamp = datetime.date.today().strftime("%y%m%d")
         backup = temp_dir / f"config.{stamp}.txt"
-        assert not backup.exists(), "No backup should be created when content is unchanged"
+        assert (
+            not backup.exists()
+        ), "No backup should be created when content is unchanged"
 
 
 class TestDryRun:
@@ -370,7 +389,9 @@ class TestDryRun:
 
         createProject(str(projectPath), dryRun=True)
 
-        assert not projectPath.exists(), "Project directory must not be created in dry-run mode"
+        assert (
+            not projectPath.exists()
+        ), "Project directory must not be created in dry-run mode"
 
     def testCreateProjectDryRunLogsActions(self, temp_dir, sample_project_name, caplog):
         """Test that createProject in dry-run mode logs the actions it would take."""
@@ -393,7 +414,9 @@ class TestDryRun:
 
         updateProject(str(projectPath), dryRun=True)
 
-        assert sentinel.read_text() == "original content", "File must not be modified in dry-run mode"
+        assert (
+            sentinel.read_text() == "original content"
+        ), "File must not be modified in dry-run mode"
 
     def testUpdateProjectDryRunLogsActions(self, temp_dir, sample_project_name, caplog):
         """Test that updateProject in dry-run mode logs the actions it would take."""
@@ -410,7 +433,7 @@ class TestDryRun:
         dest = temp_dir / "config.txt"
         dest.write_text("original")
 
-        _backup_file(dest, dryRun=True)
+        _backupFile(dest, dryRun=True)
 
         assert dest.exists(), "Original file must not be renamed in dry-run mode"
 
@@ -420,7 +443,7 @@ class TestDryRun:
         dest = temp_dir / "dest.txt"
         src.write_text("new content")
 
-        _copy_if_newer(src, dest, dryRun=True)
+        _copyIfNewer(src, dest, dryRun=True)
 
         assert not dest.exists(), "Destination file must not be created in dry-run mode"
 
@@ -428,6 +451,6 @@ class TestDryRun:
         """Test that _update_text_file in dry-run mode does not write the file."""
         dest = temp_dir / "output.txt"
 
-        _update_text_file(dest, "some content", dryRun=True)
+        _updateTextFile(dest, "some content", dryRun=True)
 
         assert not dest.exists(), "File must not be created in dry-run mode"

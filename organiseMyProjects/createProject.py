@@ -148,7 +148,9 @@ def createProject(projectName, dryRun: bool = False):
     if srcCopilotInstructions.exists():
         logger.action("copying copilot instructions")
         if not dryRun:
-            shutil.copy(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
+            shutil.copy(
+                srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md"
+            )
 
     # Copy template modules into the new project
     logger.action("copying template modules")
@@ -157,10 +159,15 @@ def createProject(projectName, dryRun: bool = False):
         shutil.copy(TEMPLATE_DIR / "styleUtils.py", basePath / "ui" / "styleUtils.py")
         shutil.copy(TEMPLATE_DIR / "mainMenu.py", basePath / "ui" / "mainMenu.py")
         shutil.copy(TEMPLATE_DIR / "baseFrame.py", basePath / "ui" / "baseFrame.py")
-        shutil.copy(TEMPLATE_DIR / "frameTemplate.py", basePath / "ui" / "frameTemplate.py")
+        shutil.copy(
+            TEMPLATE_DIR / "frameTemplate.py", basePath / "ui" / "frameTemplate.py"
+        )
         shutil.copy(TEMPLATE_DIR / "statusFrame.py", basePath / "ui" / "statusFrame.py")
         shutil.copy(TEMPLATE_DIR / "runLinter.py", basePath / "tests" / "runLinter.py")
-        shutil.copy(TEMPLATE_DIR / "guiNamingLinter.py", basePath / "tests" / "guiNamingLinter.py")
+        shutil.copy(
+            TEMPLATE_DIR / "guiNamingLinter.py",
+            basePath / "tests" / "guiNamingLinter.py",
+        )
 
     # Create main.py starter
     logger.action("writing main.py")
@@ -196,7 +203,7 @@ def createProject(projectName, dryRun: bool = False):
     logger.done(f"project '{projectName}' created")
 
 
-def _backup_file(dest: Path, dryRun: bool = False) -> None:
+def _backupFile(dest: Path, dryRun: bool = False) -> None:
     if dest.exists():
         stamp = datetime.date.today().strftime("%y%m%d")
         backup = dest.with_name(f"{dest.stem}.{stamp}{dest.suffix}")
@@ -205,17 +212,17 @@ def _backup_file(dest: Path, dryRun: bool = False) -> None:
             dest.rename(backup)
 
 
-def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
+def _copyIfNewer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
-        _backup_file(dest, dryRun)
+        _backupFile(dest, dryRun)
         logger.action(f"updated {dest}")
         if not dryRun:
             shutil.copy(src, dest)
 
 
-def _update_text_file(dest: Path, content: str, dryRun: bool = False):
+def _updateTextFile(dest: Path, content: str, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     new_bytes = content.encode("utf-8")
@@ -225,7 +232,7 @@ def _update_text_file(dest: Path, content: str, dryRun: bool = False):
         current = None
 
     if current != new_bytes:
-        _backup_file(dest, dryRun)
+        _backupFile(dest, dryRun)
         logger.action(f"updated {dest}")
         if not dryRun:
             dest.write_bytes(new_bytes)
@@ -247,11 +254,11 @@ def updateProject(projectName, dryRun: bool = False):
         (basePath / "src" / "__init__.py").touch(exist_ok=True)
         (basePath / "ui" / "__init__.py").touch(exist_ok=True)
 
-    _update_text_file(basePath / ".gitignore", GITIGNORE_CONTENT, dryRun)
-    _update_text_file(basePath / "requirements.txt", REQUIREMENTS_CONTENT, dryRun)
-    _update_text_file(basePath / "dev-requirements.txt", DEV_REQUIREMENTS_CONTENT, dryRun)
-    _update_text_file(basePath / ".env", ENV_CONTENT, dryRun)
-    _update_text_file(
+    _updateTextFile(basePath / ".gitignore", GITIGNORE_CONTENT, dryRun)
+    _updateTextFile(basePath / "requirements.txt", REQUIREMENTS_CONTENT, dryRun)
+    _updateTextFile(basePath / "dev-requirements.txt", DEV_REQUIREMENTS_CONTENT, dryRun)
+    _updateTextFile(basePath / ".env", ENV_CONTENT, dryRun)
+    _updateTextFile(
         basePath / "README.md",
         f"# {projectName}\n\nProject scaffold created by createProject.py\n",
         dryRun,
@@ -260,12 +267,16 @@ def updateProject(projectName, dryRun: bool = False):
     srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
     if srcGuidelines.exists():
         logger.info("checking guidelines file")
-        _copy_if_newer(srcGuidelines, basePath / "projectGuidelines.md", dryRun)
+        _copyIfNewer(srcGuidelines, basePath / "projectGuidelines.md", dryRun)
 
     srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
     if srcCopilotInstructions.exists():
         logger.info("checking copilot instructions")
-        _copy_if_newer(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md", dryRun)
+        _copyIfNewer(
+            srcCopilotInstructions,
+            basePath / ".github" / "copilot-instructions.md",
+            dryRun,
+        )
 
     logger.info("checking template modules")
     modules = [
@@ -279,16 +290,18 @@ def updateProject(projectName, dryRun: bool = False):
         ("guiNamingLinter.py", "tests/guiNamingLinter.py"),
     ]
     for src_name, dest_rel in modules:
-        _copy_if_newer(TEMPLATE_DIR / src_name, basePath / dest_rel, dryRun)
+        _copyIfNewer(TEMPLATE_DIR / src_name, basePath / dest_rel, dryRun)
 
-    _update_text_file(basePath / "main.py", MAIN_PY_CONTENT, dryRun)
-    _update_text_file(basePath / ".pre-commit-config.yaml", PRECOMMIT_CONTENT, dryRun)
-    _update_text_file(basePath / "pytest.ini", PYTEST_INI_CONTENT, dryRun)
+    _updateTextFile(basePath / "main.py", MAIN_PY_CONTENT, dryRun)
+    _updateTextFile(basePath / ".pre-commit-config.yaml", PRECOMMIT_CONTENT, dryRun)
+    _updateTextFile(basePath / "pytest.ini", PYTEST_INI_CONTENT, dryRun)
     if not dryRun:
         (basePath / ".vscode").mkdir(parents=True, exist_ok=True)
-    _update_text_file(basePath / ".vscode" / "settings.json", VSCODE_SETTINGS_CONTENT, dryRun)
+    _updateTextFile(
+        basePath / ".vscode" / "settings.json", VSCODE_SETTINGS_CONTENT, dryRun
+    )
 
-    logger.done(f"project '{projectName}' updated")
+    logger.done(f"project updated")
 
 
 def main():
@@ -297,9 +310,7 @@ def main():
     thisApplication = Path(__file__).stem
     setApplication(thisApplication)
 
-    parser = argparse.ArgumentParser(
-        description="Create or update a project scaffold"
-    )
+    parser = argparse.ArgumentParser(description="Create or update a project scaffold")
     parser.add_argument(
         "project",
         nargs="?",
@@ -341,5 +352,5 @@ def main():
         createProject(args.project, dryRun=dryRun)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

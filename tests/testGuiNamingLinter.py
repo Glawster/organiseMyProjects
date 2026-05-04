@@ -654,7 +654,6 @@ logger = getLogger()
 
 class MyFrame:
     def actionRun(self):
-
         filename = "output.txt"
         logger.action("writing file %s", filename)
 """
@@ -678,7 +677,6 @@ logger = getLogger()
 
 class MyFrame:
     def infoRun(self):
-
         count = 5
         logger.info("file count: %s", count)
 """
@@ -701,7 +699,6 @@ class StatusBar:
 
 class MyFrame:
     def statusRun(self):
-
         status = StatusBar()
         status.info("MixedCase message")
 """

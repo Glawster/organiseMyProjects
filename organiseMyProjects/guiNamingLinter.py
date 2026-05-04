@@ -14,7 +14,6 @@ import ast
 import os
 import re
 
-
 ## constants
 
 DOMAIN_ACTION_PATTERN = r"^_?[a-z]+[A-Z][a-zA-Z0-9]*$"
@@ -88,6 +87,7 @@ WIDGET_CLASSES = set(NAMING_RULES.keys()) - {"Handler", "Constant", "Class"}
 
 ## framework
 
+
 def frameworkDetect(fileContent: str) -> str | None:
     """
     Detect which GUI framework is used in the file.
@@ -109,6 +109,7 @@ def frameworkDetect(fileContent: str) -> str | None:
 
 ## name
 
+
 def nameIsSnakeCase(name: str) -> bool:
     """
     Check if name follows snake_case convention.
@@ -121,6 +122,7 @@ def nameIsSnakeCase(name: str) -> bool:
 
 
 ## ast
+
 
 def astAnnotateParents(tree: ast.AST) -> None:
     """Attach parent references to child AST nodes."""
@@ -139,7 +141,6 @@ class GuiNamingVisitor(ast.NodeVisitor):
         self.violations = []
         self.packCalls = 0
         self.gridCalls = 0
-
 
     ## ast visitor callbacks
 
@@ -163,7 +164,9 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
     def visit_ClassDef(self, node):
         isExplicitlyAllowed = node.name in CLASS_NAME_EXCEPTIONS
-        isPatternAllowed = any(re.match(pattern, node.name) for pattern in CLASS_NAME_PATTERNS)
+        isPatternAllowed = any(
+            re.match(pattern, node.name) for pattern in CLASS_NAME_PATTERNS
+        )
 
         if not (isExplicitlyAllowed or isPatternAllowed):
             if not re.match(NAMING_RULES["Class"], node.name):
@@ -182,7 +185,6 @@ class GuiNamingVisitor(ast.NodeVisitor):
         self.functionCheckSpacing(node)
         self.generic_visit(node)
 
-
     ## function
 
     def functionCheckName(self, node) -> None:
@@ -191,7 +193,9 @@ class GuiNamingVisitor(ast.NodeVisitor):
             return
 
         if not re.match(DOMAIN_ACTION_PATTERN, node.name):
-            self.violations.append((node.name, "Function name (domainAction)", node.lineno))
+            self.violations.append(
+                (node.name, "Function name (domainAction)", node.lineno)
+            )
 
     def functionCheckSpacing(self, node) -> None:
         """Check for a blank line immediately after the def line."""
@@ -212,9 +216,12 @@ class GuiNamingVisitor(ast.NodeVisitor):
         lineAfterDef = self.lines[node.lineno].strip()
         if lineAfterDef:
             self.violations.append(
-                (node.name, "Function spacing (no blank line after def)", node.lineno)
+                (
+                    node.name,
+                    "Function spacing (missing blank line after def)",
+                    node.lineno,
+                )
             )
-
 
     ## logging
 
@@ -229,41 +236,79 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
         if func.attr == "pack":
             self.packCalls += 1
-        elif func.attr == "grid":
-            self.gridCalls += 1
-
-        if func.attr in {'info', 'warning', 'error', 'action', 'doing', 'done'}:
-            if node.value.args and isinstance(node.value.args[0], ast.Constant):
-                msg = node.value.args[0].value
-
-                # --- NEW RULE: forbid manual ellipsis ---
-                if isinstance(msg, str) and "..." in msg:
-                    self.violations.append(
-                        (msg, "Logging (ellipsis misuse)", node.lineno)
-                    )
-
-                # Existing rules
-                if func.attr in {'info', 'warning'}:
-                    if not msg.islower():
-                        self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
-                elif func.attr == 'error':
-                    if msg != msg.capitalize():
-                        self.violations.append((msg, 'Logging (error)', node.lineno))
-
-        if not node.value.args or not isinstance(node.value.args[0], ast.Constant):
             return
 
-        msg = node.value.args[0].value
+        if func.attr == "grid":
+            self.gridCalls += 1
+            return
 
-        if func.attr in {"info", "warning"}:
-            validInfoMessage = msg.islower() or re.match(r"[.]{3}.*|.*[.]{3}|[.]{3}.*:.*", msg)
-            if not validInfoMessage:
-                self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
+        isLoggerCall = (
+            isinstance(func.value, ast.Name) and func.value.id == "logger"
+        ) or (isinstance(func.value, ast.Attribute) and func.value.attr == "logger")
 
-        elif func.attr == "error":
-            if msg != msg.capitalize():
-                self.violations.append((msg, "Logging (error)", node.lineno))
+        if not isLoggerCall:
+            return
 
+        if func.attr not in {
+            "debug",
+            "info",
+            "warning",
+            "error",
+            "action",
+            "doing",
+            "done",
+            "value",
+        }:
+            return
+
+        if not node.value.args:
+            return
+
+        messageNode = node.value.args[0]
+        variableCount = len(node.value.args) - 1
+
+        if variableCount > 0 and func.attr not in {"info", "value"}:
+            self.violations.append(
+                (
+                    func.attr,
+                    "Logging variables (only logger.info/logger.value accept variables)",
+                    node.lineno,
+                )
+            )
+
+        if func.attr == "info" and variableCount == 1:
+            self.violations.append(
+                (
+                    "logger.info",
+                    "Logging variables (use logger.value for a single variable)",
+                    node.lineno,
+                )
+            )
+
+        if func.attr == "value" and variableCount < 1:
+            self.violations.append(
+                (
+                    "logger.value",
+                    "Logging variables (logger.value requires a value argument)",
+                    node.lineno,
+                )
+            )
+
+        if not isinstance(messageNode, ast.Constant):
+            return
+
+        msg = messageNode.value
+        if not isinstance(msg, str):
+            return
+
+        if "..." in msg:
+            self.violations.append((msg, "Logging (ellipsis misuse)", node.lineno))
+
+        if func.attr in {"info", "warning"} and not msg.islower():
+            self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
+
+        elif func.attr == "error" and msg != msg.capitalize():
+            self.violations.append((msg, "Logging (error)", node.lineno))
 
     ## spelling
 
@@ -280,7 +325,6 @@ class GuiNamingVisitor(ast.NodeVisitor):
         for match in icloudMatches:
             if match != "iCloud":
                 self.violations.append((match, "Spelling (iCloud)", node.lineno))
-
 
     ## widget
 
@@ -322,6 +366,10 @@ class GuiNamingVisitor(ast.NodeVisitor):
         if not isinstance(node.value, ast.Call):
             return
 
+        # widgetCheckHorizontalVerticalName handles horizontal/vertical prefixes
+        if varName.startswith("horizontal") or varName.startswith("vertical"):
+            return
+
         widgetType = self.widgetGetType(node)
         if not widgetType:
             return
@@ -336,7 +384,9 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
         elif self.framework == "qt" and widgetType in QT_WIDGET_TYPES:
             if not nameIsSnakeCase(varName):
-                self.violations.append((varName, f"Qt {widgetType} (snake_case)", node.lineno))
+                self.violations.append(
+                    (varName, f"Qt {widgetType} (snake_case)", node.lineno)
+                )
 
     def widgetCheckQtSpacerName(self, varName: str, node) -> None:
         """Check Qt spacer variables use hrz/vrt prefixes."""
@@ -348,7 +398,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
         expectedPrefix = "hrz" if isHorizontal else "vrt"
         oldPrefix = "horizontal" if isHorizontal else "vertical"
-        suggestedName = expectedPrefix + varName[len(oldPrefix):]
+        suggestedName = expectedPrefix + varName[len(oldPrefix) :]
 
         self.violations.append(
             (
@@ -375,6 +425,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
 ## file
 
+
 def fileCheck(filepath: str) -> list[tuple[str, str, int]]:
     """Check one Python file and return lint violations."""
     with open(filepath, "r", encoding="utf-8") as file:
@@ -397,6 +448,7 @@ def fileCheck(filepath: str) -> list[tuple[str, str, int]]:
 
 ## lint
 
+
 def lintFile(filepath: str) -> None:
     """Lint a single Python file."""
     print(f"\nLinting: {filepath}\n" + "-" * 50)
@@ -408,6 +460,7 @@ def lintFile(filepath: str) -> None:
         print(f"  Error: File '{filepath}' does not exist.")
     except Exception as exc:
         print(f"  Error: Failed to lint file: {exc}")
+
 
 def lintGuiNaming(directory: str) -> None:
     """Lint all Python files below a directory."""
@@ -422,6 +475,7 @@ def lintGuiNaming(directory: str) -> None:
 
 
 ## report
+
 
 def reportViolations(label: str, violations: list[tuple[str, str, int]]) -> None:
     """Print lint violations for a file or OK when none exist."""

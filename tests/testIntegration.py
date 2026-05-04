@@ -135,7 +135,7 @@ class TestFrame:
         expectedCopiedModules = [
             "ui/styleUtils.py", "ui/mainMenu.py",
             "ui/baseFrame.py", "ui/frameTemplate.py", "ui/statusFrame.py",
-            "tests/runLinter.py", "tests/guiNamingLinter.py"
+            "tests/runLinter.py"
         ]
         
         # Check directories

@@ -9,13 +9,13 @@ This package provides tools to create and manage Python projects with:
 
 Main components:
 - createProject: Project scaffolding tool (package utility)
-- guiNamingLinter: Naming convention checker (template + package utility)
+- guiNamingLinter: Naming convention checker (package utility)
 - runLinter: Linter CLI interface (template + package utility)
 - logUtils: Logging utility (package utility only)
 
 Template files (copied to new projects):
 - globalVars.py, baseFrame.py, frameTemplate.py, statusFrame.py
-- mainMenu.py, styleUtils.py, guiNamingLinter.py, runLinter.py
+- mainMenu.py, styleUtils.py, runLinter.py
 - .github/copilot-instructions.md (copied from this repo's .github/)
 
 Usage:

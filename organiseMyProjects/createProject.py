@@ -164,10 +164,6 @@ def createProject(projectName, dryRun: bool = False):
         )
         shutil.copy(TEMPLATE_DIR / "statusFrame.py", basePath / "ui" / "statusFrame.py")
         shutil.copy(TEMPLATE_DIR / "runLinter.py", basePath / "tests" / "runLinter.py")
-        shutil.copy(
-            TEMPLATE_DIR / "guiNamingLinter.py",
-            basePath / "tests" / "guiNamingLinter.py",
-        )
 
     # Create main.py starter
     logger.action("writing main.py")
@@ -287,7 +283,6 @@ def updateProject(projectName, dryRun: bool = False):
         ("frameTemplate.py", "ui/frameTemplate.py"),
         ("statusFrame.py", "ui/statusFrame.py"),
         ("runLinter.py", "tests/runLinter.py"),
-        ("guiNamingLinter.py", "tests/guiNamingLinter.py"),
     ]
     for src_name, dest_rel in modules:
         _copyIfNewer(TEMPLATE_DIR / src_name, basePath / dest_rel, dryRun)

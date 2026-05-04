@@ -132,7 +132,7 @@ class TestCreateProject:
         assert (projectPath / "ui" / "frameTemplate.py").exists()
         assert (projectPath / "ui" / "statusFrame.py").exists()
         assert (projectPath / "tests" / "runLinter.py").exists()
-        assert (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert not (projectPath / "tests" / "guiNamingLinter.py").exists()
 
         # Verify package utilities are NOT copied
         assert not (

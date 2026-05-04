@@ -32,9 +32,9 @@ from . import runLinter
 from . import logUtils
 
 __all__ = [
-    'createProject',
-    'lintFile',
-    'lintGuiNaming',
-    'runLinter',
-    'logUtils',
+    "createProject",
+    "lintFile",
+    "lintGuiNaming",
+    "runLinter",
+    "logUtils",
 ]

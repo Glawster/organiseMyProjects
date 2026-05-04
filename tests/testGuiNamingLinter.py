@@ -604,3 +604,71 @@ class MyFrame:
         assert len(violations) >= 2
         assert any('horizontalFrame' in str(v) for v in violations)
         assert any('verticalFrame' in str(v) for v in violations)
+
+
+class TestLoggingRules:
+    """Test cases for logUtils-specific logging checks."""
+
+    def testLoggerActionVariablesViolation(self, temp_dir):
+        """Test that logger.action rejects variable interpolation arguments."""
+        test_file = temp_dir / "test_logger_action.py"
+        content = '''
+from organiseMyProjects.logUtils import getLogger
+
+logger = getLogger()
+
+class MyFrame:
+    def actionRun(self):
+
+        logger.action("writing file %s", "output.txt")
+'''
+        test_file.write_text(content)
+
+        violations = fileCheck(str(test_file))
+
+        assert any(
+            "Logging variables (only logger.info/logger.value accept variables)" in str(v)
+            for v in violations
+        )
+
+    def testLoggerInfoSingleVariableViolation(self, temp_dir):
+        """Test that logger.info with one variable suggests logger.value."""
+        test_file = temp_dir / "test_logger_info.py"
+        content = '''
+from organiseMyProjects.logUtils import getLogger
+
+logger = getLogger()
+
+class MyFrame:
+    def infoRun(self):
+
+        logger.info("file count: %s", count)
+'''
+        test_file.write_text(content)
+
+        violations = fileCheck(str(test_file))
+
+        assert any(
+            "Logging variables (use logger.value for a single variable)" in str(v)
+            for v in violations
+        )
+
+    def testNonLoggerInfoCallIgnored(self, temp_dir):
+        """Test that non-logger info-like methods are ignored."""
+        test_file = temp_dir / "test_non_logger_info.py"
+        content = '''
+class StatusBar:
+    info = print
+
+
+class MyFrame:
+    def statusRun(self):
+
+        status = StatusBar()
+        status.info("MixedCase message")
+'''
+        test_file.write_text(content)
+
+        violations = fileCheck(str(test_file))
+
+        assert violations == []

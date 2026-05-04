@@ -188,7 +188,7 @@ The `organiseMyProjects` package includes:
 - `createProject.py` - Main project scaffolding functionality
 - `guiNamingLinter.py` - GUI naming convention enforcement
 - `runLinter.py` - Command-line interface for the linter
-- `copilot-instructions.md` - GitHub Copilot development guidelines
+- `.github/copilot-instructions.md` - Master GitHub Copilot development guidelines
 - Template files for GUI components and utilities
 
 ### Sync Copilot Instructions to other repos

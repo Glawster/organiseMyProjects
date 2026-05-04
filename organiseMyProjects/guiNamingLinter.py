@@ -99,6 +99,65 @@ WIDGET_CLASSES = set(NAMING_RULES.keys()) - {"Handler", "Constant", "Class"}
 
 ## framework
 
+}
+
+NAMING_RULES = {
+    "Button": r"^btn[A-Z]\w+",
+    "Entry": r"^entry[A-Z]\w+",
+    "Label": r"^lbl[A-Z]\w+",
+    "Frame": r"^frm[A-Z]\w+",
+    "Text": r"^txt[A-Z]\w+",
+    "Listbox": r"^lst[A-Z]\w+",
+    "Checkbutton": r"^chk[A-Z]\w+",
+    "Radiobutton": r"^rdo[A-Z]\w+",
+    "Combobox": r"^cmb[A-Z]\w+",
+    "Handler": r"^on[A-Z]\w+",
+    "Constant": r"^[A-Z_]+$",
+    "Class": r"^[A-Z][a-zA-Z0-9]*$",
+}
+
+QT_WIDGET_TYPES = {
+    "QCheckBox",
+    "QComboBox",
+    "QDoubleSpinBox",
+    "QFormLayout",
+    "QFrame",
+    "QGridLayout",
+    "QGroupBox",
+    "QHBoxLayout",
+    "QLabel",
+    "QLineEdit",
+    "QListView",
+    "QListWidget",
+    "QPlainTextEdit",
+    "QProgressBar",
+    "QPushButton",
+    "QRadioButton",
+    "QScrollArea",
+    "QSlider",
+    "QSpacerItem",
+    "QSpinBox",
+    "QSplitter",
+    "QStackedWidget",
+    "QTabWidget",
+    "QTableView",
+    "QTableWidget",
+    "QTextEdit",
+    "QToolButton",
+    "QTreeView",
+    "QTreeWidget",
+    "QVBoxLayout",
+    "QWidget",
+}
+
+CLASS_NAME_EXCEPTIONS = {"iCloudSyncFrame"}
+CLASS_NAME_PATTERNS = [r"^iCloud[A-Z]\w*"]
+
+WIDGET_CLASSES = set(NAMING_RULES.keys()) - {"Handler", "Constant", "Class"}
+
+
+## framework
+
 def frameworkDetect(fileContent: str) -> str | None:
     """
     Detect which GUI framework is used in the file.
@@ -309,6 +368,43 @@ class GuiNamingVisitor(ast.NodeVisitor):
         elif func.attr == "error" and msg != msg.capitalize():
             self.violations.append((msg, "Logging (error)", node.lineno))
 
+
+                (node.name, "Function spacing (no blank line after def)", node.lineno)
+            )
+
+
+    ## logging
+
+    def loggingCheckExpression(self, node) -> None:
+        """Check project logging message formatting."""
+        if not isinstance(node.value, ast.Call):
+            return
+
+        func = node.value.func
+        if not isinstance(func, ast.Attribute):
+            return
+
+        if func.attr == "pack":
+            self.packCalls += 1
+        elif func.attr == "grid":
+            self.gridCalls += 1
+
+        if func.attr not in {"info", "warning", "error"}:
+            return
+
+        if not node.value.args or not isinstance(node.value.args[0], ast.Constant):
+            return
+
+        msg = node.value.args[0].value
+
+        if func.attr in {"info", "warning"}:
+            validInfoMessage = msg.islower() or re.match(r"[.]{3}.*|.*[.]{3}|[.]{3}.*:.*", msg)
+            if not validInfoMessage:
+                self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
+
+        elif func.attr == "error":
+            if msg != msg.capitalize():
+                self.violations.append((msg, "Logging (error)", node.lineno))
 
 
     ## spelling

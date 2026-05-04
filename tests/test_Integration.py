@@ -262,8 +262,8 @@ class TestResourceAccess:
         assert len(content) > 0
         assert "GitHub Copilot Instructions" in content
         assert "Code Organisation & Function Naming Pattern" in content
-        assert "Domain + Action" in content
-        assert "Determine the functional domains on an ongoing basis" in content
+        assert "Function names should use the `domainAction` pattern." in content
+        assert "domain first, then action. Use camelCase." in content
         assert (
             "this file takes precedence and the conflicting guidance should be removed or aligned"
             in content

@@ -30,6 +30,17 @@ FUNCTION_NAME_EXCEPTIONS = {
     "visit_FunctionDef",
 }
 
+LOGGING_METHODS = {
+    "action",
+    "debug",
+    "doing",
+    "done",
+    "error",
+    "info",
+    "value",
+    "warning",
+}
+
 NAMING_RULES = {
     "Button": r"^btn[A-Z]\w+",
     "Entry": r"^entry[A-Z]\w+",
@@ -249,16 +260,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
         if not isLoggerCall:
             return
 
-        if func.attr not in {
-            "debug",
-            "info",
-            "warning",
-            "error",
-            "action",
-            "doing",
-            "done",
-            "value",
-        }:
+        if func.attr not in LOGGING_METHODS:
             return
 
         if not node.value.args:

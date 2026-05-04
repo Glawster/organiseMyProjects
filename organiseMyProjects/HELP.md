@@ -161,7 +161,7 @@ The linter includes built-in exceptions for certain cases:
 - Pattern-based exceptions for specific naming requirements
 
 ### Extending the Linter
-To add new rules or modify existing ones, edit the package copy of `guiNamingLinter.py` in `organiseMyProjects/guiNamingLinter.py`:
+To add new rules or modify existing ones, edit `organiseMyProjects/guiNamingLinter.py`:
 - Add new patterns to the `namingRules` dictionary
 - Modify the `GuiNamingVisitor` class to implement new checks
 - Update exception lists as needed

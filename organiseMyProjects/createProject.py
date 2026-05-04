@@ -314,7 +314,7 @@ def main():
     parser = argparse.ArgumentParser(description="Create or update a project scaffold")
     parser.add_argument(
         "-p",
-        "project",
+        "--project",
         nargs="?",
         default=None,
         help="Name of the project directory (omit with --update to use CWD)",

@@ -667,6 +667,24 @@ class MyFrame:
             for v in violations
         )
 
+    def testLoggerActionLiteralMessageValid(self, temp_dir):
+        """Test that logger.action accepts a literal message without variables."""
+        test_file = temp_dir / "test_logger_action_valid.py"
+        content = """
+from organiseMyProjects.logUtils import getLogger
+
+logger = getLogger()
+
+class MyFrame:
+    def actionRun(self):
+        logger.action("writing output file")
+"""
+        test_file.write_text(content)
+
+        violations = fileCheck(str(test_file))
+
+        assert violations == []
+
     def testLoggerInfoSingleVariableViolation(self, temp_dir):
         """Test that logger.info with one variable suggests logger.value."""
         test_file = temp_dir / "test_logger_info.py"

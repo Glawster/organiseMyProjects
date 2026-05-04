@@ -655,7 +655,8 @@ logger = getLogger()
 class MyFrame:
     def actionRun(self):
 
-        logger.action("writing file %s", "output.txt")
+        filename = "output.txt"
+        logger.action("writing file %s", filename)
 """
         test_file.write_text(content)
 
@@ -678,6 +679,7 @@ logger = getLogger()
 class MyFrame:
     def infoRun(self):
 
+        count = 5
         logger.info("file count: %s", count)
 """
         test_file.write_text(content)

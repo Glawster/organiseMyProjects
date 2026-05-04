@@ -86,7 +86,6 @@ class Example:
     def configSave(self):
         pass
 
-
     ## message
 
     def messageExtract(self):
@@ -94,7 +93,6 @@ class Example:
 
     def messageParse(self):
         pass
-
 
     ## utilities
 
@@ -123,8 +121,7 @@ Larger applications may also use `src/` and `ui/` folders:
     │       ├── core/
     │       ├── utils/
     │       └── patterns/
-    ├── ui/
-    ├── Qt/ui
+    ├── qt/ui
     ├── tests/
     ├── requirements.txt
     ├── README.md
@@ -155,6 +152,7 @@ All CLI tools must:
 
 ``` python
 parser.add_argument(
+    "-y",
     "--confirm",
     dest="confirm",
     action="store_true",
@@ -272,7 +270,7 @@ def main() -> None:
 Use this in helper modules (do not import or redefine `thisApplication` outside `main.py`):
 
 ``` python
-from organiseMyProjects.logUtils import getLogger
+from organiseMyProjects.logUtils import getLogger, setApplication
 
 logger = getLogger()
 ```

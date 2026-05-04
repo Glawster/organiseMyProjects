@@ -114,7 +114,9 @@ runLinter file1.py directory2/ file3.py
 ### Integration with Development Workflow
 
 #### Pre-commit Hooks
-The linter is automatically integrated with pre-commit hooks in generated projects:
+The linter is automatically integrated with pre-commit hooks in generated projects.
+This requires the `organiseMyProjects` package to be installed in the environment
+that runs pre-commit so the `runLinter` entry point is available:
 ```yaml
 - repo: local
   hooks:

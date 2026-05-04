@@ -315,7 +315,6 @@ class TestQtNamingValidation:
     
     def testQtValidNaming(self, mockQtFile, capsys):
         """Test that valid Qt naming passes."""
-        # fileCheck imported at module level
         violations = fileCheck(str(mockQtFile))
         
         # Should have one violation for invalidButton (not snake_case)
@@ -334,7 +333,6 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(qt_file))
         
         assert len(violations) > 0
@@ -352,7 +350,6 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(qt_file))
         
         # Should have no violations for private members in snake_case
@@ -373,7 +370,6 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(qt_file))
         
         # Should have 2 violations
@@ -429,7 +425,6 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(qt_file))
         
         # Should have no violations - Qt doesn't require btn prefix
@@ -447,7 +442,6 @@ class MyFrame:
 '''
         tk_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(tk_file))
         
         # Should have no violations - Tkinter allows prefix-based camelCase
@@ -469,7 +463,6 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have violation for horizontalSpacer
@@ -489,7 +482,6 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have violation for verticalSpacer
@@ -509,7 +501,6 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have no violations for hrz_ prefix
@@ -527,7 +518,6 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have no violations for vrt_ prefix
@@ -545,7 +535,6 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have violation for horizontalLayout
@@ -565,7 +554,6 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have violation for verticalLayout
@@ -588,7 +576,6 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have 4 violations
@@ -611,7 +598,6 @@ class MyFrame:
 '''
         test_file.write_text(content)
         
-        # fileCheck imported at module level
         violations = fileCheck(str(test_file))
         
         # Should have violations for horizontal/vertical

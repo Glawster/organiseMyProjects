@@ -13,12 +13,13 @@ from organiseMyProjects.guiNamingLinter import (
     GuiNamingVisitor,
     lintFile,
     lintGuiNaming,
-    namingRules,
-    classNameExceptions,
-    widgetClasses,
-    detectFramework,
-    isSnakeCase,
-    qtWidgetTypes
+    NAMING_RULES,
+    CLASS_NAME_EXCEPTIONS,
+    WIDGET_CLASSES,
+    QT_WIDGET_TYPES,
+    frameworkDetect,
+    nameIsSnakeCase,
+    fileCheck,
 )
 
 
@@ -42,16 +43,16 @@ class TestGuiNamingVisitor:
             'Listbox', 'Checkbutton', 'Radiobutton', 'Combobox'
         }
         
-        assert 'Button' in namingRules
-        assert 'Handler' in namingRules
-        assert 'Constant' in namingRules
-        assert 'Class' in namingRules
+        assert 'Button' in NAMING_RULES
+        assert 'Handler' in NAMING_RULES
+        assert 'Constant' in NAMING_RULES
+        assert 'Class' in NAMING_RULES
         
         # Test button naming pattern
-        assert namingRules['Button'] == r'^btn[A-Z]\w+'
-        assert namingRules['Handler'] == r'^on[A-Z]\w+'
-        assert namingRules['Constant'] == r'^[A-Z_]+$'
-        assert namingRules['Class'] == r'^[A-Z][a-zA-Z0-9]*$'
+        assert NAMING_RULES['Button'] == r'^btn[A-Z]\w+'
+        assert NAMING_RULES['Handler'] == r'^on[A-Z]\w+'
+        assert NAMING_RULES['Constant'] == r'^[A-Z_]+$'
+        assert NAMING_RULES['Class'] == r'^[A-Z][a-zA-Z0-9]*$'
     
     def testWidgetClassesDefinition(self):
         """Test that widget classes are correctly defined."""
@@ -60,14 +61,14 @@ class TestGuiNamingVisitor:
             'Listbox', 'Checkbutton', 'Radiobutton', 'Combobox'
         }
         
-        assert widgetClasses == expected_widgets
-        assert 'Handler' not in widgetClasses
-        assert 'Constant' not in widgetClasses
-        assert 'Class' not in widgetClasses
+        assert WIDGET_CLASSES == expected_widgets
+        assert 'Handler' not in WIDGET_CLASSES
+        assert 'Constant' not in WIDGET_CLASSES
+        assert 'Class' not in WIDGET_CLASSES
     
     def testClassNameExceptions(self):
         """Test that class name exceptions are defined."""
-        assert 'iCloudSyncFrame' in classNameExceptions
+        assert 'iCloudSyncFrame' in CLASS_NAME_EXCEPTIONS
 
 
 class TestLintFile:
@@ -196,7 +197,7 @@ class TestNamingPatterns:
     def testValidNamingPatterns(self, valid_name, widget_type):
         """Test that valid names match their respective patterns."""
         import re
-        pattern = namingRules[widget_type]
+        pattern = NAMING_RULES[widget_type]
         assert re.match(pattern, valid_name), f"{valid_name} should match {widget_type} pattern"
     
     @pytest.mark.parametrize("invalid_name,widget_type", [
@@ -216,7 +217,7 @@ class TestNamingPatterns:
     def testInvalidNamingPatterns(self, invalid_name, widget_type):
         """Test that invalid names don't match their respective patterns."""
         import re
-        pattern = namingRules[widget_type]
+        pattern = NAMING_RULES[widget_type]
         assert not re.match(pattern, invalid_name), f"{invalid_name} should not match {widget_type} pattern"
 
 
@@ -225,15 +226,15 @@ class TestSpecialCases:
     
     def testIcloudException(self):
         """Test that iCloud-related class names are handled as exceptions."""
-        assert 'iCloudSyncFrame' in classNameExceptions
+        assert 'iCloudSyncFrame' in CLASS_NAME_EXCEPTIONS
     
     def testWidgetClassesSubset(self):
-        """Test that widgetClasses excludes non-widget types."""
-        assert 'Handler' not in widgetClasses
-        assert 'Constant' not in widgetClasses  
-        assert 'Class' not in widgetClasses
-        assert 'Button' in widgetClasses
-        assert 'Label' in widgetClasses
+        """Test that WIDGET_CLASSES excludes non-widget types."""
+        assert 'Handler' not in WIDGET_CLASSES
+        assert 'Constant' not in WIDGET_CLASSES  
+        assert 'Class' not in WIDGET_CLASSES
+        assert 'Button' in WIDGET_CLASSES
+        assert 'Label' in WIDGET_CLASSES
 
 
 class TestFrameworkDetection:
@@ -242,26 +243,26 @@ class TestFrameworkDetection:
     def testDetectTkinter(self):
         """Test detection of Tkinter framework."""
         content = "import tkinter as tk\nfrom tkinter import ttk"
-        assert detectFramework(content) == 'tkinter'
+        assert frameworkDetect(content) == 'tkinter'
         
         content2 = "from tkinter import *"
-        assert detectFramework(content2) == 'tkinter'
+        assert frameworkDetect(content2) == 'tkinter'
     
     def testDetectQt(self):
         """Test detection of Qt frameworks."""
         content1 = "from PySide6.QtWidgets import QWidget"
-        assert detectFramework(content1) == 'qt'
+        assert frameworkDetect(content1) == 'qt'
         
         content2 = "from PyQt5.QtCore import Qt"
-        assert detectFramework(content2) == 'qt'
+        assert frameworkDetect(content2) == 'qt'
         
         content3 = "from PyQt6.QtWidgets import QApplication"
-        assert detectFramework(content3) == 'qt'
+        assert frameworkDetect(content3) == 'qt'
     
     def testDetectNoFramework(self):
         """Test files without recognized GUI framework."""
         content = "import os\nimport sys"
-        assert detectFramework(content) is None
+        assert frameworkDetect(content) is None
 
 
 class TestSnakeCase:
@@ -281,7 +282,7 @@ class TestSnakeCase:
     ])
     def testValidSnakeCase(self, valid_name):
         """Test that valid snake_case names pass validation."""
-        assert isSnakeCase(valid_name), f"{valid_name} should be valid snake_case"
+        assert nameIsSnakeCase(valid_name), f"{valid_name} should be valid snake_case"
     
     @pytest.mark.parametrize("invalid_name", [
         "saveButton",  # camelCase
@@ -294,7 +295,7 @@ class TestSnakeCase:
     ])
     def testInvalidSnakeCase(self, invalid_name):
         """Test that invalid snake_case names fail validation."""
-        assert not isSnakeCase(invalid_name), f"{invalid_name} should not be valid snake_case"
+        assert not nameIsSnakeCase(invalid_name), f"{invalid_name} should not be valid snake_case"
 
 
 class TestQtWidgets:
@@ -302,11 +303,11 @@ class TestQtWidgets:
     
     def testQtWidgetTypes(self):
         """Test that common Qt widgets are defined."""
-        assert 'QPushButton' in qtWidgetTypes
-        assert 'QLabel' in qtWidgetTypes
-        assert 'QLineEdit' in qtWidgetTypes
-        assert 'QWidget' in qtWidgetTypes
-        assert 'QComboBox' in qtWidgetTypes
+        assert 'QPushButton' in QT_WIDGET_TYPES
+        assert 'QLabel' in QT_WIDGET_TYPES
+        assert 'QLineEdit' in QT_WIDGET_TYPES
+        assert 'QWidget' in QT_WIDGET_TYPES
+        assert 'QComboBox' in QT_WIDGET_TYPES
 
 
 class TestQtNamingValidation:
@@ -314,8 +315,8 @@ class TestQtNamingValidation:
     
     def testQtValidNaming(self, mockQtFile, capsys):
         """Test that valid Qt naming passes."""
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(mockQtFile))
+        # fileCheck imported at module level
+        violations = fileCheck(str(mockQtFile))
         
         # Should have one violation for invalidButton (not snake_case)
         assert len(violations) == 1
@@ -333,8 +334,8 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(qt_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(qt_file))
         
         assert len(violations) > 0
         assert any('saveButton' in str(v) for v in violations)
@@ -351,8 +352,8 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(qt_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(qt_file))
         
         # Should have no violations for private members in snake_case
         assert len(violations) == 0
@@ -372,8 +373,8 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(qt_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(qt_file))
         
         # Should have 2 violations
         assert len(violations) == 2
@@ -428,8 +429,8 @@ class MyWidget:
 '''
         qt_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(qt_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(qt_file))
         
         # Should have no violations - Qt doesn't require btn prefix
         assert len(violations) == 0
@@ -446,8 +447,8 @@ class MyFrame:
 '''
         tk_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(tk_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(tk_file))
         
         # Should have no violations - Tkinter allows prefix-based camelCase
         assert len(violations) == 0
@@ -468,8 +469,8 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have violation for horizontalSpacer
         assert len(violations) > 0
@@ -488,8 +489,8 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have violation for verticalSpacer
         assert len(violations) > 0
@@ -508,8 +509,8 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have no violations for hrz_ prefix
         assert len(violations) == 0
@@ -526,8 +527,8 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have no violations for vrt_ prefix
         assert len(violations) == 0
@@ -544,8 +545,8 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have violation for horizontalLayout
         assert len(violations) > 0
@@ -564,8 +565,8 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have violation for verticalLayout
         assert len(violations) > 0
@@ -587,8 +588,8 @@ class MyWidget:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have 4 violations
         assert len(violations) == 4
@@ -610,8 +611,8 @@ class MyFrame:
 '''
         test_file.write_text(content)
         
-        from organiseMyProjects.guiNamingLinter import checkFile
-        violations = checkFile(str(test_file))
+        # fileCheck imported at module level
+        violations = fileCheck(str(test_file))
         
         # Should have violations for horizontal/vertical
         assert len(violations) >= 2

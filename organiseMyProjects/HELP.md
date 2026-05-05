@@ -114,14 +114,16 @@ runLinter file1.py directory2/ file3.py
 ### Integration with Development Workflow
 
 #### Pre-commit Hooks
-The linter is automatically integrated with pre-commit hooks in generated projects:
+The linter is automatically integrated with pre-commit hooks in generated projects.
+This requires the `organiseMyProjects` package to be installed in the environment
+that runs pre-commit so the `runLinter` entry point is available:
 ```yaml
 - repo: local
   hooks:
     - id: gui-naming-linter
       name: GUI Naming Linter
-      entry: python tests/runLinter.py
-      language: system
+      entry: runLinter
+      language: python
       types: [python]
 ```
 
@@ -161,7 +163,7 @@ The linter includes built-in exceptions for certain cases:
 - Pattern-based exceptions for specific naming requirements
 
 ### Extending the Linter
-To add new rules or modify existing ones, edit the `guiNamingLinter.py` file:
+To add new rules or modify existing ones, edit `organiseMyProjects/guiNamingLinter.py`:
 - Add new patterns to the `namingRules` dictionary
 - Modify the `GuiNamingVisitor` class to implement new checks
 - Update exception lists as needed

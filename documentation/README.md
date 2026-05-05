@@ -41,8 +41,7 @@ myNewProject/
 │   ├── statusFrame.py            # Status display utilities
 │   └── styleUtils.py             # GUI styling utilities
 ├── tests/
-│   ├── runLinter.py              # Linter entry point
-│   └── guiNamingLinter.py        # GUI naming convention checker
+│   └── runLinter.py              # Linter entry point
 ├── logs/                         # Application log directory
 ├── main.py                       # Application main entry point
 ├── requirements.txt              # Production dependencies
@@ -107,12 +106,8 @@ pytest --cov=organiseMyProjects
 - `tests/testGuiNamingLinter.py` - Tests for GUI naming convention linting
 - `tests/testRunLinter.py` - Tests for the linter CLI interface
 - `tests/testIntegration.py` - End-to-end integration tests
-<<<<<<< HEAD
 - `tests/testLogUtils.py` - Tests for logging utilities (including `drawBox`)
-=======
-- `tests/testLogUtils.py` - Tests for logging utilities
 - `tests/testSyncCopilotInstructions.py` - Tests for Copilot instructions sync
->>>>>>> 061fc52af2348e58db883eb1ef44b41ea29799e0
 - `tests/conftest.py` - Shared test fixtures and configuration
 
 **Note**: The `tests/` directory is for development and testing of this project itself. It is not included in the installed package, so end users won't get these test files when they install `organiseMyProjects`.

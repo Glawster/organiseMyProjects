@@ -31,6 +31,7 @@ class TestDefaultLogDir:
     def testGetLoggerCreatesNameSubdirAndDateFile(self, tmp_path, monkeypatch):
         """Test that getLogger uses applicationLogDir/{name}-{date}.log when name matches the application context."""
         import organiseMyProjects.logUtils as logUtils
+
         appName = "testAppName"
         appLogDir = tmp_path / appName
         appLogDir.mkdir(parents=True, exist_ok=True)
@@ -39,7 +40,9 @@ class TestDefaultLogDir:
         logger = getLogger(appName)
         expectedDate = datetime.date.today().isoformat()
         expectedFile = appLogDir / f"{appName}-{expectedDate}.log"
-        assert expectedFile.exists(), f"Expected log file {expectedFile} was not created"
+        assert (
+            expectedFile.exists()
+        ), f"Expected log file {expectedFile} was not created"
 
 
 class TestDrawBox:
@@ -162,6 +165,26 @@ class TestDrawBox:
         assert len(lines[0]) == 1 + len(message) + 4 * 2 + 1
         # Content line should have 4 spaces of padding on each side
         assert lines[1] == "│    X    │"
+
+    def testDrawBoxWidthWrapsLongLine(self, capsys):
+        """Test that width wraps overlong lines and fixes box width."""
+        drawBox("abcdefghijklmnopqrstuvwxyz", width=10, padding=1)
+
+        captured = capsys.readouterr()
+        lines = captured.out.splitlines()
+
+        # top + 3 wrapped lines + bottom
+        assert len(lines) == 5
+        # inner width = 10 + (1 * 2), plus two corners
+        assert len(lines[0]) == 14
+        assert "abcdefghij" in lines[1]
+        assert "klmnopqrst" in lines[2]
+        assert "uvwxyz" in lines[3]
+
+    def testDrawBoxWidthMustBePositive(self):
+        """Test that width rejects non-positive values."""
+        with pytest.raises(ValueError, match="width must be a positive integer"):
+            drawBox("hello", width=0)
 
 
 class TestGetLoggerDryRun:

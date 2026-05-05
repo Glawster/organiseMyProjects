@@ -74,7 +74,7 @@ organiseMyProjects/
 │   ├── logUtils.py                       # [PACKAGE] Centralized logging utility
 │   ├── globalVars.py                     # [TEMPLATE] Global constants
 │   ├── HELP.md                           # [PACKAGE] GUI linter documentation
-│   ├── guiNamingLinter.py                # [TEMPLATE + PACKAGE] Naming convention checker
+│   ├── guiNamingLinter.py                # [PACKAGE] Naming convention checker
 │   ├── runLinter.py                      # [TEMPLATE + PACKAGE] Linter CLI interface
 │   ├── baseFrame.py                      # [TEMPLATE] Base GUI framework
 │   ├── frameTemplate.py                  # [TEMPLATE] Template for new frames
@@ -103,6 +103,7 @@ organiseMyProjects/
 - `createProject.py` - The scaffolding tool itself
 - `logUtils.py` - Package-level logging utility (accessible via `from organiseMyProjects.logUtils import getLogger, thisApplication`)
 - `HELP.md` - Documentation
+- `guiNamingLinter.py` - Naming linter used by this repo and by installed downstream projects
 
 **[TEMPLATE]** - Template files that are copied to new projects:
 - `globalVars.py` - Global constants (copied to src/)
@@ -112,7 +113,6 @@ organiseMyProjects/
 - `mainMenu.py` - Main menu framework
 
 **[TEMPLATE + PACKAGE]** - Dual-purpose files that are both copied to new projects AND accessible from the package:
-- `guiNamingLinter.py` - Naming linter (copied to tests/, also runnable via package)
 - `runLinter.py` - Linter CLI (copied to tests/, also runnable via package)
 
 ## Core Components
@@ -128,7 +128,7 @@ organiseMyProjects/
 
 ### guiNamingLinter.py
 - **Purpose**: Enforces widget naming conventions via AST analysis for both Tkinter and Qt/PySide6 projects
-- **Type**: TEMPLATE + PACKAGE (copied to new projects' tests/ directory AND accessible via package import)
+- **Type**: PACKAGE UTILITY (kept in this repository/package and used by installed downstream projects)
 - **Key Classes**:
   - `GuiNamingVisitor` - AST visitor for analyzing code
 - **Key Functions**:
@@ -144,7 +144,6 @@ organiseMyProjects/
   - **Qt Projects**: Enforces snake_case naming (no prefix requirement)
   - **Mixed Projects**: Per-file framework detection (some files Tkinter, some Qt)
 - **Usage**: 
-  - In new projects: `python tests/guiNamingLinter.py <target>`
   - From package: `python -m organiseMyProjects.guiNamingLinter <target>` or `from organiseMyProjects import lintFile`
 
 ### runLinter.py
@@ -197,7 +196,7 @@ The package contains two types of files:
    
 2. **Template Files** - Copied to new projects via `createProject`:
    - `.github/copilot-instructions.md` - Master Copilot guidelines copied to the generated project's `.github/` directory
-   - `guiNamingLinter.py` - Naming checker for the project
+   - `guiNamingLinter.py` - Naming checker provided by the installed `organiseMyProjects` package
    - `runLinter.py` - Linter CLI for the project
    - GUI framework files: `baseFrame.py`, `frameTemplate.py`, `statusFrame.py`, `mainMenu.py`, `styleUtils.py`
 

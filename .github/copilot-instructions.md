@@ -183,6 +183,7 @@ Never expose `--dry-run` as the CLI flag. Use `dryRun` only as the internal bool
 ## Logging Pattern (logUtils)
 
 All projects must use centralized logging from `organiseMyProjects.logUtils`.
+Do not include "..." manually in log messages. logUtils owns prefixes/suffixes.
 
 ### Application context
 
@@ -245,6 +246,7 @@ from ui.mainMenu import mainMenu
 def buildParser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "-y",
         "--confirm",
         dest="confirm",
         action="store_true",
@@ -267,10 +269,10 @@ def main() -> None:
     logger.done("finished")
 ```
 
-Use this in helper modules (do not import or redefine `thisApplication` outside `main.py`):
+Use this in helper modules (do not use `setApplication()` in helper modules):
 
 ``` python
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger
 
 logger = getLogger()
 ```
@@ -293,7 +295,7 @@ logger.value("month", config.monthWindow.monthKey)
 logger.value("dryRun", config.dryRun)
 ```
 
-Avoid:
+Output Examples:
 
 ``` python
 logger.doing("scanning files")           # → scanning files...
@@ -339,17 +341,11 @@ if not dryRun:
 
 Do not manually build dry-run prefixes or branch log wording by `dryRun`.
 
-### Value Logging Rule
+### Info/Value Logging Rule
 
-Use `logger.value("name", value)` when logging a single variable.
-
-Do not use:
-- `logger.info("name: %s", value)`
-- f-strings in `doing()` or `done()`
-
-Use `logger.info()` only for:
-- multiple variables
-- narrative messages
+Use logger.info() for narrative messages with no variables, or formatted messages with two or more variables.
+Use logger.value("name", value) for exactly one variable.
+No other logger methods should receive variable arguments.
 
 ### No fallback logging
 
@@ -358,7 +354,7 @@ External dependencies must fail fast. Never silently replace `logUtils`:
 ``` python
 # Do not do this
 try:
-    from organiseMyProjects.logUtils import getLogger
+    from organiseMyProjects.logUtils import getLogger, setApplication
 except Exception:
     import logging
 ```

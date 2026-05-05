@@ -278,6 +278,14 @@ class GuiNamingVisitor(ast.NodeVisitor):
                 )
             )
 
+        if func.attr == "value" and variableCount != 1:
+            self.violations.append(
+                (
+                    "logger.value",
+                    "Logging variables (logger.value requires exactly one variable)",
+                    node.lineno,
+                )
+            )
         if func.attr == "info" and variableCount == 1:
             self.violations.append(
                 (
@@ -440,6 +448,8 @@ def fileCheck(filepath: str) -> list[tuple[str, str, int]]:
     astAnnotateParents(tree)
 
     visitor = GuiNamingVisitor(lines, framework=framework)
+    visitor.violations.extend(testFileCheck(filepath))
+
     visitor.visit(tree)
 
     if framework == "tkinter" and visitor.gridCalls > 0 and visitor.packCalls == 0:
@@ -447,6 +457,24 @@ def fileCheck(filepath: str) -> list[tuple[str, str, int]]:
 
     return visitor.violations
 
+## test file naming
+
+def testFileCheck(filepath: str) -> list[tuple[str, str, int]]:
+    """Check test file naming convention."""
+    filename = os.path.basename(filepath)
+
+    if filename.startswith("test_"):
+        namePart = filename[5:].split(".")[0]
+        if not re.match(r"[A-Z]\w*$", namePart):
+            return [
+                (
+                    filename,
+                    "Test file naming (test_[A-Z]*)",
+                    0,
+                )
+            ]
+
+    return []
 
 ## lint
 

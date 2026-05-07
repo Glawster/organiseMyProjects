@@ -2,7 +2,6 @@
 Tests for createProject.py functionality.
 """
 
-import datetime
 import logging
 import pytest
 import os
@@ -16,18 +15,24 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from organiseMyProjects.createProject import (
     createProject,
     updateProject,
-    _backupFile,
-    _copyIfNewer,
-    _updateTextFile,
+    main as createProjectMain,
+    _copy_if_newer,
+    _update_text_file,
+    _build_env_content,
+    _ensureEnvFile,
     GITIGNORE_CONTENT,
     REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
-    ENV_CONTENT,
     MAIN_PY_CONTENT,
     PRECOMMIT_CONTENT,
     PYTEST_INI_CONTENT,
     VSCODE_SETTINGS_CONTENT,
 )
+
+
+def assert_no_gui_scaffolds(projectPath: Path):
+    assert not (projectPath / "ui").exists()
+    assert not (projectPath / "qt").exists()
 
 
 class TestCreateProject:
@@ -44,14 +49,13 @@ class TestCreateProject:
         # Verify directory structure
         assert projectPath.exists()
         assert (projectPath / "src").exists()
-        assert (projectPath / "ui").exists()
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
 
         # Verify package init files
         assert (projectPath / "src" / "__init__.py").exists()
-        assert (projectPath / "ui" / "__init__.py").exists()
+        assert_no_gui_scaffolds(projectPath)
 
     def testCreateProjectCoreFiles(self, temp_dir, sample_project_name):
         """Test that createProject creates core configuration files."""
@@ -82,7 +86,7 @@ class TestCreateProject:
         assert (
             projectPath / "dev-requirements.txt"
         ).read_text() == DEV_REQUIREMENTS_CONTENT
-        assert (projectPath / ".env").read_text() == ENV_CONTENT
+        assert (projectPath / ".env").read_text() == _build_env_content()
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (
             projectPath / ".pre-commit-config.yaml"
@@ -116,7 +120,7 @@ class TestCreateProject:
         ).read_text() == VSCODE_SETTINGS_CONTENT
 
     def testCreateProjectTemplateFiles(self, temp_dir, sample_project_name):
-        """Test that only template files (not package utilities) are copied."""
+        """Test that only non-UI template files are copied by default."""
         projectPath = temp_dir / sample_project_name
 
         with patch("organiseMyProjects.createProject.subprocess.run"):
@@ -126,13 +130,9 @@ class TestCreateProject:
         assert (
             projectPath / "src" / "globalVars.py"
         ).exists(), "globalVars.py should be copied to new projects"
-        assert (projectPath / "ui" / "styleUtils.py").exists()
-        assert (projectPath / "ui" / "mainMenu.py").exists()
-        assert (projectPath / "ui" / "baseFrame.py").exists()
-        assert (projectPath / "ui" / "frameTemplate.py").exists()
-        assert (projectPath / "ui" / "statusFrame.py").exists()
         assert (projectPath / "tests" / "runLinter.py").exists()
-        assert not (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert_no_gui_scaffolds(projectPath)
 
         # Verify package utilities are NOT copied
         assert not (
@@ -141,6 +141,36 @@ class TestCreateProject:
         assert not (
             projectPath / "createProject.py"
         ).exists(), "createProject.py should NOT be copied to new projects"
+
+    def testCreateProjectUiTemplates(self, temp_dir, sample_project_name):
+        """Test that tkinter UI templates are copied only when requested."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            createProject(str(projectPath), includeUi=True)
+
+        assert (projectPath / "ui" / "__init__.py").exists()
+        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
+        assert (projectPath / "ui" / "styleUtils.py").exists()
+        assert (projectPath / "ui" / "mainMenu.py").exists()
+        assert (projectPath / "ui" / "baseFrame.py").exists()
+        assert (projectPath / "ui" / "frameTemplate.py").exists()
+        assert (projectPath / "ui" / "statusFrame.py").exists()
+
+    def testCreateProjectQtTemplates(self, temp_dir, sample_project_name):
+        """Test that Qt templates are copied only when requested."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            createProject(str(projectPath), includeQt=True)
+
+        assert (projectPath / "qt" / "__init__.py").exists()
+        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
+        assert (projectPath / "qt" / "styleUtils.py").exists()
+        assert (projectPath / "qt" / "mainMenu.py").exists()
+        assert (projectPath / "qt" / "baseFrame.py").exists()
+        assert (projectPath / "qt" / "frameTemplate.py").exists()
+        assert (projectPath / "qt" / "statusFrame.py").exists()
 
     def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, caplog):
         """Test behavior when project directory already exists."""
@@ -177,10 +207,10 @@ class TestUpdateProject:
 
         # Verify directories are created
         assert (projectPath / "src").exists()
-        assert (projectPath / "ui").exists()
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
+        assert_no_gui_scaffolds(projectPath)
 
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
@@ -240,6 +270,74 @@ class TestUpdateProject:
             projectPath / ".vscode" / "settings.json"
         ).read_text() == VSCODE_SETTINGS_CONTENT
 
+    def testUpdateProjectExistingUiTemplates(self, temp_dir, sample_project_name):
+        """Test that updateProject preserves and refreshes existing tkinter scaffolds."""
+        projectPath = temp_dir / sample_project_name
+        (projectPath / "ui").mkdir(parents=True)
+        (projectPath / "ui" / "__init__.py").touch()
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            updateProject(str(projectPath))
+
+        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
+        assert (projectPath / "ui" / "mainMenu.py").exists()
+
+    def testUpdateProjectCanAddQtTemplates(self, temp_dir, sample_project_name):
+        """Test that updateProject can add Qt scaffolding when requested."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            updateProject(str(projectPath), includeQt=True)
+
+        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
+        assert (projectPath / "qt" / "__init__.py").exists()
+        assert (projectPath / "qt" / "mainMenu.py").exists()
+
+    def testUpdateProjectPreservesExistingMainPy(self, temp_dir, sample_project_name):
+        """Test that updateProject does not overwrite project-owned main.py code."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        customMain = "print('custom main')\n"
+        (projectPath / "main.py").write_text(customMain)
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            updateProject(str(projectPath))
+
+        assert (projectPath / "main.py").read_text() == customMain
+
+    def testUpdateProjectPreservesExistingUiTemplateFile(
+        self, temp_dir, sample_project_name
+    ):
+        """Test that updateProject adds missing UI templates without overwriting existing code."""
+        projectPath = temp_dir / sample_project_name
+        (projectPath / "ui").mkdir(parents=True)
+        customMainMenu = "print('custom ui')\n"
+        (projectPath / "ui" / "mainMenu.py").write_text(customMainMenu)
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            updateProject(str(projectPath), includeUi=True)
+
+        assert (projectPath / "ui" / "mainMenu.py").read_text() == customMainMenu
+        assert (projectPath / "ui" / "statusFrame.py").exists()
+
+    def testUpdateProjectEnvAddsUiWithoutRemovingOtherSettings(
+        self, temp_dir, sample_project_name
+    ):
+        """Test that updateProject extends PYTHONPATH in .env instead of overwriting the file."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        (projectPath / ".env").write_text(
+            "API_URL=https://example.test\nPYTHONPATH=src\n"
+        )
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            updateProject(str(projectPath), includeUi=True)
+
+        envText = (projectPath / ".env").read_text()
+        assert "API_URL=https://example.test" in envText
+        assert "PYTHONPATH=src;ui" in envText
+
 
 class TestUtilityFunctions:
     """Test cases for utility functions."""
@@ -251,7 +349,7 @@ class TestUtilityFunctions:
 
         src.write_text("test content")
 
-        _copyIfNewer(src, dest)
+        _copy_if_newer(src, dest)
 
         assert dest.exists()
         assert dest.read_text() == "test content"
@@ -272,7 +370,7 @@ class TestUtilityFunctions:
         # Create src after (newer)
         src.write_text("new content")
 
-        _copyIfNewer(src, dest)
+        _copy_if_newer(src, dest)
 
         assert dest.read_text() == "new content"
 
@@ -281,7 +379,7 @@ class TestUtilityFunctions:
         dest = temp_dir / "test.txt"
         content = "test content"
 
-        _updateTextFile(dest, content)
+        _update_text_file(dest, content)
 
         assert dest.exists()
         assert dest.read_text() == content
@@ -294,7 +392,7 @@ class TestUtilityFunctions:
         dest.write_text(content)
         originalMtime = dest.stat().st_mtime
 
-        _updateTextFile(dest, content)
+        _update_text_file(dest, content)
 
         # File should not be modified if content is the same
         assert dest.stat().st_mtime == originalMtime
@@ -307,35 +405,25 @@ class TestUtilityFunctions:
 
         dest.write_text(oldContent)
 
-        _updateTextFile(dest, newContent)
+        _update_text_file(dest, newContent)
 
         assert dest.read_text() == newContent
 
+    def testEnsureEnvFilePreservesExistingLines(self, temp_dir):
+        """Test that _ensureEnvFile updates PYTHONPATH without discarding other entries."""
+        dest = temp_dir / ".env"
+        dest.write_text("ONE=1\nPYTHONPATH=src\nTWO=2\n")
 
-class TestBackupFile:
-    """Test cases for _backup_file helper."""
+        _ensureEnvFile(dest, includeUi=True, includeQt=True)
 
-    def testBackupFileCreatesBackup(self, temp_dir):
-        """Test that _backup_file renames existing file to stem.YYMMDD.ext."""
-        dest = temp_dir / "globalVars.py"
-        dest.write_text("original content")
+        assert dest.read_text() == "ONE=1\nPYTHONPATH=src;ui;qt\nTWO=2\n"
 
-        _backupFile(dest)
 
-        stamp = datetime.date.today().strftime("%y%m%d")
-        backup = temp_dir / f"globalVars.{stamp}.py"
-        assert backup.exists(), "Backup file should be created"
-        assert backup.read_text() == "original content"
-        assert not dest.exists(), "Original file should be renamed away"
+class TestUpdateHelpers:
+    """Test helper behavior used during project updates."""
 
-    def testBackupFileNoExistingFile(self, temp_dir):
-        """Test that _backup_file does nothing when file doesn't exist."""
-        dest = temp_dir / "nonexistent.py"
-        _backupFile(dest)  # Should not raise
-        assert not dest.exists()
-
-    def testCopyIfNewerBacksUpBeforeOverwriting(self, temp_dir):
-        """Test that _copy_if_newer creates a backup when overwriting."""
+    def testCopyIfNewerOverwritesWithoutBackup(self, temp_dir):
+        """Test that _copy_if_newer updates in place without creating backup files."""
         import time
 
         src = temp_dir / "source.py"
@@ -345,39 +433,29 @@ class TestBackupFile:
         time.sleep(0.05)
         src.write_text("new content")
 
-        _copyIfNewer(src, dest)
+        _copy_if_newer(src, dest)
 
-        stamp = datetime.date.today().strftime("%y%m%d")
-        backup = temp_dir / f"dest.{stamp}.py"
-        assert backup.exists(), "Backup should exist after overwrite"
-        assert backup.read_text() == "old content"
         assert dest.read_text() == "new content"
+        assert list(temp_dir.glob("dest.*.py")) == []
 
-    def testUpdateTextFileBacksUpBeforeOverwriting(self, temp_dir):
-        """Test that _update_text_file creates a backup when overwriting."""
+    def testUpdateTextFileOverwritesWithoutBackup(self, temp_dir):
+        """Test that _update_text_file updates in place without creating backup files."""
         dest = temp_dir / "config.txt"
         dest.write_text("old")
 
-        _updateTextFile(dest, "new content")
+        _update_text_file(dest, "new content")
 
-        stamp = datetime.date.today().strftime("%y%m%d")
-        backup = temp_dir / f"config.{stamp}.txt"
-        assert backup.exists(), "Backup should exist after overwrite"
-        assert backup.read_text() == "old"
         assert dest.read_text() == "new content"
+        assert list(temp_dir.glob("config.*.txt")) == []
 
     def testUpdateTextFileNoBackupWhenSameContent(self, temp_dir):
-        """Test that _update_text_file does NOT create a backup when content is unchanged."""
+        """Test that _update_text_file does not create backup-like files when unchanged."""
         dest = temp_dir / "config.txt"
         dest.write_text("same content")
 
-        _updateTextFile(dest, "same content")
+        _update_text_file(dest, "same content")
 
-        stamp = datetime.date.today().strftime("%y%m%d")
-        backup = temp_dir / f"config.{stamp}.txt"
-        assert (
-            not backup.exists()
-        ), "No backup should be created when content is unchanged"
+        assert list(temp_dir.glob("config.*.txt")) == []
 
 
 class TestDryRun:
@@ -428,22 +506,13 @@ class TestDryRun:
 
         assert "updating project" in caplog.text
 
-    def testBackupFileDryRunNoRename(self, temp_dir):
-        """Test that _backup_file in dry-run mode does not rename the original file."""
-        dest = temp_dir / "config.txt"
-        dest.write_text("original")
-
-        _backupFile(dest, dryRun=True)
-
-        assert dest.exists(), "Original file must not be renamed in dry-run mode"
-
     def testCopyIfNewerDryRunNoWrite(self, temp_dir):
         """Test that _copy_if_newer in dry-run mode does not write the destination file."""
         src = temp_dir / "source.txt"
         dest = temp_dir / "dest.txt"
         src.write_text("new content")
 
-        _copyIfNewer(src, dest, dryRun=True)
+        _copy_if_newer(src, dest, dryRun=True)
 
         assert not dest.exists(), "Destination file must not be created in dry-run mode"
 
@@ -451,6 +520,70 @@ class TestDryRun:
         """Test that _update_text_file in dry-run mode does not write the file."""
         dest = temp_dir / "output.txt"
 
-        _updateTextFile(dest, "some content", dryRun=True)
+        _update_text_file(dest, "some content", dryRun=True)
 
         assert not dest.exists(), "File must not be created in dry-run mode"
+
+
+class TestCliFlags:
+    """Test CLI flag handling for createProject."""
+
+    def testMainPassesUiAndQtFlagsToCreateProject(self):
+        with patch("organiseMyProjects.createProject.createProject") as mockCreate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "demo", "--ui", "-qt", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockCreate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=True,
+            includeQt=True,
+        )
+
+    def testMainPassesQtFlagToUpdateProject(self):
+        with patch("organiseMyProjects.createProject.updateProject") as mockUpdate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "--update", "-qt", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockUpdate.assert_called_once_with(
+            Path.cwd(),
+            dryRun=False,
+            includeUi=False,
+            includeQt=True,
+        )
+
+    def testMainPassesLegacyProjectFlagToCreateProject(self):
+        with patch("organiseMyProjects.createProject.createProject") as mockCreate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "--project", "demo", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockCreate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=False,
+            includeQt=False,
+        )
+
+    def testMainPassesLegacyProjectFlagToUpdateProject(self):
+        with patch("organiseMyProjects.createProject.updateProject") as mockUpdate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "--update", "--project", "demo", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockUpdate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=False,
+            includeQt=False,
+        )

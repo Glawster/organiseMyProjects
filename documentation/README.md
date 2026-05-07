@@ -25,6 +25,19 @@ pip install .
 createProject myNewProject
 ```
 
+Optional UI scaffolds can be installed at creation time:
+
+```bash
+# add the tkinter starter package
+createProject myNewProject --ui
+
+# add the Qt/PySide6 starter package
+createProject myNewProject -qt
+
+# install both UI scaffolds
+createProject myNewProject --ui -qt
+```
+
 Creates:
 ```
 myNewProject/
@@ -53,7 +66,11 @@ myNewProject/
 ```
 
 ### Update an existing project
-Refresh a project scaffold and replace any missing or outdated files. Provide the
+Refresh a project scaffold and replace missing scaffold files. Managed
+instructional/config files such as `pytest.ini`, `.pre-commit-config.yaml`,
+`.vscode/settings.json`, `tests/runLinter.py`, and Copilot instructions are
+refreshed in place, while project-owned code such as `main.py`, `.env`,
+`requirements.txt`, and UI/Qt modules is only created when missing. Provide the
 project name or run inside the target directory:
 ```bash
 # from anywhere
@@ -61,7 +78,16 @@ createProject myExistingProject --update
 
 # or from within the project directory
 createProject --update
+
+# add tkinter or Qt scaffolds during update
+createProject myExistingProject --update --ui
+createProject myExistingProject --update -qt
 ```
+
+`createProject --update` no longer creates dated backup copies. If you want to
+undo scaffold refresh changes, inspect the changed files in VS Code's Source
+Control/Changed Files view and revert the files you do not want before
+committing.
 
 ### Run the GUI naming linter
 ```bash

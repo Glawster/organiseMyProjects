@@ -446,7 +446,12 @@ def main():
     thisApplication = Path(__file__).stem
     setApplication(thisApplication)
 
-    parser = argparse.ArgumentParser(description="Create or update a project scaffold")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Create or update a project scaffold. Pass the project positionally "
+            "(preferred) or with --project for compatibility."
+        )
+    )
     parser.add_argument(
         "project",
         nargs="?",
@@ -458,7 +463,7 @@ def main():
         "--project",
         dest="projectOption",
         default=None,
-        help="Project directory name using the named flag form",
+        help="Legacy named flag for the project directory name",
     )
     parser.add_argument(
         "-u",

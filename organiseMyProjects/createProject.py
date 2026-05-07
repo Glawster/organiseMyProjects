@@ -492,12 +492,12 @@ def main():
 
     args = parser.parse_args()
     dryRun = not args.confirm
-    projectPath = args.project if args.project is not None else args.projectOption
 
     if args.project is not None and args.projectOption is not None:
         parser.error(
             "Use either the positional project argument or the --project flag, not both."
         )
+    projectPath = args.project if args.project is not None else args.projectOption
 
     logDir = Path.home() / ".local" / "state" / thisApplication
     logDir.mkdir(parents=True, exist_ok=True)

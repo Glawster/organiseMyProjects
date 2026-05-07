@@ -13,9 +13,9 @@ The main module responsible for project scaffolding functionality.
 
 **Key Functions:**
 - `createProject(projectName, includeUi=False, includeQt=False)` - Creates a new project with optional tkinter and Qt scaffolds
-- `updateProject(projectName)` - Updates existing project with latest templates
+- `updateProject(projectName)` - Updates scaffold-managed files and fills in any missing project files without overwriting project-owned code
 - `_copy_if_newer(src, dest)` - Utility for conditional file copying
-- `_update_text_file(dest, content)` - Utility for updating text files with binary comparison
+- `_update_text_file(dest, content)` - Utility for updating managed text files with binary comparison
 
 **Templates and Constants:**
 - `GITIGNORE_CONTENT` - Standard .gitignore content for Python projects
@@ -24,6 +24,10 @@ The main module responsible for project scaffolding functionality.
 - `ENV_CONTENT` - Environment configuration template
 - `MAIN_PY_CONTENT` - Main application entry point template
 - `PRECOMMIT_CONTENT` - Pre-commit configuration template
+
+`updateProject()` no longer creates dated backup copies. Users should review the
+resulting Git/VS Code changed files and revert any scaffold-managed updates they
+do not want before committing.
 
 #### `logUtils.py`
 Centralised logging utilities shared across organiseMyProjects tooling.

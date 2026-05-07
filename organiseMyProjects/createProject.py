@@ -1,4 +1,3 @@
-import datetime
 import os
 import shutil
 import subprocess
@@ -136,6 +135,27 @@ QT_TEMPLATE_FILES = [
     "frameTemplate.py",
     "statusFrame.py",
 ]
+MANAGED_TEXT_TEMPLATES = [
+    (Path(".pre-commit-config.yaml"), PRECOMMIT_CONTENT),
+    (Path("pytest.ini"), PYTEST_INI_CONTENT),
+    (Path(".vscode") / "settings.json", VSCODE_SETTINGS_CONTENT),
+]
+PROJECT_TEXT_TEMPLATES = [
+    (Path(".gitignore"), GITIGNORE_CONTENT),
+    (Path("requirements.txt"), REQUIREMENTS_CONTENT),
+    (Path("dev-requirements.txt"), DEV_REQUIREMENTS_CONTENT),
+    (Path("README.md"), None),
+    (Path("main.py"), MAIN_PY_CONTENT),
+]
+MANAGED_COPY_TEMPLATES = [
+    (TEMPLATE_DIR.parent / "projectGuidelines.md", Path("projectGuidelines.md")),
+    (
+        TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md",
+        Path(".github") / "copilot-instructions.md",
+    ),
+    (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
+    (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
+]
 
 
 def _build_env_content(includeUi: bool = False, includeQt: bool = False) -> str:
@@ -222,7 +242,9 @@ def createProject(
     if srcCopilotInstructions.exists():
         logger.action("copying copilot instructions")
         if not dryRun:
-            shutil.copy(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md")
+            shutil.copy(
+                srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md"
+            )
 
     # Copy template modules into the new project
     logger.action("copying template modules")
@@ -264,20 +286,10 @@ def createProject(
     logger.done(f"project '{projectName}' created")
 
 
-def _backup_file(dest: Path, dryRun: bool = False) -> None:
-    if dest.exists():
-        stamp = datetime.date.today().strftime("%y%m%d")
-        backup = dest.with_name(f"{dest.stem}.{stamp}{dest.suffix}")
-        logger.action(f"backed up {dest.name} → {backup.name}")
-        if not dryRun:
-            dest.rename(backup)
-
-
 def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
-        _backup_file(dest, dryRun)
         logger.action(f"updated {dest}")
         if not dryRun:
             shutil.copy(src, dest)
@@ -293,10 +305,81 @@ def _update_text_file(dest: Path, content: str, dryRun: bool = False):
         current = None
 
     if current != new_bytes:
-        _backup_file(dest, dryRun)
         logger.action(f"updated {dest}")
         if not dryRun:
             dest.write_bytes(new_bytes)
+
+
+def _createTextFileIfMissing(dest: Path, content: str, dryRun: bool = False):
+    if dest.exists():
+        return
+    if not dryRun:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    logger.action(f"created {dest}")
+    if not dryRun:
+        dest.write_text(content)
+
+
+def _copyIfMissing(src: Path, dest: Path, dryRun: bool = False):
+    if dest.exists():
+        return
+    if not dryRun:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    logger.action(f"created {dest}")
+    if not dryRun:
+        shutil.copy(src, dest)
+
+
+def _ensureEnvFile(
+    dest: Path,
+    includeUi: bool = False,
+    includeQt: bool = False,
+    dryRun: bool = False,
+):
+    desiredPaths = ["src"]
+    if includeUi:
+        desiredPaths.append("ui")
+    if includeQt:
+        desiredPaths.append("qt")
+
+    if not dest.exists():
+        _createTextFileIfMissing(dest, _build_env_content(includeUi, includeQt), dryRun)
+        return
+
+    try:
+        currentText = dest.read_text()
+    except OSError:
+        currentText = ""
+
+    lines = currentText.splitlines()
+    updatedLines = []
+    pathLineUpdated = False
+    changed = False
+
+    for line in lines:
+        if line.startswith("PYTHONPATH="):
+            existingPaths = [
+                entry for entry in line.partition("=")[2].split(";") if entry
+            ]
+            mergedPaths = []
+            for entry in existingPaths + desiredPaths:
+                if entry not in mergedPaths:
+                    mergedPaths.append(entry)
+            newLine = f"PYTHONPATH={';'.join(mergedPaths)}"
+            updatedLines.append(newLine)
+            pathLineUpdated = True
+            if newLine != line:
+                changed = True
+        else:
+            updatedLines.append(line)
+
+    if not pathLineUpdated:
+        updatedLines.append(f"PYTHONPATH={';'.join(desiredPaths)}")
+        changed = True
+
+    newText = "\n".join(updatedLines) + "\n"
+    if changed or newText != currentText:
+        _update_text_file(dest, newText, dryRun)
 
 
 def updateProject(
@@ -330,36 +413,29 @@ def updateProject(
         if installQt:
             (basePath / "qt" / "__init__.py").touch(exist_ok=True)
 
-    _update_text_file(basePath / ".gitignore", GITIGNORE_CONTENT, dryRun)
-    _update_text_file(basePath / "requirements.txt", REQUIREMENTS_CONTENT, dryRun)
-    _update_text_file(basePath / "dev-requirements.txt", DEV_REQUIREMENTS_CONTENT, dryRun)
-    _update_text_file(basePath / ".env", _build_env_content(installUi, installQt), dryRun)
-    _update_text_file(
-        basePath / "README.md",
-        f"# {projectName}\n\nProject scaffold created by createProject.py\n",
-        dryRun,
-    )
+    for destRel, contentTemplate in PROJECT_TEXT_TEMPLATES:
+        content = (
+            f"# {projectName}\n\nProject scaffold created by createProject.py\n"
+            if destRel == Path("README.md")
+            else contentTemplate
+        )
+        _createTextFileIfMissing(
+            basePath / destRel,
+            content,
+            dryRun,
+        )
+    _ensureEnvFile(basePath / ".env", installUi, installQt, dryRun)
 
-    srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
-    if srcGuidelines.exists():
-        logger.info("checking guidelines file")
-        _copy_if_newer(srcGuidelines, basePath / "projectGuidelines.md", dryRun)
+    for destRel, content in MANAGED_TEXT_TEMPLATES:
+        _update_text_file(basePath / destRel, content, dryRun)
 
-    srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
-    if srcCopilotInstructions.exists():
-        logger.info("checking copilot instructions")
-        _copy_if_newer(srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md", dryRun)
+    for src, destRel in MANAGED_COPY_TEMPLATES:
+        if src.exists():
+            _copy_if_newer(src, basePath / destRel, dryRun)
 
-    logger.info("checking template modules")
+    logger.info("checking project-owned template modules")
     for src, destRel in _iter_template_modules(installUi, installQt):
-        _copy_if_newer(src, basePath / destRel, dryRun)
-
-    _update_text_file(basePath / "main.py", MAIN_PY_CONTENT, dryRun)
-    _update_text_file(basePath / ".pre-commit-config.yaml", PRECOMMIT_CONTENT, dryRun)
-    _update_text_file(basePath / "pytest.ini", PYTEST_INI_CONTENT, dryRun)
-    if not dryRun:
-        (basePath / ".vscode").mkdir(parents=True, exist_ok=True)
-    _update_text_file(basePath / ".vscode" / "settings.json", VSCODE_SETTINGS_CONTENT, dryRun)
+        _copyIfMissing(src, basePath / destRel, dryRun)
 
     logger.done(f"project '{projectName}' updated")
 
@@ -370,9 +446,7 @@ def main():
     thisApplication = Path(__file__).stem
     setApplication(thisApplication)
 
-    parser = argparse.ArgumentParser(
-        description="Create or update a project scaffold"
-    )
+    parser = argparse.ArgumentParser(description="Create or update a project scaffold")
     parser.add_argument(
         "project",
         nargs="?",
@@ -435,5 +509,5 @@ def main():
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -41,11 +41,15 @@ class TestEndToEndWorkflow:
 
         with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath), includeUi=True)
+            createProject(str(projectPath))
 
         # Verify project was created
         assert projectPath.exists()
         assert (projectPath / ".github" / "copilot-instructions.md").exists()
+<<<<<<< HEAD
         assert (projectPath / "ui" / "mainMenu.py").exists()
+=======
+>>>>>>> origin/main
 
         # Step 2: Add some Python code with violations to the project
         uiDir = projectPath / "ui"
@@ -114,6 +118,7 @@ class TestFrame:
         # Verify file was restored
         assert (projectPath / "main.py").exists()
 
+<<<<<<< HEAD
     def testUpdateExistingProjectPreservesCustomMain(self, temp_dir):
         """Test that scaffold refresh does not overwrite custom main.py code."""
         projectName = "testUpdateCustomMain"
@@ -133,6 +138,8 @@ class TestFrame:
         assert (projectPath / "main.py").read_text() == customMain
         assert (projectPath / "qt" / "mainMenu.py").exists()
 
+=======
+>>>>>>> origin/main
     def testProjectStructureCompleteness(self, temp_dir):
         """Test that created projects have all expected files and directories."""
         projectName = "testStructure"
@@ -144,7 +151,11 @@ class TestFrame:
             createProject(str(projectPath))
 
         # Define expected structure
+<<<<<<< HEAD
         expectedDirs = ["src", "tests", "logs", ".github"]
+=======
+        expectedDirs = ["src", "ui", "tests", "logs", ".github"]
+>>>>>>> origin/main
 
         expectedFiles = [
             "main.py",
@@ -155,10 +166,25 @@ class TestFrame:
             "README.md",
             ".pre-commit-config.yaml",
             "src/__init__.py",
+<<<<<<< HEAD
             ".github/copilot-instructions.md",
         ]
 
         expectedCopiedModules = ["tests/runLinter.py", "tests/guiNamingLinter.py"]
+=======
+            "ui/__init__.py",
+            ".github/copilot-instructions.md",
+        ]
+
+        expectedCopiedModules = [
+            "ui/styleUtils.py",
+            "ui/mainMenu.py",
+            "ui/baseFrame.py",
+            "ui/frameTemplate.py",
+            "ui/statusFrame.py",
+            "tests/runLinter.py",
+        ]
+>>>>>>> origin/main
 
         # Check directories
         for dirName in expectedDirs:
@@ -273,3 +299,13 @@ class TestResourceAccess:
         content = srcCopilotInstructions.read_text()
         assert len(content) > 0
         assert "GitHub Copilot Instructions" in content
+<<<<<<< HEAD
+=======
+        assert "Code Organisation & Function Naming Pattern" in content
+        assert "Function names should use the `domainAction` pattern." in content
+        assert "domain first, then action. Use camelCase." in content
+        assert (
+            "this file takes precedence and the conflicting guidance should be removed or aligned"
+            in content
+        )
+>>>>>>> origin/main

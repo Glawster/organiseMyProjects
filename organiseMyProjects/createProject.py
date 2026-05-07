@@ -463,7 +463,10 @@ def main():
         "--project",
         dest="projectOption",
         default=None,
-        help="Legacy named flag for the project directory name",
+        help=(
+            "Legacy named flag for the project directory name "
+            "(use the positional argument instead; retained for compatibility)"
+        ),
     )
     parser.add_argument(
         "-u",

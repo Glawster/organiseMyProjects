@@ -558,7 +558,7 @@ class TestCliFlags:
             includeQt=True,
         )
 
-    def testMainPassesProjectOptionFlagToCreateProject(self):
+    def testMainPassesLegacyProjectFlagToCreateProject(self):
         with patch("organiseMyProjects.createProject.createProject") as mockCreate:
             with patch(
                 "sys.argv",
@@ -573,7 +573,7 @@ class TestCliFlags:
             includeQt=False,
         )
 
-    def testMainPassesProjectOptionFlagToUpdateProject(self):
+    def testMainPassesLegacyProjectFlagToUpdateProject(self):
         with patch("organiseMyProjects.createProject.updateProject") as mockUpdate:
             with patch(
                 "sys.argv",

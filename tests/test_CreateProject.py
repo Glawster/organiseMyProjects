@@ -2,7 +2,6 @@
 Tests for createProject.py functionality.
 """
 
-import datetime
 import logging
 import pytest
 import os
@@ -16,17 +15,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from organiseMyProjects.createProject import (
     createProject,
     updateProject,
-<<<<<<< HEAD
     main as createProjectMain,
     _copy_if_newer,
     _update_text_file,
     _build_env_content,
     _ensureEnvFile,
-=======
-    _backupFile,
-    _copyIfNewer,
-    _updateTextFile,
->>>>>>> origin/main
     GITIGNORE_CONTENT,
     REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
@@ -56,21 +49,13 @@ class TestCreateProject:
         # Verify directory structure
         assert projectPath.exists()
         assert (projectPath / "src").exists()
-<<<<<<< HEAD
-=======
-        assert (projectPath / "ui").exists()
->>>>>>> origin/main
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
 
         # Verify package init files
         assert (projectPath / "src" / "__init__.py").exists()
-<<<<<<< HEAD
         assert_no_gui_scaffolds(projectPath)
-=======
-        assert (projectPath / "ui" / "__init__.py").exists()
->>>>>>> origin/main
 
     def testCreateProjectCoreFiles(self, temp_dir, sample_project_name):
         """Test that createProject creates core configuration files."""
@@ -101,11 +86,7 @@ class TestCreateProject:
         assert (
             projectPath / "dev-requirements.txt"
         ).read_text() == DEV_REQUIREMENTS_CONTENT
-<<<<<<< HEAD
         assert (projectPath / ".env").read_text() == _build_env_content()
-=======
-        assert (projectPath / ".env").read_text() == ENV_CONTENT
->>>>>>> origin/main
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (
             projectPath / ".pre-commit-config.yaml"
@@ -149,7 +130,6 @@ class TestCreateProject:
         assert (
             projectPath / "src" / "globalVars.py"
         ).exists(), "globalVars.py should be copied to new projects"
-<<<<<<< HEAD
         assert (projectPath / "tests" / "runLinter.py").exists()
         assert (projectPath / "tests" / "guiNamingLinter.py").exists()
         assert_no_gui_scaffolds(projectPath)
@@ -171,14 +151,11 @@ class TestCreateProject:
 
         assert (projectPath / "ui" / "__init__.py").exists()
         assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
-=======
->>>>>>> origin/main
         assert (projectPath / "ui" / "styleUtils.py").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
         assert (projectPath / "ui" / "baseFrame.py").exists()
         assert (projectPath / "ui" / "frameTemplate.py").exists()
         assert (projectPath / "ui" / "statusFrame.py").exists()
-<<<<<<< HEAD
 
     def testCreateProjectQtTemplates(self, temp_dir, sample_project_name):
         """Test that Qt templates are copied only when requested."""
@@ -194,18 +171,6 @@ class TestCreateProject:
         assert (projectPath / "qt" / "baseFrame.py").exists()
         assert (projectPath / "qt" / "frameTemplate.py").exists()
         assert (projectPath / "qt" / "statusFrame.py").exists()
-=======
-        assert (projectPath / "tests" / "runLinter.py").exists()
-        assert not (projectPath / "tests" / "guiNamingLinter.py").exists()
-
-        # Verify package utilities are NOT copied
-        assert not (
-            projectPath / "src" / "logUtils.py"
-        ).exists(), "logUtils.py should NOT be copied to new projects"
-        assert not (
-            projectPath / "createProject.py"
-        ).exists(), "createProject.py should NOT be copied to new projects"
->>>>>>> origin/main
 
     def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, caplog):
         """Test behavior when project directory already exists."""
@@ -245,10 +210,7 @@ class TestUpdateProject:
         assert (projectPath / "tests").exists()
         assert (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
-<<<<<<< HEAD
         assert_no_gui_scaffolds(projectPath)
-=======
->>>>>>> origin/main
 
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
@@ -307,7 +269,6 @@ class TestUpdateProject:
         assert (
             projectPath / ".vscode" / "settings.json"
         ).read_text() == VSCODE_SETTINGS_CONTENT
-<<<<<<< HEAD
 
     def testUpdateProjectExistingUiTemplates(self, temp_dir, sample_project_name):
         """Test that updateProject preserves and refreshes existing tkinter scaffolds."""
@@ -376,8 +337,6 @@ class TestUpdateProject:
         envText = (projectPath / ".env").read_text()
         assert "API_URL=https://example.test" in envText
         assert "PYTHONPATH=src;ui" in envText
-=======
->>>>>>> origin/main
 
 
 class TestUtilityFunctions:
@@ -390,11 +349,7 @@ class TestUtilityFunctions:
 
         src.write_text("test content")
 
-<<<<<<< HEAD
         _copy_if_newer(src, dest)
-=======
-        _copyIfNewer(src, dest)
->>>>>>> origin/main
 
         assert dest.exists()
         assert dest.read_text() == "test content"
@@ -415,11 +370,7 @@ class TestUtilityFunctions:
         # Create src after (newer)
         src.write_text("new content")
 
-<<<<<<< HEAD
         _copy_if_newer(src, dest)
-=======
-        _copyIfNewer(src, dest)
->>>>>>> origin/main
 
         assert dest.read_text() == "new content"
 
@@ -428,11 +379,7 @@ class TestUtilityFunctions:
         dest = temp_dir / "test.txt"
         content = "test content"
 
-<<<<<<< HEAD
         _update_text_file(dest, content)
-=======
-        _updateTextFile(dest, content)
->>>>>>> origin/main
 
         assert dest.exists()
         assert dest.read_text() == content
@@ -445,11 +392,7 @@ class TestUtilityFunctions:
         dest.write_text(content)
         originalMtime = dest.stat().st_mtime
 
-<<<<<<< HEAD
         _update_text_file(dest, content)
-=======
-        _updateTextFile(dest, content)
->>>>>>> origin/main
 
         # File should not be modified if content is the same
         assert dest.stat().st_mtime == originalMtime
@@ -462,11 +405,7 @@ class TestUtilityFunctions:
 
         dest.write_text(oldContent)
 
-<<<<<<< HEAD
         _update_text_file(dest, newContent)
-=======
-        _updateTextFile(dest, newContent)
->>>>>>> origin/main
 
         assert dest.read_text() == newContent
 
@@ -479,27 +418,12 @@ class TestUtilityFunctions:
 
         assert dest.read_text() == "ONE=1\nPYTHONPATH=src;ui;qt\nTWO=2\n"
 
-<<<<<<< HEAD
-=======
-        _backupFile(dest)
->>>>>>> origin/main
 
 class TestUpdateHelpers:
     """Test helper behavior used during project updates."""
 
-<<<<<<< HEAD
     def testCopyIfNewerOverwritesWithoutBackup(self, temp_dir):
         """Test that _copy_if_newer updates in place without creating backup files."""
-=======
-    def testBackupFileNoExistingFile(self, temp_dir):
-        """Test that _backup_file does nothing when file doesn't exist."""
-        dest = temp_dir / "nonexistent.py"
-        _backupFile(dest)  # Should not raise
-        assert not dest.exists()
-
-    def testCopyIfNewerBacksUpBeforeOverwriting(self, temp_dir):
-        """Test that _copy_if_newer creates a backup when overwriting."""
->>>>>>> origin/main
         import time
 
         src = temp_dir / "source.py"
@@ -509,7 +433,7 @@ class TestUpdateHelpers:
         time.sleep(0.05)
         src.write_text("new content")
 
-        _copyIfNewer(src, dest)
+        _copy_if_newer(src, dest)
 
         assert dest.read_text() == "new content"
         assert list(temp_dir.glob("dest.*.py")) == []
@@ -519,7 +443,7 @@ class TestUpdateHelpers:
         dest = temp_dir / "config.txt"
         dest.write_text("old")
 
-        _updateTextFile(dest, "new content")
+        _update_text_file(dest, "new content")
 
         assert dest.read_text() == "new content"
         assert list(temp_dir.glob("config.*.txt")) == []
@@ -529,17 +453,9 @@ class TestUpdateHelpers:
         dest = temp_dir / "config.txt"
         dest.write_text("same content")
 
-        _updateTextFile(dest, "same content")
+        _update_text_file(dest, "same content")
 
-<<<<<<< HEAD
         assert list(temp_dir.glob("config.*.txt")) == []
-=======
-        stamp = datetime.date.today().strftime("%y%m%d")
-        backup = temp_dir / f"config.{stamp}.txt"
-        assert (
-            not backup.exists()
-        ), "No backup should be created when content is unchanged"
->>>>>>> origin/main
 
 
 class TestDryRun:
@@ -590,25 +506,13 @@ class TestDryRun:
 
         assert "updating project" in caplog.text
 
-<<<<<<< HEAD
-=======
-    def testBackupFileDryRunNoRename(self, temp_dir):
-        """Test that _backup_file in dry-run mode does not rename the original file."""
-        dest = temp_dir / "config.txt"
-        dest.write_text("original")
-
-        _backupFile(dest, dryRun=True)
-
-        assert dest.exists(), "Original file must not be renamed in dry-run mode"
-
->>>>>>> origin/main
     def testCopyIfNewerDryRunNoWrite(self, temp_dir):
         """Test that _copy_if_newer in dry-run mode does not write the destination file."""
         src = temp_dir / "source.txt"
         dest = temp_dir / "dest.txt"
         src.write_text("new content")
 
-        _copyIfNewer(src, dest, dryRun=True)
+        _copy_if_newer(src, dest, dryRun=True)
 
         assert not dest.exists(), "Destination file must not be created in dry-run mode"
 
@@ -616,10 +520,9 @@ class TestDryRun:
         """Test that _update_text_file in dry-run mode does not write the file."""
         dest = temp_dir / "output.txt"
 
-        _updateTextFile(dest, "some content", dryRun=True)
+        _update_text_file(dest, "some content", dryRun=True)
 
         assert not dest.exists(), "File must not be created in dry-run mode"
-<<<<<<< HEAD
 
 
 class TestCliFlags:
@@ -654,5 +557,3 @@ class TestCliFlags:
             includeUi=False,
             includeQt=True,
         )
-=======
->>>>>>> origin/main

@@ -121,6 +121,7 @@ Larger applications may also use `src/` and `ui/` folders:
     │       ├── core/
     │       ├── utils/
     │       └── patterns/
+    ├── ui/
     ├── qt/ui
     ├── tests/
     ├── requirements.txt

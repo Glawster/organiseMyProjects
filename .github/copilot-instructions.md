@@ -111,7 +111,7 @@ All applications must have a root entry point:
     └── .github/
         └── additional-copilot-instructions.md
 
-Larger applications may also use `src/` and `ui/` folders:
+Larger applications may also use `src/`, `ui/`, and `qt/` folders:
 
     projectName/
     ├── main.py
@@ -122,7 +122,7 @@ Larger applications may also use `src/` and `ui/` folders:
     │       ├── utils/
     │       └── patterns/
     ├── ui/
-    ├── qt/ui
+    ├── qt/
     ├── tests/
     ├── requirements.txt
     ├── README.md

@@ -454,6 +454,13 @@ def main():
         help="Name of the project directory (omit with --update to use CWD)",
     )
     parser.add_argument(
+        "-p",
+        "--project",
+        dest="projectOption",
+        default=None,
+        help="Name of the project directory (omit with --update to use CWD)",
+    )
+    parser.add_argument(
         "-u",
         "--update",
         action="store_true",
@@ -480,6 +487,10 @@ def main():
 
     args = parser.parse_args()
     dryRun = not args.confirm
+    projectPath = args.project if args.project is not None else args.projectOption
+
+    if args.project is not None and args.projectOption is not None:
+        parser.error("use either the positional project argument or --project")
 
     logDir = Path.home() / ".local" / "state" / thisApplication
     logDir.mkdir(parents=True, exist_ok=True)
@@ -492,7 +503,7 @@ def main():
     logger.doing(thisApplication)
 
     if args.update:
-        project_path = args.project or Path.cwd()
+        project_path = projectPath or Path.cwd()
         updateProject(
             project_path,
             dryRun=dryRun,
@@ -500,10 +511,10 @@ def main():
             includeQt=args.qt,
         )
     else:
-        if args.project is None:
+        if projectPath is None:
             parser.error("the following arguments are required: project")
         createProject(
-            args.project,
+            projectPath,
             dryRun=dryRun,
             includeUi=args.ui,
             includeQt=args.qt,

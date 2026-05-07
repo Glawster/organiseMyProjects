@@ -557,3 +557,33 @@ class TestCliFlags:
             includeUi=False,
             includeQt=True,
         )
+
+    def testMainPassesNamedProjectFlagToCreateProject(self):
+        with patch("organiseMyProjects.createProject.createProject") as mockCreate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "--project", "demo", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockCreate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=False,
+            includeQt=False,
+        )
+
+    def testMainPassesNamedProjectFlagToUpdateProject(self):
+        with patch("organiseMyProjects.createProject.updateProject") as mockUpdate:
+            with patch(
+                "sys.argv",
+                ["createProject.py", "--update", "--project", "demo", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockUpdate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=False,
+            includeQt=False,
+        )

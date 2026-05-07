@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import textwrap
 from logging import getLogger as _getLogger
 from pathlib import Path
 from typing import Any, MutableMapping, Optional
@@ -38,11 +39,12 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
 
     def info(self, message: str, *args, **kwargs) -> None:
         """Log general information: '...message'.
-        Also used where we want to log a complext string containing variables and the format provided by logger.value would not work"""
+        Also used where we want to log a complext string containing variables and the format provided by logger.value would not work
+        """
         self.logger.info(f"...{message}", *args, **kwargs)
-        
+
     def value(self, message: str, variable) -> None:
-        """Log a name-value pair: '...message: variable'. 
+        """Log a name-value pair: '...message: variable'.
         This is the standard format we want to use for variables, that is
         '...variable name: variable value'."""
         self.logger.info(f"...{message}: {variable}")
@@ -225,6 +227,7 @@ def drawBox(
     corner_char: str = "+",
     side_char: str = "│",
     padding: int = 2,
+    width: int | None = None,
     logger=None,
 ) -> None:
     """Print or log a formatted ASCII box around a message."""
@@ -232,23 +235,39 @@ def drawBox(
     if not lines:
         lines = ["(empty message)"]
 
-    contentWidth = max(len(line) for line in lines)
+    if width is not None:
+        if width <= 0:
+            raise ValueError("width must be a positive integer when provided")
+
+        wrappedLines: list[str] = []
+        for line in lines:
+            wrappedLines.extend(
+                textwrap.wrap(
+                    line,
+                    width=width,
+                    drop_whitespace=False,
+                    replace_whitespace=False,
+                )
+                or [""]
+            )
+        lines = wrappedLines
+        contentWidth = width
+    else:
+        contentWidth = max(len(line) for line in lines)
+
     innerWidth = contentWidth + padding * 2
     topBottom = corner_char + border_char * innerWidth + corner_char
 
-    header = f"{lines[0]}"
-    headerPadding = innerWidth - len(header) - padding
-    headerLine = f"{side_char}{' ' * padding}{header}{' ' * headerPadding}{side_char}"
-
-    bodyLines = []
-    for line in lines[1:]:
+    contentLines: list[str] = []
+    for line in lines:
         padRight = innerWidth - len(line) - padding
-        bodyLines.append(f"{side_char}{' ' * padding}{line}{' ' * padRight}{side_char}")
+        contentLines.append(
+            f"{side_char}{' ' * padding}{line}{' ' * padRight}{side_char}"
+        )
 
     outputLines = [
         topBottom,
-        headerLine,
-        *(bodyLines if len(lines) > 1 else []),
+        *contentLines,
         topBottom,
     ]
 

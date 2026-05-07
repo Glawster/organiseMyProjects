@@ -285,7 +285,6 @@ def createProject(
 
     logger.done(f"project '{projectName}' created")
 
-
 def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -437,10 +436,11 @@ def updateProject(
     for src, destRel in _iter_template_modules(installUi, installQt):
         _copyIfMissing(src, basePath / destRel, dryRun)
 
-    logger.done(f"project '{projectName}' updated")
+    logger.done("project updated")
 
 
 def main():
+
     global logger
 
     thisApplication = Path(__file__).stem
@@ -471,6 +471,7 @@ def main():
         help="install Qt UI templates in a qt package",
     )
     parser.add_argument(
+        "-y",
         "--confirm",
         dest="confirm",
         action="store_true",

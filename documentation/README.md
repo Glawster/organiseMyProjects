@@ -54,8 +54,7 @@ myNewProject/
 │   ├── statusFrame.py            # Status display utilities
 │   └── styleUtils.py             # GUI styling utilities
 ├── tests/
-│   ├── runLinter.py              # Linter entry point
-│   └── guiNamingLinter.py        # GUI naming convention checker
+│   └── runLinter.py              # Linter entry point
 ├── logs/                         # Application log directory
 ├── main.py                       # Application main entry point
 ├── requirements.txt              # Production dependencies
@@ -210,7 +209,7 @@ The `organiseMyProjects` package includes:
 - `createProject.py` - Main project scaffolding functionality
 - `guiNamingLinter.py` - GUI naming convention enforcement
 - `runLinter.py` - Command-line interface for the linter
-- `copilot-instructions.md` - GitHub Copilot development guidelines
+- `.github/copilot-instructions.md` - Master GitHub Copilot development guidelines
 - Template files for GUI components and utilities
 
 ### Sync Copilot Instructions to other repos

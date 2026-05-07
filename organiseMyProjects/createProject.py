@@ -319,7 +319,7 @@ def _createTextFileIfMissing(dest: Path, content: str, dryRun: bool = False):
         dest.write_text(content)
 
 
-def _copyIfMissing(src: Path, dest: Path, dryRun: bool = False):
+def _copy_if_missing(src: Path, dest: Path, dryRun: bool = False):
     if dest.exists():
         return
     if not dryRun:
@@ -434,7 +434,7 @@ def updateProject(
 
     logger.info("checking project-owned template modules")
     for src, destRel in _iter_template_modules(installUi, installQt):
-        _copyIfMissing(src, basePath / destRel, dryRun)
+        _copy_if_missing(src, basePath / destRel, dryRun)
 
     logger.done("project updated")
 

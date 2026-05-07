@@ -25,6 +25,19 @@ pip install .
 createProject myNewProject
 ```
 
+Optional UI scaffolds can be installed at creation time:
+
+```bash
+# add the tkinter starter package
+createProject myNewProject --ui
+
+# add the Qt/PySide6 starter package
+createProject myNewProject -qt
+
+# install both UI scaffolds
+createProject myNewProject --ui -qt
+```
+
 Creates:
 ```
 myNewProject/
@@ -54,7 +67,11 @@ myNewProject/
 ```
 
 ### Update an existing project
-Refresh a project scaffold and replace any missing or outdated files. Provide the
+Refresh a project scaffold and replace missing scaffold files. Managed
+instructional/config files such as `pytest.ini`, `.pre-commit-config.yaml`,
+`.vscode/settings.json`, `tests/runLinter.py`, and Copilot instructions are
+refreshed in place, while project-owned code such as `main.py`, `.env`,
+`requirements.txt`, and UI/Qt modules is only created when missing. Provide the
 project name or run inside the target directory:
 ```bash
 # from anywhere
@@ -62,7 +79,16 @@ createProject myExistingProject --update
 
 # or from within the project directory
 createProject --update
+
+# add tkinter or Qt scaffolds during update
+createProject myExistingProject --update --ui
+createProject myExistingProject --update -qt
 ```
+
+`createProject --update` no longer creates dated backup copies. If you want to
+undo scaffold refresh changes, inspect the changed files in VS Code's Source
+Control/Changed Files view and revert the files you do not want before
+committing.
 
 ### Run the GUI naming linter
 ```bash
@@ -107,12 +133,8 @@ pytest --cov=organiseMyProjects
 - `tests/testGuiNamingLinter.py` - Tests for GUI naming convention linting
 - `tests/testRunLinter.py` - Tests for the linter CLI interface
 - `tests/testIntegration.py` - End-to-end integration tests
-<<<<<<< HEAD
 - `tests/testLogUtils.py` - Tests for logging utilities (including `drawBox`)
-=======
-- `tests/testLogUtils.py` - Tests for logging utilities
 - `tests/testSyncCopilotInstructions.py` - Tests for Copilot instructions sync
->>>>>>> 061fc52af2348e58db883eb1ef44b41ea29799e0
 - `tests/conftest.py` - Shared test fixtures and configuration
 
 **Note**: The `tests/` directory is for development and testing of this project itself. It is not included in the installed package, so end users won't get these test files when they install `organiseMyProjects`.

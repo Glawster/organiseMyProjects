@@ -134,7 +134,7 @@ def _setupLogging(
 
     if str(logFile) not in _initialized_log_files:
         fileHandler = logging.FileHandler(logFile, encoding="utf-8")
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
         fileHandler.setFormatter(formatter)
         logger.addHandler(fileHandler)
         _initialized_log_files.add(str(logFile))

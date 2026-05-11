@@ -135,6 +135,7 @@ Rules:
 -   `main.py` sets the application logging context with `setApplication()`\
 -   `src/` is optional and should be used for larger apps, reusable core logic, or UI-based apps\
 -   `ui/` is optional and should contain UI orchestration/assets where useful\
+-   Any routine that produces output files must place them in an `output/` folder directly under the project root\
 -   Core/business logic must remain testable without the UI
 
 # CLI Design Standards

@@ -273,3 +273,4 @@ class TestResourceAccess:
         content = srcCopilotInstructions.read_text()
         assert len(content) > 0
         assert "GitHub Copilot Instructions" in content
+        assert "output/" in content

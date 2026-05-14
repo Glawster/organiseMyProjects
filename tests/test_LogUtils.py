@@ -287,6 +287,13 @@ class TestSemanticLogMethods:
         logger.multiline("line 1\nline 2")
         assert records and records[0].getMessage() == "...line 1\n   line 2"
 
+    def testMultilineEmptyInputLogsEllipsisOnly(self, tmp_path):
+        """Test that multiline() logs only the ellipsis marker for empty input."""
+        logger = getLogger("testMultilineEmpty", logDir=tmp_path)
+        records = self._captureRecords(logger)
+        logger.multiline("")
+        assert records and records[0].getMessage() == "..."
+
     def testValueDryRunNoPrefix(self, tmp_path):
         """Test that value() does not insert dry-run prefix even when dryRun=True."""
         logger = getLogger("testValueDry", logDir=tmp_path, dryRun=True)

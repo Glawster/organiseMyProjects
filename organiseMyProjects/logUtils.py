@@ -44,9 +44,11 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         self.logger.info(f"...{message}", *args, **kwargs)
 
     def multiline(self, lines: str | Sequence[str]) -> None:
-        """Log multiline information with three-space indentation after line one."""
+        """Log multiline information with three-space indentation after line one.
+        Single-line input logs as standard info. Empty input logs as "...".
+        """
         if isinstance(lines, str):
-            messageLines = lines.splitlines() or [lines]
+            messageLines = lines.splitlines() if lines else []
         else:
             messageLines = list(lines)
 

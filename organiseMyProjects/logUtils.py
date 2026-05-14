@@ -185,12 +185,12 @@ def getLogger(
     is used. Passing name explicitly remains supported for specialised tools.
 
     Returns an _OrganiseLoggerAdapter with semantic log methods:
-      doing(message)           – logs 'message...'
-      done(message)            – logs '...message'
-      info(message)            – logs '...message'
-      multiline(lines)         – logs first line as info, remaining lines indented
-      value(message, variable) – logs '...message: variable'
-      action(message)          – logs '{prefix}message...'
+        doing(message)           – logs 'message...'
+        done(message)            – logs '...message'
+        info(message)            – logs '...message'
+        multiline(lines)         – logs first line as info, remaining lines indented
+        value(message, variable) – logs '...message: variable'
+        action(message)          – logs '{prefix}message...'
     Pass dryRun=True to insert '[] ' only for action.
     """
     loggerName = _resolveLoggerName(name)

@@ -233,7 +233,7 @@ class TestGetLoggerDryRun:
 
 
 class TestSemanticLogMethods:
-    """Test the semantic log methods: doing, done, info, multiline, value."""
+    """Test the semantic log methods: action, doing, done, info, multiline, value."""
 
     def _captureRecords(self, logger):
         records: list[logging.LogRecord] = []

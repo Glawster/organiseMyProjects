@@ -39,7 +39,7 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
 
     def info(self, message: str, *args, **kwargs) -> None:
         """Log general information: '...message'.
-        Also used where we want to log a complext string containing variables and the format provided by logger.value would not work
+        Also used where we want to log a complex string containing variables and the format provided by logger.value would not work
         """
         self.logger.info(f"...{message}", *args, **kwargs)
 
@@ -188,7 +188,7 @@ def getLogger(
       info(message)            – logs '...message'
       multiline(lines)         – logs first line as info, remaining lines indented
       value(message, variable) – logs '...message: variable'
-            action(message)          – logs '{prefix}message...'
+      action(message)          – logs '{prefix}message...'
     Pass dryRun=True to insert '[] ' only for action.
     """
     loggerName = _resolveLoggerName(name)

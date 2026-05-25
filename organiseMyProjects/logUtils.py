@@ -5,7 +5,7 @@ import logging
 import textwrap
 from logging import getLogger as _getLogger
 from pathlib import Path
-from typing import Any, MutableMapping, Optional
+from typing import Any, MutableMapping, Optional, Sequence
 
 # logging guidelines:
 # all messages in lowercase
@@ -39,9 +39,30 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
 
     def info(self, message: str, *args, **kwargs) -> None:
         """Log general information: '...message'.
-        Also used where we want to log a complext string containing variables and the format provided by logger.value would not work
+        Also used where we want to log a complex string containing variables and the format provided by logger.value would not work
         """
         self.logger.info(f"...{message}", *args, **kwargs)
+
+    def multiline(self, lines: str | Sequence[str]) -> None:
+        """Log multiline information with three-space indentation after line one.
+        Single-line input logs as standard info. Empty input logs as "...".
+        """
+        if isinstance(lines, str):
+            messageLines = lines.splitlines() if lines else []
+        else:
+            messageLines = list(lines)
+
+        if not messageLines:
+            self.logger.info("...")
+            return
+
+        firstLine = messageLines[0]
+        if len(messageLines) == 1:
+            self.logger.info(f"...{firstLine}")
+            return
+
+        indentedLines = "\n".join(f"   {line}" for line in messageLines[1:])
+        self.logger.info(f"...{firstLine}\n{indentedLines}")
 
     def value(self, message: str, variable) -> None:
         """Log a name-value pair: '...message: variable'.
@@ -167,8 +188,9 @@ def getLogger(
       doing(message)           – logs 'message...'
       done(message)            – logs '...message'
       info(message)            – logs '...message'
+      multiline(lines)         – logs first line as info, remaining lines indented
       value(message, variable) – logs '...message: variable'
-            action(message)          – logs '{prefix}message...'
+      action(message)          – logs '{prefix}message...'
     Pass dryRun=True to insert '[] ' only for action.
     """
     loggerName = _resolveLoggerName(name)

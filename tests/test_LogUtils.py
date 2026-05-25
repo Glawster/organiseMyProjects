@@ -233,7 +233,7 @@ class TestGetLoggerDryRun:
 
 
 class TestSemanticLogMethods:
-    """Test the semantic log methods: doing, done, info, value."""
+    """Test the semantic log methods: action, doing, done, info, multiline, value."""
 
     def _captureRecords(self, logger):
         records: list[logging.LogRecord] = []
@@ -272,6 +272,27 @@ class TestSemanticLogMethods:
         records = self._captureRecords(logger)
         logger.value("file count", 42)
         assert records and records[0].getMessage() == "...file count: 42"
+
+    def testMultilineFormatsFirstLineAndIndentsOthers(self, tmp_path):
+        """Test that multiline() prefixes line one and indents subsequent lines."""
+        logger = getLogger("testMultiline", logDir=tmp_path)
+        records = self._captureRecords(logger)
+        logger.multiline(["line 1", "line 2", "line 3"])
+        assert records and records[0].getMessage() == "...line 1\n   line 2\n   line 3"
+
+    def testMultilineSupportsStringInput(self, tmp_path):
+        """Test that multiline() accepts newline-delimited string input."""
+        logger = getLogger("testMultilineString", logDir=tmp_path)
+        records = self._captureRecords(logger)
+        logger.multiline("line 1\nline 2")
+        assert records and records[0].getMessage() == "...line 1\n   line 2"
+
+    def testMultilineEmptyInputLogsEllipsisOnly(self, tmp_path):
+        """Test that multiline() logs only the ellipsis marker for empty input."""
+        logger = getLogger("testMultilineEmpty", logDir=tmp_path)
+        records = self._captureRecords(logger)
+        logger.multiline("")
+        assert records and records[0].getMessage() == "..."
 
     def testValueDryRunNoPrefix(self, tmp_path):
         """Test that value() does not insert dry-run prefix even when dryRun=True."""

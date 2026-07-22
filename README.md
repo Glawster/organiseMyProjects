@@ -234,12 +234,19 @@ python syncCopilotInstructions.py
 # Actually push updates
 GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
 
+# Push updates, then merge branches that GitHub can merge without conflicts
+GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm --merge
+
 # Pass the token directly and show extra detail
 python syncCopilotInstructions.py --confirm --token <your-pat> --verbose
 ```
 
-Requires a GitHub Personal Access Token with `repo` scope, supplied via the
-`GITHUB_TOKEN` environment variable or the `--token` flag.
+Requires a GitHub Personal Access Token with `repo` scope. Supply it once via
+the `GITHUB_TOKEN` environment variable or the `--token` flag. The script saves
+it with user-only permissions in
+`~/.config/organiseMyProjects/syncCopilotInstructions.json` and uses that value
+on future runs. An explicitly supplied token takes precedence over the stored
+value and refreshes it.
 
 ## License
 

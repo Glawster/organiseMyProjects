@@ -2,6 +2,8 @@
 Tests for syncCopilotInstructions.py
 """
 import base64
+import json
+import stat
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -12,6 +14,34 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import syncCopilotInstructions as sci
+
+
+class TestConfigToken:
+    """Tests for persistent GitHub token configuration."""
+
+    def testLoadsStoredToken(self, tmp_path):
+        """The token should be read from the JSON config store."""
+        configPath = tmp_path / "sync.json"
+        configPath.write_text(json.dumps({"githubToken": "stored-token"}))
+
+        assert sci.configLoadToken(configPath) == "stored-token"
+
+    def testMissingOrInvalidConfigReturnsEmptyToken(self, tmp_path):
+        """A missing or malformed store should not crash token resolution."""
+        configPath = tmp_path / "sync.json"
+        assert sci.configLoadToken(configPath) == ""
+
+        configPath.write_text("not json")
+        assert sci.configLoadToken(configPath) == ""
+
+    def testSavesTokenWithPrivatePermissions(self, tmp_path):
+        """Saved credentials should only be readable by the current user."""
+        configPath = tmp_path / "config" / "sync.json"
+
+        sci.configSaveToken("new-token", configPath)
+
+        assert json.loads(configPath.read_text()) == {"githubToken": "new-token"}
+        assert stat.S_IMODE(configPath.stat().st_mode) == 0o600
 
 
 class TestBuildTargetContent:
@@ -85,6 +115,46 @@ class TestGetRemoteFile:
                 sci.getRemoteFile("owner/repo", ".github/file.md", {})
 
 
+class TestMergeBranch:
+    """Tests for mergeBranch."""
+
+    def testReportsAlreadyMergedBranch(self):
+        """An already merged branch should not be reported as a conflict."""
+        mockResp = MagicMock(status_code=204)
+        with patch("syncCopilotInstructions.requests.post", return_value=mockResp):
+            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+
+        assert result == "already_merged"
+
+    def testReportsConflictingBranch(self):
+        """A conflicting branch should be identified for manual review."""
+        mockResp = MagicMock(status_code=409)
+        with patch("syncCopilotInstructions.requests.post", return_value=mockResp):
+            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+
+        assert result == "conflict"
+
+    def testMergesConflictFreeBranch(self):
+        """A conflict-free branch should be reported as merged."""
+        mockResp = MagicMock(status_code=201)
+        with patch("syncCopilotInstructions.requests.post", return_value=mockResp) as mockPost:
+            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+
+        assert result == "merged"
+        assert mockPost.call_args.kwargs["json"]["base"] == "main"
+
+    def testReturnsFailedOnApiError(self):
+        """Unexpected GitHub errors should be reported as failures."""
+        import requests as req
+
+        mockResp = MagicMock(status_code=500)
+        mockResp.raise_for_status.side_effect = req.HTTPError("server error")
+        with patch("syncCopilotInstructions.requests.post", return_value=mockResp):
+            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+
+        assert result == "failed"
+
+
 class TestSyncRepo:
     """Tests for syncRepo."""
 
@@ -93,7 +163,7 @@ class TestSyncRepo:
         return logger
 
     def testSkipsWhenContentMatches(self):
-        """Should return 'skipped' when remote content matches target."""
+        """Should skip when content on the default branch matches."""
         targetContent = "hello world"
         encodedContent = base64.b64encode(targetContent.encode()).decode()
         remoteData = {"sha": "abc", "content": encodedContent + "\n"}
@@ -110,6 +180,27 @@ class TestSyncRepo:
                 False,
             )
         assert result == "skipped"
+
+    def testReadyWhenSyncBranchContentMatches(self):
+        """A matching existing sync branch should remain eligible to merge."""
+        targetContent = "hello world"
+        encodedContent = base64.b64encode(targetContent.encode()).decode()
+        remoteData = {"sha": "abc", "content": encodedContent}
+
+        with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
+            result = sci.syncRepo(
+                "owner/repo",
+                ".github/copilot-instructions.md",
+                targetContent,
+                "sync: update instructions",
+                False,
+                {},
+                self._makeLogger(),
+                False,
+                branch="sync/instructions-20260722",
+            )
+
+        assert result == "ready"
 
     def testDryRunDoesNotCallPut(self):
         """In dry-run mode, putRemoteFile should NOT be called."""

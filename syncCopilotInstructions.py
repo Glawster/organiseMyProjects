@@ -6,6 +6,7 @@ Syncs canonical instruction files from organiseMyProjects
 out to all other Glawster repos that use the shared template.
 
 Default mode is dry-run; use --confirm to actually push changes.
+Use --merge to merge conflict-free sync branches into each default branch.
 
 This script always writes to a generated destination branch named:
 sync/instructions-YYYYMMDD
@@ -14,6 +15,7 @@ sync/instructions-YYYYMMDD
 import argparse
 import base64
 import datetime
+import json
 import os
 import sys
 from pathlib import Path
@@ -65,6 +67,38 @@ TARGET_REPOS = [
 ]
 
 API_BASE = "https://api.github.com"
+CONFIG_PATH = (
+    Path.home()
+    / ".config"
+    / "organiseMyProjects"
+    / "syncCopilotInstructions.json"
+)
+
+
+# ---------------------------------------------------------------------------
+# Configuration helpers
+# ---------------------------------------------------------------------------
+
+
+def configLoadToken(configPath: Path = CONFIG_PATH) -> str:
+    """Return the stored GitHub token, or an empty string if unavailable."""
+    try:
+        data = json.loads(configPath.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return ""
+
+    token = data.get("githubToken", "") if isinstance(data, dict) else ""
+    return token if isinstance(token, str) else ""
+
+
+def configSaveToken(token: str, configPath: Path = CONFIG_PATH) -> None:
+    """Store the GitHub token in the user config directory with private access."""
+    configPath.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    configPath.write_text(
+        json.dumps({"githubToken": token}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    configPath.chmod(0o600)
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +190,32 @@ def putRemoteFile(
     response.raise_for_status()
 
 
+def mergeBranch(repo: str, branch: str, base: str, headers: dict) -> str:
+    """Merge branch into base when GitHub can do so without conflicts.
+
+    Returns one of: "merged", "already_merged", "conflict", "failed". A
+    conflicting merge leaves the generated branch available for manual review.
+    """
+    url = f"{API_BASE}/repos/{repo}/merges"
+    payload = {
+        "base": base,
+        "head": branch,
+        "commit_message": f"Merge {branch} into {base}",
+    }
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=15)
+        if response.status_code == 204:
+            return "already_merged"
+        if response.status_code == 409:
+            return "conflict"
+        response.raise_for_status()
+        return "merged"
+    except requests.HTTPError:
+        return "failed"
+    except requests.RequestException:
+        return "failed"
+
+
 # ---------------------------------------------------------------------------
 # Core sync logic
 # ---------------------------------------------------------------------------
@@ -180,7 +240,8 @@ def syncRepo(
     """
     Sync one instruction file to a single repo.
 
-    Returns one of: "updated", "skipped", "failed".
+    Returns one of: "updated", "ready", "skipped", "failed". "ready" means
+    the target content already exists on the generated sync branch.
     """
     logger.doing("checking repository")
     logger.value("repository", repo)
@@ -188,9 +249,11 @@ def syncRepo(
     try:
         # Try sync branch first if it exists (reuse branch from same day)
         remoteData = None
+        foundOnBranch = False
         if branch:
             logger.value("branch", branch)
             remoteData = getRemoteFile(repo, targetPath, headers, ref=branch)
+            foundOnBranch = remoteData is not None
             if remoteData is not None and verbose:
                 logger.info("using existing branch")
 
@@ -204,7 +267,10 @@ def syncRepo(
             sha = remoteData["sha"]
 
             if remoteContent == targetContent:
-                logger.info("already up to date, skipping")
+                if foundOnBranch:
+                    logger.info("sync branch already up to date, ready to merge")
+                    return "ready"
+                logger.info("default branch already up to date, skipping")
                 return "skipped"
 
             if verbose:
@@ -265,9 +331,14 @@ def main() -> None:
         help="execute the sync (default is dry-run)",
     )
     parser.add_argument(
+        "--merge",
+        action="store_true",
+        help="merge conflict-free sync branches into each default branch",
+    )
+    parser.add_argument(
         "--token",
         default=None,
-        help="GitHub PAT (overrides GITHUB_TOKEN env var)",
+        help="GitHub PAT (overrides GITHUB_TOKEN and is saved in ~/.config)",
     )
     parser.add_argument(
         "--verbose",
@@ -286,11 +357,21 @@ def main() -> None:
     syncBranch = f"sync/instructions-{datetime.date.today().strftime('%Y%m%d')}"
     logger.value("sync branch", syncBranch)
 
-    # Resolve the GitHub token
-    token = args.token or os.environ.get("GITHUB_TOKEN", "")
+    # Resolve the GitHub token. Explicit and environment tokens refresh the store.
+    suppliedToken = args.token or os.environ.get("GITHUB_TOKEN", "")
+    token = suppliedToken or configLoadToken()
     if not token:
-        logger.error("No GitHub token found. Set GITHUB_TOKEN or use --token.")
+        logger.error(
+            "No GitHub token found. Set GITHUB_TOKEN, use --token, or add it to %s.",
+            CONFIG_PATH,
+        )
         sys.exit(1)
+    if suppliedToken:
+        try:
+            configSaveToken(suppliedToken)
+            logger.info("GitHub token saved to user config")
+        except OSError as exc:
+            logger.warning("Could not save GitHub token to %s: %s", CONFIG_PATH, exc)
 
     # Validate source files
     for spec in SYNC_SPECS:
@@ -306,7 +387,8 @@ def main() -> None:
     if dryRun:
         logger.info("dry-run mode: no changes will be made")
 
-    counts = {"updated": 0, "skipped": 0, "failed": 0}
+    counts = {"updated": 0, "ready": 0, "skipped": 0, "failed": 0}
+    repoResults = {repo: [] for repo in TARGET_REPOS}
 
     for spec in SYNC_SPECS:
         logger.value("source file", spec["sourceFile"])
@@ -326,13 +408,69 @@ def main() -> None:
                 branch=syncBranch,
             )
             counts[result] += 1
+            repoResults[repo].append(result)
+
+    mergeCounts = {
+        "merged": 0,
+        "already_merged": 0,
+        "conflict": 0,
+        "failed": 0,
+    }
+    manualReviewRepos = []
+    if args.merge:
+        for repo, results in repoResults.items():
+            hasMergeableBranch = "updated" in results or "ready" in results
+            if not hasMergeableBranch or "failed" in results:
+                continue
+
+            defaultBranch = getDefaultBranch(repo, headers)
+            logger.action("merge sync branch")
+            logger.value("repository", repo)
+            logger.value("base branch", defaultBranch)
+            if dryRun:
+                mergeResult = "merged"
+            else:
+                mergeResult = mergeBranch(
+                    repo, syncBranch, defaultBranch, headers
+                )
+            mergeCounts[mergeResult] += 1
+            if mergeResult == "merged":
+                logger.done("merge sync branch")
+            elif mergeResult == "already_merged":
+                logger.info("merge skipped: branch is already merged")
+            elif mergeResult == "conflict":
+                manualReviewRepos.append(repo)
+                logger.warning(
+                    "manual merge required for %s: %s cannot be merged into %s "
+                    "without conflicts",
+                    repo,
+                    syncBranch,
+                    defaultBranch,
+                )
+            else:
+                logger.error(f"Failed to merge {syncBranch} in {repo}")
 
     logger.info(
-        "summary updated=%s skipped=%s failed=%s",
+        "summary updated=%s ready=%s skipped=%s failed=%s",
         counts["updated"],
+        counts["ready"],
         counts["skipped"],
         counts["failed"],
     )
+    if args.merge:
+        logger.info(
+            "merge summary merged=%s already_merged=%s conflicts=%s failed=%s",
+            mergeCounts["merged"],
+            mergeCounts["already_merged"],
+            mergeCounts["conflict"],
+            mergeCounts["failed"],
+        )
+        if manualReviewRepos:
+            logger.warning(
+                "manual review required for %s repositories: %s",
+                len(manualReviewRepos),
+                ", ".join(manualReviewRepos),
+            )
     logger.done("finished")
 
 

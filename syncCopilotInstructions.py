@@ -2,13 +2,13 @@
 """
 syncCopilotInstructions.py
 
-Syncs the canonical .github/copilot-instructions.md from organiseMyProjects
+Syncs canonical instruction files from organiseMyProjects
 out to all other Glawster repos that use the shared template.
 
 Default mode is dry-run; use --confirm to actually push changes.
 
 This script always writes to a generated destination branch named:
-sync/copilot-instructions-YYYYMMDD
+sync/instructions-YYYYMMDD
 """
 
 import argparse
@@ -27,9 +27,18 @@ from organiseMyProjects.logUtils import getLogger, thisApplication
 # Configuration
 # ---------------------------------------------------------------------------
 
-SOURCE_FILE = Path(__file__).resolve().parent / ".github" / "copilot-instructions.md"
-TARGET_PATH = ".github/copilot-instructions.md"
-COMMIT_MESSAGE = "sync: update copilot-instructions.md from organiseMyProjects template"
+SYNC_SPECS = [
+    {
+        "sourceFile": Path(__file__).resolve().parent / ".github" / "copilot-instructions.md",
+        "targetPath": ".github/copilot-instructions.md",
+        "commitMessage": "sync: update copilot-instructions.md from organiseMyProjects template",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent / "AGENTS.md",
+        "targetPath": "AGENTS.md",
+        "commitMessage": "sync: update AGENTS.md from organiseMyProjects template",
+    },
+]
 SYNC_COMMENT = (
     "<!-- synced from Glawster/organiseMyProjects -- do not edit directly -->\n"
 )
@@ -52,6 +61,7 @@ TARGET_REPOS = [
     "Glawster/AbilityUsageTracker",
     "Glawster/OutdatedItemCleaner",
     "Glawster/wheresItAt",
+    "Glawster/myHandbook",
 ]
 
 API_BASE = "https://api.github.com"
@@ -158,7 +168,9 @@ def buildTargetContent(sourceContent: str) -> str:
 
 def syncRepo(
     repo: str,
+    targetPath: str,
     targetContent: str,
+    commitMessage: str,
     dryRun: bool,
     headers: dict,
     logger,
@@ -166,7 +178,7 @@ def syncRepo(
     branch: Optional[str] = None,
 ) -> str:
     """
-    Sync the copilot-instructions file to a single repo.
+    Sync one instruction file to a single repo.
 
     Returns one of: "updated", "skipped", "failed".
     """
@@ -178,13 +190,13 @@ def syncRepo(
         remoteData = None
         if branch:
             logger.value("branch", branch)
-            remoteData = getRemoteFile(repo, TARGET_PATH, headers, ref=branch)
+            remoteData = getRemoteFile(repo, targetPath, headers, ref=branch)
             if remoteData is not None and verbose:
                 logger.info("using existing branch")
 
         # If branch doesn't have the file, check default branch
         if remoteData is None:
-            remoteData = getRemoteFile(repo, TARGET_PATH, headers, ref=None)
+            remoteData = getRemoteFile(repo, targetPath, headers, ref=None)
 
         if remoteData is not None:
             # Decode existing content
@@ -211,17 +223,17 @@ def syncRepo(
                 createBranch(repo, branch, defaultSha, headers)
                 logger.done("create branch")
 
-        logger.value("target path", TARGET_PATH)
+        logger.value("target path", targetPath)
         logger.action("update target file")
         if dryRun:
             return "updated"
 
         putRemoteFile(
             repo,
-            TARGET_PATH,
+            targetPath,
             targetContent,
             sha,
-            COMMIT_MESSAGE,
+            commitMessage,
             headers,
             branch=branch,
         )
@@ -244,7 +256,7 @@ def syncRepo(
 def main() -> None:
     """Parse arguments and run the sync."""
     parser = argparse.ArgumentParser(
-        description="Sync .github/copilot-instructions.md to all Glawster target repos."
+        description="Sync instruction files to all Glawster target repos."
     )
     parser.add_argument(
         "-y",
@@ -271,7 +283,7 @@ def main() -> None:
     logger.doing("starting")
     logger.value("dryRun", dryRun)
 
-    syncBranch = f"sync/copilot-instructions-{datetime.date.today().strftime('%Y%m%d')}"
+    syncBranch = f"sync/instructions-{datetime.date.today().strftime('%Y%m%d')}"
     logger.value("sync branch", syncBranch)
 
     # Resolve the GitHub token
@@ -280,16 +292,14 @@ def main() -> None:
         logger.error("No GitHub token found. Set GITHUB_TOKEN or use --token.")
         sys.exit(1)
 
-    # Read the source file
-    if not SOURCE_FILE.exists():
-        logger.error("Source file not found: %s", SOURCE_FILE)
-        sys.exit(1)
+    # Validate source files
+    for spec in SYNC_SPECS:
+        if not spec["sourceFile"].exists():
+            logger.error("Source file not found: %s", spec["sourceFile"])
+            sys.exit(1)
 
-    logger.value("source file", SOURCE_FILE)
+    logger.value("source file count", len(SYNC_SPECS))
     logger.value("target repo count", len(TARGET_REPOS))
-
-    sourceContent = SOURCE_FILE.read_text(encoding="utf-8")
-    targetContent = buildTargetContent(sourceContent)
 
     headers = buildHeaders(token)
 
@@ -298,17 +308,24 @@ def main() -> None:
 
     counts = {"updated": 0, "skipped": 0, "failed": 0}
 
-    for repo in TARGET_REPOS:
-        result = syncRepo(
-            repo,
-            targetContent,
-            dryRun,
-            headers,
-            logger,
-            args.verbose,
-            branch=syncBranch,
-        )
-        counts[result] += 1
+    for spec in SYNC_SPECS:
+        logger.value("source file", spec["sourceFile"])
+        sourceContent = spec["sourceFile"].read_text(encoding="utf-8")
+        targetContent = buildTargetContent(sourceContent)
+
+        for repo in TARGET_REPOS:
+            result = syncRepo(
+                repo,
+                spec["targetPath"],
+                targetContent,
+                spec["commitMessage"],
+                dryRun,
+                headers,
+                logger,
+                args.verbose,
+                branch=syncBranch,
+            )
+            counts[result] += 1
 
     logger.info(
         "summary updated=%s skipped=%s failed=%s",

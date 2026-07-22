@@ -9,12 +9,13 @@
 5.  [CLI Design Standards](#cli-design-standards)\
 6.  [Environment & Dependency Policy](#environment--dependency-policy)\
 7.  [Patterns](#patterns)\
-8.  [Error Handling & Logging](#error-handling--logging)\
-9.  [Security Standards](#security-standards)\
-10. [Testing Standards](#testing-standards)\
-11. [Performance Guidelines](#performance-guidelines)\
-12. [Refactoring Guidelines](#refactoring-guidelines)\
-13. [Common Principles to Always Follow](#common-principles-to-always-follow)
+8.  [User Config Pattern](#user-config-pattern)\
+9.  [Error Handling & Logging](#error-handling--logging)\
+10. [Security Standards](#security-standards)\
+11. [Testing Standards](#testing-standards)\
+12. [Performance Guidelines](#performance-guidelines)\
+13. [Refactoring Guidelines](#refactoring-guidelines)\
+14. [Common Principles to Always Follow](#common-principles-to-always-follow)
 
 # Overview
 
@@ -135,6 +136,8 @@ Rules:
 -   `main.py` sets the application logging context with `setApplication()`\
 -   `src/` is optional and should be used for larger apps, reusable core logic, or UI-based apps\
 -   `ui/` is optional and should contain UI orchestration/assets where useful\
+-   Documentation rule: only `README.md` may be at the project root; all other documentation must live under `documentation/`, and documentation file names should use camelCase except for `README.md`\
+-   The README must include a near-top Documentation section that links to every living guide in the repo so it remains the canonical entry point for all docs\
 -   Any routine that produces output files must place them in an `output/` folder directly under the project root\
 -   Core/business logic must remain testable without the UI
 
@@ -461,6 +464,24 @@ if not dryRun:
 -   Check for stop file periodically\
 -   Exit gracefully if detected\
 -   Log cancellation event
+
+# User Config Pattern
+
+Applications store user-level defaults and preferences in:
+
+```text
+~/.config/<application>/config.json
+```
+
+Rules:
+
+-   Use JSON objects, not `key=value` files\
+-   Preserve existing and unknown keys when updating config\
+-   Use clear, stable key names such as `source`, `month`, or `groupName`\
+-   Validate config values before using them\
+-   Create the config directory only when writing config\
+-   Preference updates, such as saving a `--source` override, may be written even during dry-run\
+-   Dry-run guards apply to workflow side effects, not to preference persistence unless the user explicitly asks for config preview only
 
 # Error Handling & Logging
 

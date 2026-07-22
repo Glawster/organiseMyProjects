@@ -43,6 +43,15 @@ class TestBuildHeaders:
         assert "github" in headers["Accept"].lower()
 
 
+class TestSyncSpecs:
+    """Tests for sync file configuration."""
+
+    def testIncludesAgentsFile(self):
+        """AGENTS.md should be part of files synced to target repos."""
+        targetPaths = [spec["targetPath"] for spec in sci.SYNC_SPECS]
+        assert "AGENTS.md" in targetPaths
+
+
 class TestGetRemoteFile:
     """Tests for getRemoteFile."""
 
@@ -91,7 +100,14 @@ class TestSyncRepo:
 
         with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
             result = sci.syncRepo(
-                "owner/repo", targetContent, True, {}, self._makeLogger(), False
+                "owner/repo",
+                ".github/copilot-instructions.md",
+                targetContent,
+                "sync: update instructions",
+                True,
+                {},
+                self._makeLogger(),
+                False,
             )
         assert result == "skipped"
 
@@ -104,7 +120,14 @@ class TestSyncRepo:
         with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
             with patch("syncCopilotInstructions.putRemoteFile") as mockPut:
                 result = sci.syncRepo(
-                    "owner/repo", targetContent, True, {}, self._makeLogger(), False
+                    "owner/repo",
+                    ".github/copilot-instructions.md",
+                    targetContent,
+                    "sync: update instructions",
+                    True,
+                    {},
+                    self._makeLogger(),
+                    False,
                 )
 
         mockPut.assert_not_called()
@@ -119,7 +142,14 @@ class TestSyncRepo:
         with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
             with patch("syncCopilotInstructions.putRemoteFile") as mockPut:
                 result = sci.syncRepo(
-                    "owner/repo", targetContent, False, {}, self._makeLogger(), False
+                    "owner/repo",
+                    ".github/copilot-instructions.md",
+                    targetContent,
+                    "sync: update instructions",
+                    False,
+                    {},
+                    self._makeLogger(),
+                    False,
                 )
 
         mockPut.assert_called_once()
@@ -134,7 +164,14 @@ class TestSyncRepo:
             side_effect=req.HTTPError("403 Forbidden"),
         ):
             result = sci.syncRepo(
-                "owner/repo", "content", True, {}, self._makeLogger(), False
+                "owner/repo",
+                ".github/copilot-instructions.md",
+                "content",
+                "sync: update instructions",
+                True,
+                {},
+                self._makeLogger(),
+                False,
             )
         assert result == "failed"
 
@@ -147,7 +184,14 @@ class TestSyncRepo:
             side_effect=req.ConnectionError("timeout"),
         ):
             result = sci.syncRepo(
-                "owner/repo", "content", True, {}, self._makeLogger(), False
+                "owner/repo",
+                ".github/copilot-instructions.md",
+                "content",
+                "sync: update instructions",
+                True,
+                {},
+                self._makeLogger(),
+                False,
             )
         assert result == "failed"
 
@@ -158,7 +202,14 @@ class TestSyncRepo:
         with patch("syncCopilotInstructions.getRemoteFile", return_value=None):
             with patch("syncCopilotInstructions.putRemoteFile") as mockPut:
                 sci.syncRepo(
-                    "owner/repo", targetContent, False, {}, self._makeLogger(), False
+                    "owner/repo",
+                    ".github/copilot-instructions.md",
+                    targetContent,
+                    "sync: update instructions",
+                    False,
+                    {},
+                    self._makeLogger(),
+                    False,
                 )
 
         args, kwargs = mockPut.call_args

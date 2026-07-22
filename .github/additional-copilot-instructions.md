@@ -2,7 +2,7 @@
 
 ## Project-Specific Information
 
-This file contains project-specific details for the **organiseMyProjects** repository. The master development guidelines live in `.github/copilot-instructions.md` and take precedence over any conflicting guidance here or elsewhere in the repository. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`.
+This file contains project-specific details for the **organiseMyProjects** repository. The master development guidelines live in `.github/copilot-instructions.md` and take precedence over any conflicting guidance here or elsewhere in the repository. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`. The README must include a near-top Documentation section that links to every living guide in the repo so it remains the canonical entry point for all docs.
 
 ## Installation
 

@@ -2,6 +2,16 @@
 
 A Python toolkit to scaffold new projects with predefined structure, logging, GUI naming conventions, and enforceable coding standards.
 
+## Documentation
+
+The README is the canonical entry point for repo documentation. The living guides are:
+
+- [Developer Guide](documentation/developer.md)
+- [Git Guide](documentation/git.md)
+- [GUI Naming Linter Help](organiseMyProjects/HELP.md)
+- [Master Copilot Instructions](.github/copilot-instructions.md)
+- [Repository Copilot Notes](.github/additional-copilot-instructions.md)
+
 ## Features
 
 - 📁 Create a full Python project scaffold using `createProject`

@@ -6,7 +6,7 @@ Syncs canonical instruction files from organiseMyProjects
 out to all other Glawster repos that use the shared template.
 
 Default mode is dry-run; use --confirm to actually push changes.
-Use --merge to merge conflict-free sync branches into each default branch.
+Use --merge to create and merge conflict-free pull requests into each default branch.
 
 This script always writes to a generated destination branch named:
 sync/instructions-YYYYMMDD
@@ -31,7 +31,9 @@ from organiseMyProjects.logUtils import getLogger, thisApplication
 
 SYNC_SPECS = [
     {
-        "sourceFile": Path(__file__).resolve().parent / ".github" / "copilot-instructions.md",
+        "sourceFile": Path(__file__).resolve().parent
+        / ".github"
+        / "copilot-instructions.md",
         "targetPath": ".github/copilot-instructions.md",
         "commitMessage": "sync: update copilot-instructions.md from organiseMyProjects template",
     },
@@ -44,34 +46,11 @@ SYNC_SPECS = [
 SYNC_COMMENT = (
     "<!-- synced from Glawster/organiseMyProjects -- do not edit directly -->\n"
 )
-
-# keep these in alphabetical order for easier maintenance
-TARGET_REPOS = [
-    "Glawster/organiseMyAlts",
-    "Glawster/myDavinciScripts",
-    "Glawster/organiseMyFooty",
-    "Glawster/organiseMyPhotos",
-    "Glawster/organiseMyVideo",
-    "Glawster/b2-backup-scripts",
-    "Glawster/batchImageProcessing",
-    "Glawster/comfyuiWorkflows",
-    "Glawster/createDirPerFile",
-    "Glawster/directPayments",
-    "Glawster/imageRecognition",
-    "Glawster/linuxMigration",
-    "Glawster/sidecarEditor",
-    "Glawster/AbilityUsageTracker",
-    "Glawster/OutdatedItemCleaner",
-    "Glawster/wheresItAt",
-    "Glawster/myHandbook",
-]
-
 API_BASE = "https://api.github.com"
+REPO_OWNER = "Glawster"
+SOURCE_REPO = f"{REPO_OWNER}/organiseMyProjects"
 CONFIG_PATH = (
-    Path.home()
-    / ".config"
-    / "organiseMyProjects"
-    / "syncCopilotInstructions.json"
+    Path.home() / ".config" / "organiseMyProjects" / "syncCopilotInstructions.json"
 )
 
 
@@ -136,6 +115,38 @@ def getRemoteFile(
     return response.json()
 
 
+def getTargetRepos(headers: dict) -> list[str]:
+    """Return active, owned, non-fork repositories eligible for syncing."""
+    url = f"{API_BASE}/user/repos"
+    page = 1
+    repos = []
+
+    while True:
+        params = {
+            "affiliation": "owner",
+            "per_page": 100,
+            "page": page,
+        }
+        response = requests.get(url, headers=headers, params=params, timeout=15)
+        response.raise_for_status()
+        pageRepos = response.json()
+        repos.extend(pageRepos)
+        if len(pageRepos) < 100:
+            break
+        page += 1
+
+    targets = [
+        repo["full_name"]
+        for repo in repos
+        if repo.get("owner", {}).get("login", "").casefold()
+        == REPO_OWNER.casefold()
+        and repo.get("full_name") != SOURCE_REPO
+        and not repo.get("archived", False)
+        and not repo.get("fork", False)
+    ]
+    return sorted(targets, key=str.casefold)
+
+
 def getDefaultBranch(repo: str, headers: dict) -> str:
     """Return the destination repository default branch name."""
     url = f"{API_BASE}/repos/{repo}"
@@ -190,30 +201,71 @@ def putRemoteFile(
     response.raise_for_status()
 
 
-def mergeBranch(repo: str, branch: str, base: str, headers: dict) -> str:
-    """Merge branch into base when GitHub can do so without conflicts.
-
-    Returns one of: "merged", "already_merged", "conflict", "failed". A
-    conflicting merge leaves the generated branch available for manual review.
-    """
-    url = f"{API_BASE}/repos/{repo}/merges"
+def createPullRequest(repo: str, branch: str, base: str, headers: dict) -> dict:
+    """Create a pull request for the generated sync branch."""
+    url = f"{API_BASE}/repos/{repo}/pulls"
     payload = {
-        "base": base,
+        "title": "Sync shared Copilot instructions",
+        "body": (
+            "Automated sync from `Glawster/organiseMyProjects`.\n\n"
+            "This pull request was created by `syncCopilotInstructions.py`."
+        ),
         "head": branch,
-        "commit_message": f"Merge {branch} into {base}",
+        "base": base,
     }
+    response = requests.post(url, json=payload, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+
+def getPullRequest(repo: str, branch: str, base: str, headers: dict) -> Optional[dict]:
+    """Return the newest PR for branch and base, including closed PRs."""
+    owner = repo.split("/", maxsplit=1)[0]
+    url = f"{API_BASE}/repos/{repo}/pulls"
+    params = {
+        "state": "all",
+        "head": f"{owner}:{branch}",
+        "base": base,
+        "sort": "created",
+        "direction": "desc",
+    }
+    response = requests.get(url, params=params, headers=headers, timeout=15)
+    response.raise_for_status()
+    pullRequests = response.json()
+    return pullRequests[0] if pullRequests else None
+
+
+def mergePullRequest(repo: str, pullNumber: int, headers: dict) -> str:
+    """Merge a pull request when GitHub considers it mergeable."""
+    url = f"{API_BASE}/repos/{repo}/pulls/{pullNumber}/merge"
+    payload = {"merge_method": "merge"}
+    response = requests.put(url, json=payload, headers=headers, timeout=15)
+    if response.status_code in (405, 409):
+        return "conflict"
+    response.raise_for_status()
+    return "merged" if response.json().get("merged") else "conflict"
+
+
+def syncPullRequest(
+    repo: str, branch: str, base: str, headers: dict
+) -> tuple[str, Optional[int]]:
+    """Create or reuse the sync PR and merge it when possible.
+
+    Returns a merge status and the pull request number, when one exists.
+    """
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=15)
-        if response.status_code == 204:
-            return "already_merged"
-        if response.status_code == 409:
-            return "conflict"
-        response.raise_for_status()
-        return "merged"
+        pullRequest = getPullRequest(repo, branch, base, headers)
+        if pullRequest and pullRequest.get("merged_at"):
+            return "already_merged", pullRequest["number"]
+        if not pullRequest or pullRequest.get("state") != "open":
+            pullRequest = createPullRequest(repo, branch, base, headers)
+
+        pullNumber = pullRequest["number"]
+        return mergePullRequest(repo, pullNumber, headers), pullNumber
     except requests.HTTPError:
-        return "failed"
+        return "failed", None
     except requests.RequestException:
-        return "failed"
+        return "failed", None
 
 
 # ---------------------------------------------------------------------------
@@ -333,7 +385,7 @@ def main() -> None:
     parser.add_argument(
         "--merge",
         action="store_true",
-        help="merge conflict-free sync branches into each default branch",
+        help="create and merge conflict-free sync pull requests",
     )
     parser.add_argument(
         "--token",
@@ -379,23 +431,28 @@ def main() -> None:
             logger.error("Source file not found: %s", spec["sourceFile"])
             sys.exit(1)
 
-    logger.value("source file count", len(SYNC_SPECS))
-    logger.value("target repo count", len(TARGET_REPOS))
-
     headers = buildHeaders(token)
+    try:
+        targetRepos = getTargetRepos(headers)
+    except requests.RequestException as exc:
+        logger.error("Could not list GitHub repositories: %s", exc)
+        sys.exit(1)
+
+    logger.value("source file count", len(SYNC_SPECS))
+    logger.value("target repo count", len(targetRepos))
 
     if dryRun:
         logger.info("dry-run mode: no changes will be made")
 
     counts = {"updated": 0, "ready": 0, "skipped": 0, "failed": 0}
-    repoResults = {repo: [] for repo in TARGET_REPOS}
+    repoResults = {repo: [] for repo in targetRepos}
 
     for spec in SYNC_SPECS:
         logger.value("source file", spec["sourceFile"])
         sourceContent = spec["sourceFile"].read_text(encoding="utf-8")
         targetContent = buildTargetContent(sourceContent)
 
-        for repo in TARGET_REPOS:
+        for repo in targetRepos:
             result = syncRepo(
                 repo,
                 spec["targetPath"],
@@ -424,31 +481,35 @@ def main() -> None:
                 continue
 
             defaultBranch = getDefaultBranch(repo, headers)
-            logger.action("merge sync branch")
+            logger.action("create or reuse sync pull request")
             logger.value("repository", repo)
             logger.value("base branch", defaultBranch)
             if dryRun:
                 mergeResult = "merged"
+                pullNumber = None
             else:
-                mergeResult = mergeBranch(
+                mergeResult, pullNumber = syncPullRequest(
                     repo, syncBranch, defaultBranch, headers
                 )
             mergeCounts[mergeResult] += 1
+            if pullNumber is not None:
+                logger.value("pull request", f"#{pullNumber}")
             if mergeResult == "merged":
-                logger.done("merge sync branch")
+                logger.done("merge sync pull request")
             elif mergeResult == "already_merged":
-                logger.info("merge skipped: branch is already merged")
+                logger.info("merge skipped: pull request is already merged")
             elif mergeResult == "conflict":
                 manualReviewRepos.append(repo)
                 logger.warning(
-                    "manual merge required for %s: %s cannot be merged into %s "
-                    "without conflicts",
+                    "manual review required for %s pull request #%s: %s cannot "
+                    "currently be merged into %s",
                     repo,
+                    pullNumber,
                     syncBranch,
                     defaultBranch,
                 )
             else:
-                logger.error(f"Failed to merge {syncBranch} in {repo}")
+                logger.error(f"Failed to create or merge a pull request in {repo}")
 
     logger.info(
         "summary updated=%s ready=%s skipped=%s failed=%s",

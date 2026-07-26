@@ -234,7 +234,7 @@ python syncCopilotInstructions.py
 # Actually push updates
 GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
 
-# Push updates, then merge branches that GitHub can merge without conflicts
+# Push updates, then create and merge conflict-free pull requests
 GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm --merge
 
 # Pass the token directly and show extra detail

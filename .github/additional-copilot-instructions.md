@@ -43,7 +43,7 @@ python syncCopilotInstructions.py
 # Actually push updates
 GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
 
-# Push updates and merge branches that have no conflicts
+# Push updates, then create and merge conflict-free pull requests
 GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm --merge
 ```
 

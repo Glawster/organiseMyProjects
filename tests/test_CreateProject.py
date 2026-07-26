@@ -193,6 +193,17 @@ class TestCreateProject:
         assert copilotFile.exists()
         assert len(copilotFile.read_text()) > 0
 
+    def testCreateProjectAgentInstructions(self, temp_dir, sample_project_name):
+        """Test that Codex agent instructions are copied to the project root."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        agentFile = projectPath / "AGENTS.md"
+        sourceFile = Path(__file__).parent.parent / "AGENTS.md"
+        assert agentFile.read_text() == sourceFile.read_text()
+
 
 class TestUpdateProject:
     """Test cases for updateProject function."""
@@ -244,6 +255,17 @@ class TestUpdateProject:
         assert (
             projectPath / ".vscode" / "settings.json"
         ).read_text() == VSCODE_SETTINGS_CONTENT
+
+    def testUpdateProjectAddsAgentInstructions(self, temp_dir, sample_project_name):
+        """Test that updateProject adds managed Codex agent instructions."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        updateProject(str(projectPath))
+
+        agentFile = projectPath / "AGENTS.md"
+        sourceFile = Path(__file__).parent.parent / "AGENTS.md"
+        assert agentFile.read_text() == sourceFile.read_text()
 
     def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
         """Test that updateProject updates pytest.ini if it is outdated."""

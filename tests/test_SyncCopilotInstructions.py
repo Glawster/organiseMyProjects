@@ -1,6 +1,7 @@
 """
 Tests for syncCopilotInstructions.py
 """
+
 import base64
 import json
 import stat
@@ -115,44 +116,142 @@ class TestGetRemoteFile:
                 sci.getRemoteFile("owner/repo", ".github/file.md", {})
 
 
-class TestMergeBranch:
-    """Tests for mergeBranch."""
+class TestGetTargetRepos:
+    """Tests for dynamic target repository discovery."""
 
-    def testReportsAlreadyMergedBranch(self):
-        """An already merged branch should not be reported as a conflict."""
-        mockResp = MagicMock(status_code=204)
-        with patch("syncCopilotInstructions.requests.post", return_value=mockResp):
-            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+    @staticmethod
+    def _repo(
+        name: str,
+        owner: str = "Glawster",
+        archived: bool = False,
+        fork: bool = False,
+    ) -> dict:
+        return {
+            "full_name": f"{owner}/{name}",
+            "owner": {"login": owner},
+            "archived": archived,
+            "fork": fork,
+        }
 
-        assert result == "already_merged"
+    def testFiltersAndSortsEligibleRepos(self):
+        """Only active, owned, non-source, non-fork repos should be returned."""
+        response = MagicMock()
+        response.json.return_value = [
+            self._repo("zebra"),
+            self._repo("Alpha"),
+            self._repo("organiseMyProjects"),
+            self._repo("archived", archived=True),
+            self._repo("forked", fork=True),
+            self._repo("external", owner="someoneElse"),
+        ]
 
-    def testReportsConflictingBranch(self):
-        """A conflicting branch should be identified for manual review."""
-        mockResp = MagicMock(status_code=409)
-        with patch("syncCopilotInstructions.requests.post", return_value=mockResp):
-            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+        with patch("syncCopilotInstructions.requests.get", return_value=response):
+            result = sci.getTargetRepos({})
 
-        assert result == "conflict"
+        assert result == ["Glawster/Alpha", "Glawster/zebra"]
+        response.raise_for_status.assert_called_once()
 
-    def testMergesConflictFreeBranch(self):
-        """A conflict-free branch should be reported as merged."""
-        mockResp = MagicMock(status_code=201)
-        with patch("syncCopilotInstructions.requests.post", return_value=mockResp) as mockPost:
-            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+    def testFetchesAllPages(self):
+        """A full API page should cause the next page to be requested."""
+        firstPage = MagicMock()
+        firstPage.json.return_value = [self._repo(f"repo{index}") for index in range(100)]
+        secondPage = MagicMock()
+        secondPage.json.return_value = [self._repo("finalRepo")]
 
-        assert result == "merged"
-        assert mockPost.call_args.kwargs["json"]["base"] == "main"
+        with patch(
+            "syncCopilotInstructions.requests.get",
+            side_effect=[firstPage, secondPage],
+        ) as mockGet:
+            result = sci.getTargetRepos({})
+
+        assert len(result) == 101
+        assert mockGet.call_args_list[1].kwargs["params"]["page"] == 2
+
+
+class TestSyncPullRequest:
+    """Tests for the pull request merge workflow."""
+
+    def testCreatesAndMergesPullRequest(self):
+        """A missing pull request should be created and merged."""
+        pullRequest = {"number": 42, "state": "open", "merged_at": None}
+        with patch("syncCopilotInstructions.getPullRequest", return_value=None):
+            with patch(
+                "syncCopilotInstructions.createPullRequest",
+                return_value=pullRequest,
+            ) as mockCreate:
+                with patch(
+                    "syncCopilotInstructions.mergePullRequest",
+                    return_value="merged",
+                ) as mockMerge:
+                    result = sci.syncPullRequest(
+                        "owner/repo", "sync/branch", "main", {}
+                    )
+
+        assert result == ("merged", 42)
+        mockCreate.assert_called_once()
+        mockMerge.assert_called_once_with("owner/repo", 42, {})
+
+    def testReusesOpenPullRequest(self):
+        """An existing open pull request should not be duplicated."""
+        pullRequest = {"number": 7, "state": "open", "merged_at": None}
+        with patch("syncCopilotInstructions.getPullRequest", return_value=pullRequest):
+            with patch("syncCopilotInstructions.createPullRequest") as mockCreate:
+                with patch(
+                    "syncCopilotInstructions.mergePullRequest",
+                    return_value="conflict",
+                ):
+                    result = sci.syncPullRequest(
+                        "owner/repo", "sync/branch", "main", {}
+                    )
+
+        assert result == ("conflict", 7)
+        mockCreate.assert_not_called()
+
+    def testReportsAlreadyMergedPullRequest(self):
+        """An already merged pull request should not be recreated."""
+        pullRequest = {
+            "number": 8,
+            "state": "closed",
+            "merged_at": "2026-07-22T12:00:00Z",
+        }
+        with patch("syncCopilotInstructions.getPullRequest", return_value=pullRequest):
+            result = sci.syncPullRequest("owner/repo", "sync/branch", "main", {})
+
+        assert result == ("already_merged", 8)
 
     def testReturnsFailedOnApiError(self):
         """Unexpected GitHub errors should be reported as failures."""
         import requests as req
 
-        mockResp = MagicMock(status_code=500)
-        mockResp.raise_for_status.side_effect = req.HTTPError("server error")
-        with patch("syncCopilotInstructions.requests.post", return_value=mockResp):
-            result = sci.mergeBranch("owner/repo", "sync/branch", "main", {})
+        with patch(
+            "syncCopilotInstructions.getPullRequest",
+            side_effect=req.HTTPError("server error"),
+        ):
+            result = sci.syncPullRequest("owner/repo", "sync/branch", "main", {})
 
-        assert result == "failed"
+        assert result == ("failed", None)
+
+
+class TestMergePullRequest:
+    """Tests for mergePullRequest."""
+
+    @pytest.mark.parametrize("statusCode", [405, 409])
+    def testReportsPullRequestRequiringReview(self, statusCode):
+        """Blocked and conflicting pull requests should require review."""
+        mockResp = MagicMock(status_code=statusCode)
+        with patch("syncCopilotInstructions.requests.put", return_value=mockResp):
+            result = sci.mergePullRequest("owner/repo", 42, {})
+
+        assert result == "conflict"
+
+    def testReportsSuccessfulMerge(self):
+        """A successfully merged pull request should be reported."""
+        mockResp = MagicMock(status_code=200)
+        mockResp.json.return_value = {"merged": True}
+        with patch("syncCopilotInstructions.requests.put", return_value=mockResp):
+            result = sci.mergePullRequest("owner/repo", 42, {})
+
+        assert result == "merged"
 
 
 class TestSyncRepo:

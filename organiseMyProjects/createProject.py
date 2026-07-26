@@ -148,6 +148,7 @@ PROJECT_TEXT_TEMPLATES = [
     (Path("main.py"), MAIN_PY_CONTENT),
 ]
 MANAGED_COPY_TEMPLATES = [
+    (TEMPLATE_DIR.parent / "AGENTS.md", Path("AGENTS.md")),
     (TEMPLATE_DIR.parent / "projectGuidelines.md", Path("projectGuidelines.md")),
     (
         TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md",
@@ -245,6 +246,13 @@ def createProject(
             shutil.copy(
                 srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md"
             )
+
+    # Copy the Codex agent instructions file
+    srcAgentInstructions = TEMPLATE_DIR.parent / "AGENTS.md"
+    if srcAgentInstructions.exists():
+        logger.action("copying agent instructions")
+        if not dryRun:
+            shutil.copy(srcAgentInstructions, basePath / "AGENTS.md")
 
     # Copy template modules into the new project
     logger.action("copying template modules")

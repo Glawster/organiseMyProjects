@@ -147,31 +147,31 @@ The test suite is organized into several modules:
 Shared test fixtures and configuration:
 - `temp_dir` - Temporary directory fixture
 - `sample_project_name` - Standard test project name
-- `mock_python_file` - Sample Python file with violations
+- `mockPythonFile` - Sample Python file with violations
 
-#### `tests/testLogUtils.py`
+#### `tests/test_LogUtils.py`
 Tests for logging utilities:
 - `TestDrawBox` - Box-drawing function tests
 
-#### `tests/testCreateProject.py`
+#### `tests/test_CreateProject.py`
 Tests for project creation functionality:
 - `TestCreateProject` - Basic project creation tests
 - `TestUpdateProject` - Project update functionality tests
 - `TestUtilityFunctions` - Utility function tests
 
-#### `tests/testGuiNamingLinter.py`
+#### `tests/test_GuiNamingLinter.py`
 Tests for linting functionality:
 - `TestGuiNamingVisitor` - AST visitor tests
 - `TestLintFile` - File linting tests
 - `TestLintGuiNaming` - Directory linting tests
 - `TestNamingPatterns` - Naming pattern validation tests
 
-#### `tests/testRunLinter.py`
+#### `tests/test_RunLinter.py`
 Tests for command-line interface:
 - `TestRunLinter` - CLI functionality tests
 - `TestIntegration` - Complete workflow tests
 
-#### `tests/testIntegration.py`
+#### `tests/test_Integration.py`
 End-to-end integration tests:
 - `TestPackageInstallation` - Entry point tests
 - `TestEndToEndWorkflow` - Complete workflow tests
@@ -184,6 +184,7 @@ Tests for Agent instructions sync utility:
 - `TestBuildTargetContent` - Content building tests
 - `TestBuildHeaders` - HTTP header tests
 - `TestGetRemoteFile` - Remote file retrieval tests
+- `TestRepoSelect` - Interactive and named single-repository selection tests
 - `TestSyncRepo` - Sync operation tests
 
 ### Running Tests
@@ -193,7 +194,7 @@ Tests for Agent instructions sync utility:
 pytest
 
 # Run specific test module
-pytest tests/testCreateProject.py
+pytest tests/test_CreateProject.py
 
 # Run with verbose output
 pytest -v
@@ -202,10 +203,10 @@ pytest -v
 pytest --cov=organiseMyProjects
 
 # Run specific test class
-pytest tests/testCreateProject.py::TestCreateProject
+pytest tests/test_CreateProject.py::TestCreateProject
 
 # Run specific test method
-pytest tests/testCreateProject.py::TestCreateProject::testCreateProjectBasicStructure
+pytest tests/test_CreateProject.py::TestCreateProject::testCreateProjectBasicStructure
 ```
 
 ### Test Patterns
@@ -315,7 +316,7 @@ To add new linting rules to `guiNamingLinter.py`:
 
 1. Add the rule to `namingRules` dictionary
 2. Update the `GuiNamingVisitor` class to check for the new rule
-3. Add tests for the new rule in `tests/testGuiNamingLinter.py`
+3. Add tests for the new rule in `tests/test_GuiNamingLinter.py`
 
 Example:
 ```python
@@ -341,6 +342,9 @@ To add new template files to projects:
 ### Adding New Command-Line Tools
 
 To add new entry points:
+
+Only executable applications and command-line tools need an entry point. A
+reusable library module or package does not require `main.py`.
 
 1. Create the module with a `main()` function
 2. Add entry point to `setup.py`:

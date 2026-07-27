@@ -2,7 +2,7 @@
 
 ## Project-Specific Information
 
-This file contains project-specific details for the **organiseMyProjects** repository. The master development guidelines live in `.github/agent-instructions.md` and take precedence over any conflicting guidance here or elsewhere in the repository. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`. The README must include a near-top Documentation section that links to every living guide in the repo so it remains the canonical entry point for all docs.
+This file contains project-specific details for the **organiseMyProjects** repository. The master development guidelines live in `.github/agent-instructions.md` and take precedence over any conflicting guidance here or elsewhere in the repository. User-facing documentation begins in the root `README.md`, and developer documentation is in `documentation/developer.md`. The README must include a near-top Documentation section that links to every living guide in the repo so it remains the canonical entry point for all docs.
 
 ## Installation
 
@@ -40,8 +40,17 @@ runLinter <file_or_dir>
 # Preview what would change (dry-run, default)
 python syncAgentInstructions.py
 
+# Choose one repository from a numbered list
+python syncAgentInstructions.py --repo
+
+# Select one repository non-interactively
+python syncAgentInstructions.py --repo Glawster/myRepository
+
 # Actually push updates
 GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm
+
+# Actually update one repository selected from the list
+GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --repo --confirm
 
 # Push updates, then create and merge conflict-free pull requests
 GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm --merge
@@ -90,16 +99,17 @@ organiseMyProjects/
 │   ├── styleUtils.py                     # [TEMPLATE] GUI styling utilities
 │   └── mainMenu.py                       # [TEMPLATE] Main menu framework
 ├── tests/                                 # Test suite (not distributed)
-│   ├── testCreateProject.py
-│   ├── testGuiNamingLinter.py
-│   ├── testRunLinter.py
-│   ├── testIntegration.py
-│   ├── testLogUtils.py
+│   ├── test_CreateProject.py
+│   ├── test_GuiNamingLinter.py
+│   ├── test_RunLinter.py
+│   ├── test_Integration.py
+│   ├── test_LogUtils.py
 │   ├── test_SyncAgentInstructions.py
 │   └── conftest.py
 ├── documentation/                         # Project documentation
-│   ├── README.md                          # User documentation
-│   └── DEVELOPER.md                       # Developer guide
+│   ├── developer.md                       # Developer guide
+│   └── git.md                             # Git workflow guide
+├── syncAgentInstructions.py               # Shared-instruction sync utility
 ├── setup.py                               # Package configuration
 ├── MANIFEST.in                            # Distribution files
 └── pytest.ini                             # Test configuration
@@ -132,7 +142,7 @@ organiseMyProjects/
 - **Key Functions**:
   - `createProject(projectName)` - Creates a new project structure
   - `updateProject(projectName)` - Updates existing project with latest templates
-  - `copyIfNewer(src, dest)` - Smart file copying with timestamp checking
+  - `_copy_if_newer(src, dest)` - Smart file copying with timestamp checking
   - `updateTextFile(src, dest, marker)` - Merges text files with section markers
 - **Resource Access**: Uses `importlib.resources` with filesystem fallback
 
@@ -275,7 +285,7 @@ pip install pytest black
 python -m pytest
 
 # Run specific test file
-python -m pytest tests/testCreateProject.py
+python -m pytest tests/test_CreateProject.py
 
 # Run with verbose output
 python -m pytest -v
@@ -309,12 +319,12 @@ createProject --update
 ## Test Suite Details
 
 ### Test Organization
-- `testCreateProject.py` - 24 tests for project scaffolding
-- `testGuiNamingLinter.py` - 35 tests for linter logic
-- `testRunLinter.py` - 10 tests for CLI interface
-- `testIntegration.py` - 12 tests for end-to-end workflows
-- `testLogUtils.py` - 10 tests for logging utilities
-- `test_SyncAgentInstructions.py` - 13 tests for Agent instructions sync
+- `test_CreateProject.py` - Tests for project scaffolding
+- `test_GuiNamingLinter.py` - Tests for linter logic
+- `test_RunLinter.py` - Tests for the CLI interface
+- `test_Integration.py` - Tests for end-to-end workflows
+- `test_LogUtils.py` - Tests for logging utilities
+- `test_SyncAgentInstructions.py` - Tests for agent-instruction syncing
 - **Total**: 104 comprehensive tests
 
 ### Test Patterns
@@ -491,25 +501,25 @@ The linter recognizes these Qt widget types:
 1. Add file to `organiseMyProjects/` directory
 2. Update `MANIFEST.in` if needed
 3. Update `createProject()` to copy the file
-4. Add test in `testCreateProject.py`
-5. Update `documentation/README.md` with file description
+4. Add test in `test_CreateProject.py`
+5. Update the root `README.md` with the file description
 
 ### Adding a New Widget Type to Linter
 **For Tkinter widgets:**
 1. Add naming rule to `namingRules` dict in `guiNamingLinter.py`
 2. Add widget class to `widgetClasses` set
-3. Add parametrized test cases in `testGuiNamingLinter.py`
+3. Add parametrized test cases in `test_GuiNamingLinter.py`
 4. Update HELP.md and `.github/additional-instructions.md` (and `.github/agent-instructions.md` only if the change affects universal guidance)
 
 **For Qt widgets:**
 1. Add widget type to `qtWidgetTypes` set in `guiNamingLinter.py`
-2. Add parametrized test cases in `testGuiNamingLinter.py`
+2. Add parametrized test cases in `test_GuiNamingLinter.py`
 3. Update HELP.md and `.github/additional-instructions.md` (and `.github/agent-instructions.md` only if the change affects universal guidance)
 
 ### Modifying Project Structure
 1. Update `createProject()` function
 2. Update tests to verify new structure
-3. Update `documentation/README.md` documentation
+3. Update the root `README.md` documentation
 4. Consider backward compatibility for `updateProject()`
 
 ## Troubleshooting

@@ -161,6 +161,46 @@ def getTargetRepos(headers: dict) -> list[str]:
     return sorted(targets, key=str.casefold)
 
 
+def repoSelect(targetRepos: list[str], requestedRepo: Optional[str]) -> list[str]:
+    """Return all repositories or the single repository requested by the user."""
+    if requestedRepo is None:
+        return targetRepos
+    if not targetRepos:
+        raise ValueError("No eligible repositories were found")
+
+    if requestedRepo:
+        requestedName = requestedRepo.casefold()
+        matches = [
+            repo
+            for repo in targetRepos
+            if repo.casefold() == requestedName
+            or repo.rpartition("/")[2].casefold() == requestedName
+        ]
+        if len(matches) == 1:
+            return matches
+        if len(matches) > 1:
+            raise ValueError(
+                f"Repository name is ambiguous; use owner/name: {requestedRepo}"
+            )
+        raise ValueError(f"Repository is not eligible or was not found: {requestedRepo}")
+
+    print("Eligible repositories:")
+    for index, repo in enumerate(targetRepos, start=1):
+        print(f"  {index}. {repo}")
+
+    while True:
+        try:
+            response = input("Select a repository number: ").strip()
+        except (EOFError, KeyboardInterrupt) as exc:
+            raise ValueError("Repository selection cancelled") from exc
+
+        if response.isdigit():
+            selectedIndex = int(response)
+            if 1 <= selectedIndex <= len(targetRepos):
+                return [targetRepos[selectedIndex - 1]]
+        print(f"Enter a number from 1 to {len(targetRepos)}.")
+
+
 def getDefaultBranch(repo: str, headers: dict) -> str:
     """Return the destination repository default branch name."""
     url = f"{API_BASE}/repos/{repo}"
@@ -302,6 +342,7 @@ def syncRepo(
     logger,
     verbose: bool,
     branch: Optional[str] = None,
+    preparedBranches: Optional[set[str]] = None,
 ) -> str:
     """
     Sync one instruction file to a single repo.
@@ -346,14 +387,16 @@ def syncRepo(
             if verbose:
                 logger.info("file does not exist, creating")
 
-        # Only create branch if update is needed
-        if branch:
+        # Prepare one shared sync branch per repository, then reuse it for every file.
+        if branch and (preparedBranches is None or repo not in preparedBranches):
             defaultBranch = getDefaultBranch(repo, headers)
             defaultSha = getBranchHeadSha(repo, defaultBranch, headers)
-            logger.action("create branch")
+            logger.action("prepare sync branch")
             if not dryRun:
                 createBranch(repo, branch, defaultSha, headers)
-                logger.done("create branch")
+                logger.done("prepare sync branch")
+            if preparedBranches is not None:
+                preparedBranches.add(repo)
 
         logger.value("target path", targetPath)
         logger.action("update target file")
@@ -400,6 +443,16 @@ def main() -> None:
         "--merge",
         action="store_true",
         help="create and merge conflict-free sync pull requests",
+    )
+    parser.add_argument(
+        "--repo",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="OWNER/REPO",
+        help=(
+            "sync one repository; omit the value to choose from a numbered list"
+        ),
     )
     parser.add_argument(
         "--token",
@@ -452,6 +505,12 @@ def main() -> None:
         logger.error("Could not list GitHub repositories: %s", exc)
         sys.exit(1)
 
+    try:
+        targetRepos = repoSelect(targetRepos, args.repo)
+    except ValueError as exc:
+        logger.error(str(exc))
+        sys.exit(1)
+
     logger.value("source file count", len(SYNC_SPECS))
     logger.value("target repo count", len(targetRepos))
 
@@ -460,6 +519,7 @@ def main() -> None:
 
     counts = {"updated": 0, "ready": 0, "skipped": 0, "failed": 0}
     repoResults = {repo: [] for repo in targetRepos}
+    preparedBranches: set[str] = set()
 
     for spec in SYNC_SPECS:
         logger.value("source file", spec["sourceFile"])
@@ -477,6 +537,7 @@ def main() -> None:
                 logger,
                 args.verbose,
                 branch=syncBranch,
+                preparedBranches=preparedBranches,
             )
             counts[result] += 1
             repoResults[repo].append(result)

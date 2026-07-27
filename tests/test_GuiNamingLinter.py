@@ -358,7 +358,7 @@ class TestQtNamingValidation:
 
     def testQtSnakeCaseViolation(self, temp_dir):
         """Test that camelCase in Qt files is flagged."""
-        qt_file = temp_dir / "test_qt.py"
+        qt_file = temp_dir / "test_Qt.py"
         content = """
 from PySide6.QtWidgets import QPushButton
 
@@ -375,7 +375,7 @@ class MyWidget:
 
     def testQtPrivateMembersValid(self, temp_dir):
         """Test that Qt private members with leading underscore are valid."""
-        qt_file = temp_dir / "test_qt_private.py"
+        qt_file = temp_dir / "test_Qt_private.py"
         content = """
 from PySide6.QtWidgets import QWidget
 
@@ -392,7 +392,7 @@ class MyWidget:
 
     def testQtMultipleWidgets(self, temp_dir):
         """Test validation with multiple Qt widgets."""
-        qt_file = temp_dir / "test_qt_multi.py"
+        qt_file = temp_dir / "test_Qt_multi.py"
         content = """
 from PySide6.QtWidgets import QPushButton, QLabel, QLineEdit
 
@@ -450,7 +450,7 @@ class QtWidget:
 
     def testTkinterRulesNotAppliedToQt(self, temp_dir):
         """Test that Tkinter prefix rules are not applied to Qt files."""
-        qt_file = temp_dir / "test_qt.py"
+        qt_file = temp_dir / "test_Qt.py"
         content = """
 from PySide6.QtWidgets import QPushButton
 
@@ -467,7 +467,7 @@ class MyWidget:
 
     def testQtRulesNotAppliedToTkinter(self, temp_dir):
         """Test that Qt snake_case rules are not applied to Tkinter files."""
-        tk_file = temp_dir / "test_tk.py"
+        tk_file = temp_dir / "test_Tk.py"
         content = """
 import tkinter as tk
 
@@ -488,7 +488,7 @@ class TestHorizontalVerticalNaming:
 
     def testHorizontalWidgetViolation(self, temp_dir):
         """Test that horizontalSpacer triggers a violation."""
-        test_file = temp_dir / "test_horizontal.py"
+        test_file = temp_dir / "test_Horizontal.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -507,7 +507,7 @@ class MyWidget:
 
     def testVerticalWidgetViolation(self, temp_dir):
         """Test that verticalSpacer triggers a violation."""
-        test_file = temp_dir / "test_vertical.py"
+        test_file = temp_dir / "test_Vertical.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -526,7 +526,7 @@ class MyWidget:
 
     def testHrzPrefixValid(self, temp_dir):
         """Test that hrzSpacer is valid."""
-        test_file = temp_dir / "test_hrz_valid.py"
+        test_file = temp_dir / "test_Hrz_valid.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -543,7 +543,7 @@ class MyWidget:
 
     def testVrtPrefixValid(self, temp_dir):
         """Test that vrtSpacer is valid."""
-        test_file = temp_dir / "test_vrt_valid.py"
+        test_file = temp_dir / "test_Vrt_valid.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -560,7 +560,7 @@ class MyWidget:
 
     def testHorizontalLayoutViolation(self, temp_dir):
         """Test that horizontalLayout triggers a violation."""
-        test_file = temp_dir / "test_horizontal_layout.py"
+        test_file = temp_dir / "test_Horizontal_layout.py"
         content = """
 from PySide6.QtWidgets import QHBoxLayout
 
@@ -579,7 +579,7 @@ class MyWidget:
 
     def testVerticalLayoutViolation(self, temp_dir):
         """Test that verticalLayout triggers a violation."""
-        test_file = temp_dir / "test_vertical_layout.py"
+        test_file = temp_dir / "test_Vertical_layout.py"
         content = """
 from PySide6.QtWidgets import QVBoxLayout
 
@@ -598,7 +598,7 @@ class MyWidget:
 
     def testMultipleHorizontalVerticalViolations(self, temp_dir):
         """Test multiple horizontal and vertical widgets in same file."""
-        test_file = temp_dir / "test_multiple_hv.py"
+        test_file = temp_dir / "test_Multiple_hv.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem, QHBoxLayout, QVBoxLayout
 
@@ -622,7 +622,7 @@ class MyWidget:
 
     def testTkinterHorizontalVertical(self, temp_dir):
         """Test that horizontal/vertical rules apply to Tkinter too."""
-        test_file = temp_dir / "test_tkinter_hv.py"
+        test_file = temp_dir / "test_Tkinter_hv.py"
         content = """
 import tkinter as tk
 
@@ -646,7 +646,7 @@ class TestLoggingRules:
 
     def testLoggerActionVariablesViolation(self, temp_dir):
         """Test that logger.action rejects variable interpolation arguments."""
-        test_file = temp_dir / "test_logger_action.py"
+        test_file = temp_dir / "test_Logger_action.py"
         content = """
 from organiseMyProjects.logUtils import getLogger
 
@@ -669,7 +669,7 @@ class MyFrame:
 
     def testLoggerActionLiteralMessageValid(self, temp_dir):
         """Test that logger.action accepts a literal message without variables."""
-        test_file = temp_dir / "test_logger_action_valid.py"
+        test_file = temp_dir / "test_Logger_action_valid.py"
         content = """
 from organiseMyProjects.logUtils import getLogger
 
@@ -687,7 +687,7 @@ class MyFrame:
 
     def testLoggerInfoSingleVariableViolation(self, temp_dir):
         """Test that logger.info with one variable suggests logger.value."""
-        test_file = temp_dir / "test_logger_info.py"
+        test_file = temp_dir / "test_Logger_info.py"
         content = """
 from organiseMyProjects.logUtils import getLogger
 
@@ -709,7 +709,7 @@ class MyFrame:
 
     def testNonLoggerInfoCallIgnored(self, temp_dir):
         """Test that non-logger info-like methods are ignored."""
-        test_file = temp_dir / "test_non_logger_info.py"
+        test_file = temp_dir / "test_Non_logger_info.py"
         content = """
 class StatusBar:
     info = print

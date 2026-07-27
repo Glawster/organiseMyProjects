@@ -46,7 +46,7 @@ def sample_project_name():
 @pytest.fixture
 def mockPythonFile(tempDir):
     """Create a sample Python file for testing the linter."""
-    pythonFile = tempDir / "test_file.py"
+    pythonFile = tempDir / "test_File.py"
     content = '''
 import tkinter as tk
 from tkinter import ttk
@@ -75,7 +75,7 @@ class TestFrame:
 @pytest.fixture
 def mockQtFile(tempDir):
     """Create a sample Qt/PySide6 Python file for testing the linter."""
-    qtFile = tempDir / "test_qt_file.py"
+    qtFile = tempDir / "test_Qt_file.py"
     content = '''
 from PySide6.QtWidgets import QWidget, QPushButton, QLabel
 

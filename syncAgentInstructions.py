@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-syncCopilotInstructions.py
+syncAgentInstructions.py
 
 Syncs canonical instruction files from organiseMyProjects
 out to all other Glawster repos that use the shared template.
@@ -33,14 +33,28 @@ SYNC_SPECS = [
     {
         "sourceFile": Path(__file__).resolve().parent
         / ".github"
-        / "copilot-instructions.md",
-        "targetPath": ".github/copilot-instructions.md",
-        "commitMessage": "sync: update copilot-instructions.md from organiseMyProjects template",
+        / "agent-instructions.md",
+        "targetPath": ".github/agent-instructions.md",
+        "commitMessage": "sync: update agent-instructions.md from organiseMyProjects template",
     },
     {
-        "sourceFile": Path(__file__).resolve().parent / "AGENTS.md",
+        "sourceFile": Path(__file__).resolve().parent
+        / ".github"
+        / "agent-instructions.md",
+        "targetPath": ".github/copilot-instructions.md",
+        "commitMessage": "sync: update Copilot compatibility instructions",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent / ".github" / "AGENTS.md",
         "targetPath": "AGENTS.md",
         "commitMessage": "sync: update AGENTS.md from organiseMyProjects template",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent
+        / ".github"
+        / "repositoryLayout.md",
+        "targetPath": ".github/repositoryLayout.md",
+        "commitMessage": "sync: update repository layout definition",
     },
 ]
 SYNC_COMMENT = (
@@ -50,7 +64,7 @@ API_BASE = "https://api.github.com"
 REPO_OWNER = "Glawster"
 SOURCE_REPO = f"{REPO_OWNER}/organiseMyProjects"
 CONFIG_PATH = (
-    Path.home() / ".config" / "organiseMyProjects" / "syncCopilotInstructions.json"
+    Path.home() / ".config" / "organiseMyProjects" / "syncAgentInstructions.json"
 )
 
 
@@ -205,10 +219,10 @@ def createPullRequest(repo: str, branch: str, base: str, headers: dict) -> dict:
     """Create a pull request for the generated sync branch."""
     url = f"{API_BASE}/repos/{repo}/pulls"
     payload = {
-        "title": "Sync shared Copilot instructions",
+        "title": "Sync shared agent instructions",
         "body": (
             "Automated sync from `Glawster/organiseMyProjects`.\n\n"
-            "This pull request was created by `syncCopilotInstructions.py`."
+            "This pull request was created by `syncAgentInstructions.py`."
         ),
         "head": branch,
         "base": base,

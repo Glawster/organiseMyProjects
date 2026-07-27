@@ -182,16 +182,18 @@ class TestCreateProject:
 
         assert "already exists" in caplog.text
 
-    def testCreateProjectCopilotInstructions(self, temp_dir, sample_project_name):
-        """Test that copilot instructions are copied from the .github/ directory."""
+    def testCreateProjectAgentGuidelines(self, temp_dir, sample_project_name):
+        """Test that agent guidelines are copied from the .github/ directory."""
         projectPath = temp_dir / sample_project_name
 
         with patch("organiseMyProjects.createProject.subprocess.run"):
             createProject(str(projectPath))
 
-        copilotFile = projectPath / ".github" / "copilot-instructions.md"
-        assert copilotFile.exists()
-        assert len(copilotFile.read_text()) > 0
+        agentGuidelines = projectPath / ".github" / "agent-instructions.md"
+        copilotGuidelines = projectPath / ".github" / "copilot-instructions.md"
+        assert agentGuidelines.exists()
+        assert len(agentGuidelines.read_text()) > 0
+        assert copilotGuidelines.read_text() == agentGuidelines.read_text()
 
     def testCreateProjectAgentInstructions(self, temp_dir, sample_project_name):
         """Test that Codex agent instructions are copied to the project root."""
@@ -201,8 +203,19 @@ class TestCreateProject:
             createProject(str(projectPath))
 
         agentFile = projectPath / "AGENTS.md"
-        sourceFile = Path(__file__).parent.parent / "AGENTS.md"
+        sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
         assert agentFile.read_text() == sourceFile.read_text()
+
+    def testCreateProjectRepositoryLayout(self, temp_dir, sample_project_name):
+        """Test that the shared repository layout is project documentation."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        layoutFile = projectPath / ".github" / "repositoryLayout.md"
+        sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
+        assert layoutFile.read_text() == sourceFile.read_text()
 
 
 class TestUpdateProject:
@@ -264,8 +277,19 @@ class TestUpdateProject:
         updateProject(str(projectPath))
 
         agentFile = projectPath / "AGENTS.md"
-        sourceFile = Path(__file__).parent.parent / "AGENTS.md"
+        sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
         assert agentFile.read_text() == sourceFile.read_text()
+
+    def testUpdateProjectAddsRepositoryLayout(self, temp_dir, sample_project_name):
+        """Test that updateProject adds the managed repository layout."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        updateProject(str(projectPath))
+
+        layoutFile = projectPath / ".github" / "repositoryLayout.md"
+        sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
+        assert layoutFile.read_text() == sourceFile.read_text()
 
     def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
         """Test that updateProject updates pytest.ini if it is outdated."""

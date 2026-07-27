@@ -9,8 +9,10 @@ The README is the canonical entry point for repo documentation. The living guide
 - [Developer Guide](documentation/developer.md)
 - [Git Guide](documentation/git.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
-- [Master Copilot Instructions](.github/copilot-instructions.md)
-- [Repository Copilot Notes](.github/additional-copilot-instructions.md)
+- [Master Agent Instructions](.github/agent-instructions.md)
+- [Copilot Compatibility Instructions](.github/copilot-instructions.md)
+- [Repository Layout](.github/repositoryLayout.md)
+- [Repository Agent Notes](.github/additional-instructions.md)
 
 ## Features
 
@@ -20,7 +22,7 @@ The README is the canonical entry point for repo documentation. The living guide
 - 🧪 Automatically include logging setup, dev tools, and layout
 - 🧼 Run a custom GUI naming linter with `runLinter` (default scans the current project)
 - 🧰 Includes pre-commit support and code style guidelines
-- 🤖 Includes GitHub Copilot instructions for consistent development guidelines
+- 🤖 Includes AI coding agent instructions for consistent development guidelines
 
 ## Installation
 
@@ -52,7 +54,9 @@ Creates:
 ```
 myNewProject/
 ├── .github/
-│   └── copilot-instructions.md    # GitHub Copilot development guidelines
+│   ├── agent-instructions.md    # Canonical AI coding agent guidelines
+│   ├── copilot-instructions.md  # Generated GitHub Copilot compatibility copy
+│   └── repositoryLayout.md      # Project file and directory placement rules
 ├── src/
 │   ├── __init__.py
 │   └── logUtils.py                # Centralized logging utilities
@@ -78,7 +82,7 @@ myNewProject/
 ### Update an existing project
 Refresh a project scaffold and replace missing scaffold files. Managed
 instructional/config files such as `pytest.ini`, `.pre-commit-config.yaml`,
-`.vscode/settings.json`, `tests/runLinter.py`, and Copilot instructions are
+`.vscode/settings.json`, `tests/runLinter.py`, and Agent instructions are
 refreshed in place, while project-owned code such as `main.py`, `.env`,
 `requirements.txt`, and UI/Qt modules is only created when missing. Provide the
 project name or run inside the target directory:
@@ -143,7 +147,7 @@ pytest --cov=organiseMyProjects
 - `tests/testRunLinter.py` - Tests for the linter CLI interface
 - `tests/testIntegration.py` - End-to-end integration tests
 - `tests/testLogUtils.py` - Tests for logging utilities (including `drawBox`)
-- `tests/testSyncCopilotInstructions.py` - Tests for Copilot instructions sync
+- `tests/test_SyncAgentInstructions.py` - Tests for Agent instructions sync
 - `tests/conftest.py` - Shared test fixtures and configuration
 
 **Note**: The `tests/` directory is for development and testing of this project itself. It is not included in the installed package, so end users won't get these test files when they install `organiseMyProjects`.
@@ -219,32 +223,35 @@ The `organiseMyProjects` package includes:
 - `createProject.py` - Main project scaffolding functionality
 - `guiNamingLinter.py` - GUI naming convention enforcement
 - `runLinter.py` - Command-line interface for the linter
-- `.github/copilot-instructions.md` - Master GitHub Copilot development guidelines
+- `.github/agent-instructions.md` - Master AI coding agent development guidelines
 - Template files for GUI components and utilities
 
-### Sync Copilot Instructions to other repos
+### Sync Agent Instructions to other repos
 
-`organiseMyProjects` is the single source of truth for `.github/copilot-instructions.md`.
-Use `syncCopilotInstructions.py` to push the canonical template to all downstream Glawster repos.
+`organiseMyProjects` is the single source of truth for `.github/agent-instructions.md`.
+`.github/copilot-instructions.md` is an identical compatibility copy for GitHub
+Copilot. Use `syncAgentInstructions.py` to push both instruction paths to all
+downstream Glawster repos. The same routine distributes the canonical
+repository layout to `.github/repositoryLayout.md`.
 
 ```bash
 # Preview what would change (dry-run, default)
-python syncCopilotInstructions.py
+python syncAgentInstructions.py
 
 # Actually push updates
-GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
+GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm
 
 # Push updates, then create and merge conflict-free pull requests
-GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm --merge
+GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm --merge
 
 # Pass the token directly and show extra detail
-python syncCopilotInstructions.py --confirm --token <your-pat> --verbose
+python syncAgentInstructions.py --confirm --token <your-pat> --verbose
 ```
 
 Requires a GitHub Personal Access Token with `repo` scope. Supply it once via
 the `GITHUB_TOKEN` environment variable or the `--token` flag. The script saves
 it with user-only permissions in
-`~/.config/organiseMyProjects/syncCopilotInstructions.json` and uses that value
+`~/.config/organiseMyProjects/syncAgentInstructions.json` and uses that value
 on future runs. An explicitly supplied token takes precedence over the stored
 value and refreshes it.
 

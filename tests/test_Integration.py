@@ -44,7 +44,8 @@ class TestEndToEndWorkflow:
 
         # Verify project was created
         assert projectPath.exists()
-        assert (projectPath / ".github" / "copilot-instructions.md").exists()
+        assert (projectPath / ".github" / "agent-instructions.md").exists()
+        assert (projectPath / ".github" / "repositoryLayout.md").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
 
         # Step 2: Add some Python code with violations to the project
@@ -155,7 +156,7 @@ class TestFrame:
             "README.md",
             ".pre-commit-config.yaml",
             "src/__init__.py",
-            ".github/copilot-instructions.md",
+            ".github/agent-instructions.md",
         ]
 
         expectedCopiedModules = ["tests/runLinter.py", "tests/guiNamingLinter.py"]
@@ -260,17 +261,22 @@ class TestModuleImports:
 class TestResourceAccess:
     """Test access to package resources."""
 
-    def testCopilotInstructionsFileAccess(self):
-        """Test that copilot instructions exist at the canonical .github/ path."""
+    def testAgentInstructionsFileAccess(self):
+        """Test that agent instructions exist at the canonical .github/ path."""
         from organiseMyProjects.createProject import TEMPLATE_DIR
 
-        srcCopilotInstructions = (
-            TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+        srcAgentInstructions = (
+            TEMPLATE_DIR.parent / ".github" / "agent-instructions.md"
         )
         assert (
-            srcCopilotInstructions.is_file()
-        ), f"copilot-instructions.md not found at {srcCopilotInstructions}"
-        content = srcCopilotInstructions.read_text()
+            srcAgentInstructions.is_file()
+        ), f"agent-instructions.md not found at {srcAgentInstructions}"
+        content = srcAgentInstructions.read_text()
         assert len(content) > 0
-        assert "GitHub Copilot Instructions" in content
+        assert "Agent Instructions" in content
         assert "output/" in content
+
+        copilotInstructions = (
+            TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+        )
+        assert copilotInstructions.read_text() == content

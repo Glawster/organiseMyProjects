@@ -148,11 +148,19 @@ PROJECT_TEXT_TEMPLATES = [
     (Path("main.py"), MAIN_PY_CONTENT),
 ]
 MANAGED_COPY_TEMPLATES = [
-    (TEMPLATE_DIR.parent / "AGENTS.md", Path("AGENTS.md")),
+    (TEMPLATE_DIR.parent / ".github" / "AGENTS.md", Path("AGENTS.md")),
     (TEMPLATE_DIR.parent / "projectGuidelines.md", Path("projectGuidelines.md")),
     (
-        TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md",
+        TEMPLATE_DIR.parent / ".github" / "agent-instructions.md",
+        Path(".github") / "agent-instructions.md",
+    ),
+    (
+        TEMPLATE_DIR.parent / ".github" / "agent-instructions.md",
         Path(".github") / "copilot-instructions.md",
+    ),
+    (
+        TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md",
+        Path(".github") / "repositoryLayout.md",
     ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
@@ -238,21 +246,30 @@ def createProject(
         if not dryRun:
             shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
 
-    # Copy the copilot instructions file
-    srcCopilotInstructions = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
-    if srcCopilotInstructions.exists():
-        logger.action("copying copilot instructions")
+    # Copy the agent instructions file
+    srcAgentGuidelines = TEMPLATE_DIR.parent / ".github" / "agent-instructions.md"
+    if srcAgentGuidelines.exists():
+        logger.action("copying agent guidelines")
         if not dryRun:
-            shutil.copy(
-                srcCopilotInstructions, basePath / ".github" / "copilot-instructions.md"
-            )
+            for fileName in ("agent-instructions.md", "copilot-instructions.md"):
+                shutil.copy(srcAgentGuidelines, basePath / ".github" / fileName)
 
     # Copy the Codex agent instructions file
-    srcAgentInstructions = TEMPLATE_DIR.parent / "AGENTS.md"
+    srcAgentInstructions = TEMPLATE_DIR.parent / ".github" / "AGENTS.md"
     if srcAgentInstructions.exists():
         logger.action("copying agent instructions")
         if not dryRun:
             shutil.copy(srcAgentInstructions, basePath / "AGENTS.md")
+
+    # Copy the repository layout definition
+    srcRepositoryLayout = TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md"
+    if srcRepositoryLayout.exists():
+        logger.action("copying repository layout")
+        if not dryRun:
+            shutil.copy(
+                srcRepositoryLayout,
+                basePath / ".github" / "repositoryLayout.md",
+            )
 
     # Copy template modules into the new project
     logger.action("copying template modules")

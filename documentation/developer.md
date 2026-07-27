@@ -115,12 +115,14 @@ Command-line interface for the GUI naming linter.
 
 The package includes template files that are distributed with the package:
 
-- `.github/copilot-instructions.md` - Master GitHub Copilot development guidelines
+- `.github/agent-instructions.md` - Master AI coding agent development guidelines
+- `.github/copilot-instructions.md` - Identical GitHub Copilot compatibility copy
+- `.github/repositoryLayout.md` - Canonical project layout definition copied to generated repositories
 - Template Python modules (copied to new projects)
 
-## Canonical Copilot Instructions Access
+## Canonical Agent Instructions Access
 
-The canonical Copilot instructions live in the repository root `.github/` directory and are copied into generated projects from there:
+The canonical Agent instructions live in the repository root `.github/` directory and are copied into generated projects from there:
 
 ```python
 try:
@@ -131,8 +133,8 @@ except ImportError:
 
 # Access repository root files
 repo_root = files('organiseMyProjects').parent
-copilot_file = repo_root / '.github' / 'copilot-instructions.md'
-content = copilot_file.read_text()
+agent_file = repo_root / '.github' / 'agent-instructions.md'
+content = agent_file.read_text()
 ```
 
 ## Testing Framework
@@ -177,8 +179,8 @@ End-to-end integration tests:
 - `TestModuleImports` - Import verification tests
 - `TestResourceAccess` - Package resource tests
 
-#### `tests/testSyncCopilotInstructions.py`
-Tests for Copilot instructions sync utility:
+#### `tests/test_SyncAgentInstructions.py`
+Tests for Agent instructions sync utility:
 - `TestBuildTargetContent` - Content building tests
 - `TestBuildHeaders` - HTTP header tests
 - `TestGetRemoteFile` - Remote file retrieval tests

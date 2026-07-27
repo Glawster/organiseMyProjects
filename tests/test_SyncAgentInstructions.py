@@ -1,5 +1,5 @@
 """
-Tests for syncCopilotInstructions.py
+Tests for syncAgentInstructions.py
 """
 
 import base64
@@ -14,7 +14,7 @@ import pytest
 # Ensure repo root is on the path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import syncCopilotInstructions as sci
+import syncAgentInstructions as sci
 
 
 class TestConfigToken:
@@ -82,6 +82,23 @@ class TestSyncSpecs:
         targetPaths = [spec["targetPath"] for spec in sci.SYNC_SPECS]
         assert "AGENTS.md" in targetPaths
 
+    def testIncludesCopilotCompatibilityFile(self):
+        """Copilot's standard repository instruction path should be synced."""
+        targetPaths = [spec["targetPath"] for spec in sci.SYNC_SPECS]
+        assert ".github/copilot-instructions.md" in targetPaths
+
+    def testCopilotSpecUsesCanonicalAgentSource(self):
+        """The Copilot mirror should be generated from the canonical source."""
+        specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
+        copilotSpec = specsByTarget[".github/copilot-instructions.md"]
+        assert copilotSpec["sourceFile"].name == "agent-instructions.md"
+
+    def testIncludesRepositoryLayout(self):
+        """The shared repository layout should be synced as documentation."""
+        specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
+        layoutSpec = specsByTarget[".github/repositoryLayout.md"]
+        assert layoutSpec["sourceFile"].name == "repositoryLayout.md"
+
 
 class TestGetRemoteFile:
     """Tests for getRemoteFile."""
@@ -90,7 +107,7 @@ class TestGetRemoteFile:
         """Should return None when the file does not exist."""
         mockResp = MagicMock()
         mockResp.status_code = 404
-        with patch("syncCopilotInstructions.requests.get", return_value=mockResp):
+        with patch("syncAgentInstructions.requests.get", return_value=mockResp):
             result = sci.getRemoteFile("owner/repo", ".github/file.md", {})
         assert result is None
 
@@ -100,7 +117,7 @@ class TestGetRemoteFile:
         mockResp.status_code = 200
         mockResp.json.return_value = {"sha": "abc123", "content": "aGVsbG8="}
         mockResp.raise_for_status = MagicMock()
-        with patch("syncCopilotInstructions.requests.get", return_value=mockResp):
+        with patch("syncAgentInstructions.requests.get", return_value=mockResp):
             result = sci.getRemoteFile("owner/repo", ".github/file.md", {})
         assert result == {"sha": "abc123", "content": "aGVsbG8="}
 
@@ -111,7 +128,7 @@ class TestGetRemoteFile:
         mockResp = MagicMock()
         mockResp.status_code = 500
         mockResp.raise_for_status.side_effect = req.HTTPError("500 Server Error")
-        with patch("syncCopilotInstructions.requests.get", return_value=mockResp):
+        with patch("syncAgentInstructions.requests.get", return_value=mockResp):
             with pytest.raises(req.HTTPError):
                 sci.getRemoteFile("owner/repo", ".github/file.md", {})
 
@@ -145,7 +162,7 @@ class TestGetTargetRepos:
             self._repo("external", owner="someoneElse"),
         ]
 
-        with patch("syncCopilotInstructions.requests.get", return_value=response):
+        with patch("syncAgentInstructions.requests.get", return_value=response):
             result = sci.getTargetRepos({})
 
         assert result == ["Glawster/Alpha", "Glawster/zebra"]
@@ -159,7 +176,7 @@ class TestGetTargetRepos:
         secondPage.json.return_value = [self._repo("finalRepo")]
 
         with patch(
-            "syncCopilotInstructions.requests.get",
+            "syncAgentInstructions.requests.get",
             side_effect=[firstPage, secondPage],
         ) as mockGet:
             result = sci.getTargetRepos({})
@@ -174,13 +191,13 @@ class TestSyncPullRequest:
     def testCreatesAndMergesPullRequest(self):
         """A missing pull request should be created and merged."""
         pullRequest = {"number": 42, "state": "open", "merged_at": None}
-        with patch("syncCopilotInstructions.getPullRequest", return_value=None):
+        with patch("syncAgentInstructions.getPullRequest", return_value=None):
             with patch(
-                "syncCopilotInstructions.createPullRequest",
+                "syncAgentInstructions.createPullRequest",
                 return_value=pullRequest,
             ) as mockCreate:
                 with patch(
-                    "syncCopilotInstructions.mergePullRequest",
+                    "syncAgentInstructions.mergePullRequest",
                     return_value="merged",
                 ) as mockMerge:
                     result = sci.syncPullRequest(
@@ -194,10 +211,10 @@ class TestSyncPullRequest:
     def testReusesOpenPullRequest(self):
         """An existing open pull request should not be duplicated."""
         pullRequest = {"number": 7, "state": "open", "merged_at": None}
-        with patch("syncCopilotInstructions.getPullRequest", return_value=pullRequest):
-            with patch("syncCopilotInstructions.createPullRequest") as mockCreate:
+        with patch("syncAgentInstructions.getPullRequest", return_value=pullRequest):
+            with patch("syncAgentInstructions.createPullRequest") as mockCreate:
                 with patch(
-                    "syncCopilotInstructions.mergePullRequest",
+                    "syncAgentInstructions.mergePullRequest",
                     return_value="conflict",
                 ):
                     result = sci.syncPullRequest(
@@ -214,7 +231,7 @@ class TestSyncPullRequest:
             "state": "closed",
             "merged_at": "2026-07-22T12:00:00Z",
         }
-        with patch("syncCopilotInstructions.getPullRequest", return_value=pullRequest):
+        with patch("syncAgentInstructions.getPullRequest", return_value=pullRequest):
             result = sci.syncPullRequest("owner/repo", "sync/branch", "main", {})
 
         assert result == ("already_merged", 8)
@@ -224,7 +241,7 @@ class TestSyncPullRequest:
         import requests as req
 
         with patch(
-            "syncCopilotInstructions.getPullRequest",
+            "syncAgentInstructions.getPullRequest",
             side_effect=req.HTTPError("server error"),
         ):
             result = sci.syncPullRequest("owner/repo", "sync/branch", "main", {})
@@ -239,7 +256,7 @@ class TestMergePullRequest:
     def testReportsPullRequestRequiringReview(self, statusCode):
         """Blocked and conflicting pull requests should require review."""
         mockResp = MagicMock(status_code=statusCode)
-        with patch("syncCopilotInstructions.requests.put", return_value=mockResp):
+        with patch("syncAgentInstructions.requests.put", return_value=mockResp):
             result = sci.mergePullRequest("owner/repo", 42, {})
 
         assert result == "conflict"
@@ -248,7 +265,7 @@ class TestMergePullRequest:
         """A successfully merged pull request should be reported."""
         mockResp = MagicMock(status_code=200)
         mockResp.json.return_value = {"merged": True}
-        with patch("syncCopilotInstructions.requests.put", return_value=mockResp):
+        with patch("syncAgentInstructions.requests.put", return_value=mockResp):
             result = sci.mergePullRequest("owner/repo", 42, {})
 
         assert result == "merged"
@@ -267,10 +284,10 @@ class TestSyncRepo:
         encodedContent = base64.b64encode(targetContent.encode()).decode()
         remoteData = {"sha": "abc", "content": encodedContent + "\n"}
 
-        with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
+        with patch("syncAgentInstructions.getRemoteFile", return_value=remoteData):
             result = sci.syncRepo(
                 "owner/repo",
-                ".github/copilot-instructions.md",
+                ".github/agent-instructions.md",
                 targetContent,
                 "sync: update instructions",
                 True,
@@ -286,10 +303,10 @@ class TestSyncRepo:
         encodedContent = base64.b64encode(targetContent.encode()).decode()
         remoteData = {"sha": "abc", "content": encodedContent}
 
-        with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
+        with patch("syncAgentInstructions.getRemoteFile", return_value=remoteData):
             result = sci.syncRepo(
                 "owner/repo",
-                ".github/copilot-instructions.md",
+                ".github/agent-instructions.md",
                 targetContent,
                 "sync: update instructions",
                 False,
@@ -307,11 +324,11 @@ class TestSyncRepo:
         encodedContent = base64.b64encode(b"old content").decode()
         remoteData = {"sha": "abc", "content": encodedContent}
 
-        with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
-            with patch("syncCopilotInstructions.putRemoteFile") as mockPut:
+        with patch("syncAgentInstructions.getRemoteFile", return_value=remoteData):
+            with patch("syncAgentInstructions.putRemoteFile") as mockPut:
                 result = sci.syncRepo(
                     "owner/repo",
-                    ".github/copilot-instructions.md",
+                    ".github/agent-instructions.md",
                     targetContent,
                     "sync: update instructions",
                     True,
@@ -329,11 +346,11 @@ class TestSyncRepo:
         encodedContent = base64.b64encode(b"old content").decode()
         remoteData = {"sha": "abc", "content": encodedContent}
 
-        with patch("syncCopilotInstructions.getRemoteFile", return_value=remoteData):
-            with patch("syncCopilotInstructions.putRemoteFile") as mockPut:
+        with patch("syncAgentInstructions.getRemoteFile", return_value=remoteData):
+            with patch("syncAgentInstructions.putRemoteFile") as mockPut:
                 result = sci.syncRepo(
                     "owner/repo",
-                    ".github/copilot-instructions.md",
+                    ".github/agent-instructions.md",
                     targetContent,
                     "sync: update instructions",
                     False,
@@ -350,12 +367,12 @@ class TestSyncRepo:
         import requests as req
 
         with patch(
-            "syncCopilotInstructions.getRemoteFile",
+            "syncAgentInstructions.getRemoteFile",
             side_effect=req.HTTPError("403 Forbidden"),
         ):
             result = sci.syncRepo(
                 "owner/repo",
-                ".github/copilot-instructions.md",
+                ".github/agent-instructions.md",
                 "content",
                 "sync: update instructions",
                 True,
@@ -370,12 +387,12 @@ class TestSyncRepo:
         import requests as req
 
         with patch(
-            "syncCopilotInstructions.getRemoteFile",
+            "syncAgentInstructions.getRemoteFile",
             side_effect=req.ConnectionError("timeout"),
         ):
             result = sci.syncRepo(
                 "owner/repo",
-                ".github/copilot-instructions.md",
+                ".github/agent-instructions.md",
                 "content",
                 "sync: update instructions",
                 True,
@@ -389,11 +406,11 @@ class TestSyncRepo:
         """Should call putRemoteFile with sha=None when file doesn't exist."""
         targetContent = "new content"
 
-        with patch("syncCopilotInstructions.getRemoteFile", return_value=None):
-            with patch("syncCopilotInstructions.putRemoteFile") as mockPut:
+        with patch("syncAgentInstructions.getRemoteFile", return_value=None):
+            with patch("syncAgentInstructions.putRemoteFile") as mockPut:
                 sci.syncRepo(
                     "owner/repo",
-                    ".github/copilot-instructions.md",
+                    ".github/agent-instructions.md",
                     targetContent,
                     "sync: update instructions",
                     False,

@@ -1,8 +1,8 @@
-# Additional Copilot Instructions for organiseMyProjects
+# Additional Agent Instructions for organiseMyProjects
 
 ## Project-Specific Information
 
-This file contains project-specific details for the **organiseMyProjects** repository. The master development guidelines live in `.github/copilot-instructions.md` and take precedence over any conflicting guidance here or elsewhere in the repository. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`. The README must include a near-top Documentation section that links to every living guide in the repo so it remains the canonical entry point for all docs.
+This file contains project-specific details for the **organiseMyProjects** repository. The master development guidelines live in `.github/agent-instructions.md` and take precedence over any conflicting guidance here or elsewhere in the repository. User-facing documentation is in `documentation/README.md`, and developer documentation is in `documentation/DEVELOPER.md`. The README must include a near-top Documentation section that links to every living guide in the repo so it remains the canonical entry point for all docs.
 
 ## Installation
 
@@ -35,20 +35,20 @@ runLinter
 runLinter <file_or_dir>
 ```
 
-### Sync Copilot instructions to other repos
+### Sync Agent instructions to other repos
 ```bash
 # Preview what would change (dry-run, default)
-python syncCopilotInstructions.py
+python syncAgentInstructions.py
 
 # Actually push updates
-GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm
+GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm
 
 # Push updates, then create and merge conflict-free pull requests
-GITHUB_TOKEN=<your-pat> python syncCopilotInstructions.py --confirm --merge
+GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm --merge
 ```
 
 The supplied token is stored with user-only permissions in
-`~/.config/organiseMyProjects/syncCopilotInstructions.json` for future runs.
+`~/.config/organiseMyProjects/syncAgentInstructions.json` for future runs.
 
 ## Requirements
 
@@ -65,15 +65,17 @@ The supplied token is stored with user-only permissions in
 - 🧪 Automatically include logging setup, dev tools, and layout
 - 🧼 Run custom GUI naming linter with `runLinter`
 - 🧰 Includes pre-commit support and code style guidelines
-- 🤖 Includes GitHub Copilot instructions for generated projects
+- 🤖 Includes AI coding agent instructions for generated projects
 
 ## Repository Structure
 
 ```
 organiseMyProjects/
 ├── .github/
-│   ├── copilot-instructions.md           # Master guidelines template
-│   └── additional-copilot-instructions.md # Project-specific (this file, NOT template)
+│   ├── agent-instructions.md           # Canonical master guidelines template
+│   ├── copilot-instructions.md         # GitHub Copilot compatibility copy
+│   ├── repositoryLayout.md             # Canonical project layout definition
+│   └── additional-instructions.md # Project-specific (this file, NOT template)
 ├── organiseMyProjects/                    # Main package
 │   ├── __init__.py                       # [PACKAGE] Package initialization with public API
 │   ├── createProject.py                   # [PACKAGE] Project scaffolding tool
@@ -93,7 +95,7 @@ organiseMyProjects/
 │   ├── testRunLinter.py
 │   ├── testIntegration.py
 │   ├── testLogUtils.py
-│   ├── testSyncCopilotInstructions.py
+│   ├── test_SyncAgentInstructions.py
 │   └── conftest.py
 ├── documentation/                         # Project documentation
 │   ├── README.md                          # User documentation
@@ -113,7 +115,9 @@ organiseMyProjects/
 
 **[TEMPLATE]** - Template files that are copied to new projects:
 - `globalVars.py` - Global constants (copied to src/)
-- `.github/copilot-instructions.md` - Master development guidelines copied into generated projects
+- `.github/agent-instructions.md` - Canonical development guidelines copied into generated projects
+- `.github/copilot-instructions.md` - Identical compatibility copy for GitHub Copilot
+- `.github/repositoryLayout.md` - Managed project layout definition synced at the same path
 - `baseFrame.py`, `frameTemplate.py`, `statusFrame.py` - GUI framework
 - `styleUtils.py` - GUI styling utilities
 - `mainMenu.py` - Main menu framework
@@ -201,7 +205,7 @@ The package contains two types of files:
    - `globalVars.py` - Package constants
    
 2. **Template Files** - Copied to new projects via `createProject`:
-   - `.github/copilot-instructions.md` - Master Copilot guidelines copied to the generated project's `.github/` directory
+   - `.github/agent-instructions.md` - Master Agent guidelines copied to the generated project's `.github/` directory
    - `guiNamingLinter.py` - Naming checker provided by the installed `organiseMyProjects` package
    - `runLinter.py` - Linter CLI for the project
    - GUI framework files: `baseFrame.py`, `frameTemplate.py`, `statusFrame.py`, `mainMenu.py`, `styleUtils.py`
@@ -310,7 +314,7 @@ createProject --update
 - `testRunLinter.py` - 10 tests for CLI interface
 - `testIntegration.py` - 12 tests for end-to-end workflows
 - `testLogUtils.py` - 10 tests for logging utilities
-- `testSyncCopilotInstructions.py` - 13 tests for Copilot instructions sync
+- `test_SyncAgentInstructions.py` - 13 tests for Agent instructions sync
 - **Total**: 104 comprehensive tests
 
 ### Test Patterns
@@ -495,12 +499,12 @@ The linter recognizes these Qt widget types:
 1. Add naming rule to `namingRules` dict in `guiNamingLinter.py`
 2. Add widget class to `widgetClasses` set
 3. Add parametrized test cases in `testGuiNamingLinter.py`
-4. Update HELP.md and `.github/additional-copilot-instructions.md` (and `.github/copilot-instructions.md` only if the change affects universal guidance)
+4. Update HELP.md and `.github/additional-instructions.md` (and `.github/agent-instructions.md` only if the change affects universal guidance)
 
 **For Qt widgets:**
 1. Add widget type to `qtWidgetTypes` set in `guiNamingLinter.py`
 2. Add parametrized test cases in `testGuiNamingLinter.py`
-3. Update HELP.md and `.github/additional-copilot-instructions.md` (and `.github/copilot-instructions.md` only if the change affects universal guidance)
+3. Update HELP.md and `.github/additional-instructions.md` (and `.github/agent-instructions.md` only if the change affects universal guidance)
 
 ### Modifying Project Structure
 1. Update `createProject()` function
@@ -535,7 +539,7 @@ The linter recognizes these Qt widget types:
 - Better handling of existing projects during updates
 
 ### Maintenance Notes
-- Keep `.github/copilot-instructions.md` as the master guideline and keep this file aligned with it
+- Keep `.github/agent-instructions.md` as the master guideline and keep this file aligned with it
 - Update this file for project-specific changes
 - Maintain backward compatibility in `updateProject()`
 - Keep test coverage above 90%

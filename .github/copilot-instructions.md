@@ -110,7 +110,15 @@ Repository-specific layout exceptions belong in
 `.github/additional-instructions.md`; they may refine the shared layout but may
 not override universal safety or development rules in this file.
 
-All applications must have a root entry point:
+Choose the entry-point pattern according to what is being built:
+
+- a reusable library module or package does not need `main.py` or any executable
+  entry point;
+- a packaged CLI uses a declared console-script entry point, normally targeting
+  a `main()` function inside the package;
+- a standalone application uses `main.py` at its project root.
+
+A standalone application therefore uses this baseline:
 
     projectName/
     ├── main.py
@@ -142,8 +150,10 @@ Rules:
 
 -   In a multi-project repository, treat each project directory as its own project root and use the nearest owning boundary for code, tests, documentation, planning records, scripts, dependencies and output\
 -   Reserve repository-level folders for shared concerns, repository tooling and cross-project integration; project-specific tests belong in that project's `tests/` folder\
--   `main.py` lives at the project root and is the application entry point\
--   `main.py` sets the application logging context with `setApplication()`\
+-   Reusable library modules and packages do not require `main.py` or an executable entry point\
+-   Packaged CLIs use declared console-script entry points, normally targeting a package-level `main()` function\
+-   Standalone applications keep `main.py` at their project root\
+-   The application entry point sets the application logging context with `setApplication()`\
 -   `src/` is optional and should be used for larger apps, reusable core logic, or UI-based apps\
 -   `ui/` is optional and should contain UI orchestration/assets where useful\
 -   Documentation rule: only `README.md` may be at the project root; all other documentation must live under `documentation/`, and documentation file names should use camelCase except for `README.md`\

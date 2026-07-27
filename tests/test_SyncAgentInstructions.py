@@ -185,6 +185,49 @@ class TestGetTargetRepos:
         assert mockGet.call_args_list[1].kwargs["params"]["page"] == 2
 
 
+class TestRepoSelect:
+    """Tests for selecting all or one target repository."""
+
+    repos = ["Glawster/Alpha", "Glawster/Beta", "Glawster/Gamma"]
+
+    def testReturnsAllReposByDefault(self):
+        """Omitting --repo should preserve the existing all-repo behavior."""
+        assert sci.repoSelect(self.repos, None) == self.repos
+
+    @pytest.mark.parametrize("requested", ["Beta", "glawster/beta"])
+    def testSelectsNamedRepo(self, requested):
+        """A repository may be selected by short or full case-insensitive name."""
+        assert sci.repoSelect(self.repos, requested) == ["Glawster/Beta"]
+
+    def testSelectsRepoByNumber(self, capsys):
+        """An empty --repo value should show and use the numbered selector."""
+        with patch("builtins.input", return_value="2"):
+            result = sci.repoSelect(self.repos, "")
+
+        assert result == ["Glawster/Beta"]
+        output = capsys.readouterr().out
+        assert "1. Glawster/Alpha" in output
+        assert "3. Glawster/Gamma" in output
+
+    def testRetriesInvalidNumber(self, capsys):
+        """The selector should retry until the number is in range."""
+        with patch("builtins.input", side_effect=["wrong", "9", "1"]):
+            result = sci.repoSelect(self.repos, "")
+
+        assert result == ["Glawster/Alpha"]
+        assert capsys.readouterr().out.count("Enter a number from 1 to 3.") == 2
+
+    def testRejectsUnknownRepo(self):
+        """A named repository must be in the eligible repository list."""
+        with pytest.raises(ValueError, match="not eligible or was not found"):
+            sci.repoSelect(self.repos, "Missing")
+
+    def testRejectsEmptyRepoList(self):
+        """Interactive selection should fail clearly when no repos are eligible."""
+        with pytest.raises(ValueError, match="No eligible repositories"):
+            sci.repoSelect([], "")
+
+
 class TestSyncPullRequest:
     """Tests for the pull request merge workflow."""
 
@@ -422,3 +465,44 @@ class TestSyncRepo:
         args, kwargs = mockPut.call_args
         # sha argument (index 3) should be None
         assert args[3] is None
+
+    def testPreparesOneBranchForMultipleFiles(self):
+        """Multiple file updates in one repository should share one branch."""
+        encodedContent = base64.b64encode(b"old content").decode()
+        remoteData = {"sha": "abc", "content": encodedContent}
+        preparedBranches = set()
+        logger = self._makeLogger()
+
+        with patch(
+            "syncAgentInstructions.getRemoteFile", return_value=remoteData
+        ), patch(
+            "syncAgentInstructions.getDefaultBranch", return_value="main"
+        ), patch(
+            "syncAgentInstructions.getBranchHeadSha", return_value="head-sha"
+        ), patch(
+            "syncAgentInstructions.createBranch"
+        ) as mockCreate, patch(
+            "syncAgentInstructions.putRemoteFile"
+        ):
+            for targetPath in (".github/agent-instructions.md", "AGENTS.md"):
+                result = sci.syncRepo(
+                    "owner/repo",
+                    targetPath,
+                    "new content",
+                    "sync: update instructions",
+                    False,
+                    {},
+                    logger,
+                    False,
+                    branch="sync/instructions-20260722",
+                    preparedBranches=preparedBranches,
+                )
+                assert result == "updated"
+
+        mockCreate.assert_called_once_with(
+            "owner/repo", "sync/instructions-20260722", "head-sha", {}
+        )
+        assert preparedBranches == {"owner/repo"}
+        assert logger.action.call_args_list.count(
+            (("prepare sync branch",), {})
+        ) == 1

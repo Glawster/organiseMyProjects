@@ -53,13 +53,14 @@ createProject myNewProject --ui -qt
 Creates:
 ```
 myNewProject/
+├── AGENTS.md                   # Agent discovery and instruction entry point
 ├── .github/
 │   ├── agent-instructions.md    # Canonical AI coding agent guidelines
 │   ├── copilot-instructions.md  # Generated GitHub Copilot compatibility copy
 │   └── repositoryLayout.md      # Project file and directory placement rules
 ├── src/
 │   ├── __init__.py
-│   └── logUtils.py                # Centralized logging utilities
+│   └── globalVars.py              # Project constants template
 ├── ui/
 │   ├── __init__.py
 │   ├── mainMenu.py               # Main application entry point
@@ -132,7 +133,7 @@ The project includes a comprehensive test suite using pytest for **development a
 pytest
 
 # Run specific test file
-pytest tests/testCreateProject.py
+pytest tests/test_CreateProject.py
 
 # Run with verbose output
 pytest -v
@@ -142,11 +143,11 @@ pytest --cov=organiseMyProjects
 ```
 
 ### Test Structure
-- `tests/testCreateProject.py` - Tests for project creation and updating
-- `tests/testGuiNamingLinter.py` - Tests for GUI naming convention linting
-- `tests/testRunLinter.py` - Tests for the linter CLI interface
-- `tests/testIntegration.py` - End-to-end integration tests
-- `tests/testLogUtils.py` - Tests for logging utilities (including `drawBox`)
+- `tests/test_CreateProject.py` - Tests for project creation and updating
+- `tests/test_GuiNamingLinter.py` - Tests for GUI naming convention linting
+- `tests/test_RunLinter.py` - Tests for the linter CLI interface
+- `tests/test_Integration.py` - End-to-end integration tests
+- `tests/test_LogUtils.py` - Tests for logging utilities (including `drawBox`)
 - `tests/test_SyncAgentInstructions.py` - Tests for Agent instructions sync
 - `tests/conftest.py` - Shared test fixtures and configuration
 
@@ -234,12 +235,25 @@ Copilot. Use `syncAgentInstructions.py` to push both instruction paths to all
 downstream Glawster repos. The same routine distributes the canonical
 repository layout to `.github/repositoryLayout.md`.
 
+Without `--repo`, every eligible repository is processed. `--repo` with no
+value opens a numbered selector; supplying a repository name avoids the prompt
+and is suitable for scripts.
+
 ```bash
 # Preview what would change (dry-run, default)
 python syncAgentInstructions.py
 
+# Choose one repository from a numbered list
+python syncAgentInstructions.py --repo
+
+# Select one repository non-interactively
+python syncAgentInstructions.py --repo Glawster/myRepository
+
 # Actually push updates
 GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm
+
+# Actually update one repository selected from the list
+GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --repo --confirm
 
 # Push updates, then create and merge conflict-free pull requests
 GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm --merge

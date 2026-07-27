@@ -1,9 +1,9 @@
 # Repository layout
 
-This guide explains what belongs in each top-level directory and where to put
-new material. It is written as a reusable template: copy it into another
-project, retain the common rules, and replace the project-specific directory
-rows and examples.
+This managed guide explains what belongs in each top-level directory and where
+to put new material. It is synchronized unchanged across repositories;
+repository-specific additions or exceptions belong in
+`.github/additional-instructions.md`.
 
 The central convention is to keep project-management records separate from the
 durable documentation and content that a project produces.
@@ -41,6 +41,20 @@ document instead.
 | `project/` | Planning, governance and historical delivery records. | Requirements, ADRs, roadmap and point-in-time reviews. |
 | `scripts/` | Maintainer tools and repeatable development tasks. | Asset-generation and repository-maintenance scripts. |
 | `tests/` | Automated tests, arranged to mirror the code they verify. | Tests for source modules and application behaviour. |
+
+## Entry-point conventions
+
+The required files depend on the project's role:
+
+- a reusable library module or package is imported by other code and does not
+  require `main.py` or another executable entry point;
+- a packaged command-line tool declares a console-script entry point that
+  normally calls a `main()` function inside its package;
+- a standalone application keeps `main.py` at its project root.
+
+Do not add a placeholder `main.py` to a library merely to match an application
+layout. Add an executable entry point only when the module has an executable
+workflow to expose.
 
 ## Repositories containing multiple projects
 

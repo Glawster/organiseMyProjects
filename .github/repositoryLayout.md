@@ -113,8 +113,7 @@ normally be ignored unless an export is deliberately approved for publication.
 | Path | Purpose |
 | --- | --- |
 | `project/project.yaml` | Current project purpose, scope, audience, risks and milestones. |
-| `project/requirements/features/` | Proposed, approved or in-progress outcomes and constraints. |
-| `project/requirements/completed/` | Completed or retired requirements retained for traceability. |
+| `project/requirements/features/` | Requirement records at every lifecycle stage, kept at stable paths. |
 | `project/requirements/templates/` | Templates used to create consistent project records. |
 | `project/adr/` | Significant project-shaping decisions and their consequences. |
 | `project/reviews/` | Point-in-time assessments that should not be mistaken for living guidance. |
@@ -123,6 +122,44 @@ normally be ignored unless an export is deliberately approved for publication.
 When a repository uses requirements or ADR workflows, their detailed naming
 rules should live in `project/requirements/README.md` and
 `project/adr/README.md` respectively.
+
+## Requirement conventions
+
+Keep every requirement permanently under `project/requirements/features/`.
+Do not move completed or retired records: treat the allocated path as a stable
+interface for documentation, prompts, commits and external references. Record
+lifecycle changes in the requirement's status and requirements index instead.
+
+The requirements index uses these workflow sections:
+
+- `ToDo`
+- `In Progress`
+- `Completed`
+
+Requirement filenames use a permanent project identifier:
+
+```text
+<PREFIX>-ddd-name.md
+```
+
+- `<PREFIX>` is the owning project's stable uppercase identifier.
+- `ddd` is a zero-padded sequential number that is never changed or reused.
+- `name` is a concise camelCase description.
+
+Each project's `project/requirements/README.md` records its prefix, next
+available number, status index and any project-specific requirement details.
+The identifier must also appear inside the requirement record.
+
+Living documentation owned by one requirement belongs in a directory named
+after the requirement without its prefix, number or `.md` extension:
+
+```text
+project/requirements/features/FMP-003-viewManagement.md
+documentation/viewManagement/
+```
+
+General documentation spanning multiple requirements remains directly under
+the owning project's `documentation/` directory.
 
 ## Documentation conventions
 
@@ -161,7 +198,7 @@ top-level directory should represent a real, distinct responsibility.
 
 | New item | Location | Reason |
 | --- | --- | --- |
-| A proposal for a new feature | `project/requirements/features/` | It describes an outcome not yet necessarily delivered. |
+| A requirement at any lifecycle stage | `project/requirements/features/` | Its stable path remains valid as status changes. |
 | The decision to use a particular implementation approach | `project/adr/` | It records a consequential choice and rationale. |
 | An explanation of implemented behaviour | `documentation/` | It is maintained product or technical knowledge. |
 | A review of project risks on a particular date | `project/reviews/` | It is a point-in-time assessment. |

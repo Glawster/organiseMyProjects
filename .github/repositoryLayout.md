@@ -143,25 +143,24 @@ The requirements index uses these workflow sections:
 - `InProgress`
 - `Completed`
 
-Requirement filenames use a permanent project identifier:
+Requirement filenames use a permanent sequential identifier:
 
 ```text
-<PREFIX>-ddd-name.md
+ddd-name.md
 ```
 
-- `<PREFIX>` is the owning project's stable uppercase identifier.
 - `ddd` is a zero-padded sequential number that is never changed or reused.
 - `name` is a concise camelCase description.
 
-Each project's `project/requirements/README.md` records its prefix, next
-available number, status index and any project-specific requirement details.
-The identifier must also appear inside the requirement record.
+Each project's `project/requirements/README.md` records its next available
+number, status index and any project-specific requirement details. The
+identifier must also appear inside the requirement record.
 
 Living documentation owned by one requirement belongs in a directory named
-after the requirement without its prefix, number or `.md` extension:
+after the requirement without its number or `.md` extension:
 
 ```text
-project/requirements/features/FMP-003-viewManagement.md
+project/requirements/features/003-viewManagement.md
 documentation/viewManagement/
 ```
 

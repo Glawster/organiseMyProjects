@@ -114,6 +114,7 @@ normally be ignored unless an export is deliberately approved for publication.
 | --- | --- |
 | `project/project.yaml` | Current project purpose, scope, audience, risks and milestones. |
 | `project/requirements/features/` | Requirement records at every lifecycle stage, kept at stable paths. |
+| `project/requirements/prompt/` | Version-controlled canonical agent prompts and reusable agent adapters. |
 | `project/requirements/templates/` | Templates used to create consistent project records. |
 | `project/adr/` | Significant project-shaping decisions and their consequences. |
 | `project/reviews/` | Point-in-time assessments that should not be mistaken for living guidance. |
@@ -130,10 +131,16 @@ Do not move completed or retired records: treat the allocated path as a stable
 interface for documentation, prompts, commits and external references. Record
 lifecycle changes in the requirement's status and requirements index instead.
 
+Keep durable prompts under `project/requirements/prompt/`, grouped in a folder
+whose name matches the requirement filename without `.md`. Shared agent
+adapters belong in `project/requirements/prompt/adapters/`. Prompt records stay
+at stable paths after completion so later work can reconstruct how an agent was
+briefed.
+
 The requirements index uses these workflow sections:
 
 - `ToDo`
-- `In Progress`
+- `InProgress`
 - `Completed`
 
 Requirement filenames use a permanent project identifier:

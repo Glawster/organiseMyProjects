@@ -12,6 +12,7 @@ The README is the canonical entry point for repo documentation. The living guide
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Copilot Compatibility Instructions](.github/copilot-instructions.md)
 - [Repository Layout](.github/repositoryLayout.md)
+- [Requirements Management](.github/requirementsManagement.md)
 - [Repository Agent Notes](.github/additional-instructions.md)
 
 ## Features

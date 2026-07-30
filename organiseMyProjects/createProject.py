@@ -162,6 +162,10 @@ MANAGED_COPY_TEMPLATES = [
         TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md",
         Path(".github") / "repositoryLayout.md",
     ),
+    (
+        TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md",
+        Path(".github") / "requirementsManagement.md",
+    ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
@@ -269,6 +273,18 @@ def createProject(
             shutil.copy(
                 srcRepositoryLayout,
                 basePath / ".github" / "repositoryLayout.md",
+            )
+
+    # Copy the requirements management guide
+    srcRequirementsManagement = (
+        TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md"
+    )
+    if srcRequirementsManagement.exists():
+        logger.action("copying requirements management guide")
+        if not dryRun:
+            shutil.copy(
+                srcRequirementsManagement,
+                basePath / ".github" / "requirementsManagement.md",
             )
 
     # Copy template modules into the new project

@@ -118,6 +118,7 @@ The package includes template files that are distributed with the package:
 - `.github/agent-instructions.md` - Master AI coding agent development guidelines
 - `.github/copilot-instructions.md` - Identical GitHub Copilot compatibility copy
 - `.github/repositoryLayout.md` - Canonical project layout definition copied to generated repositories
+- `.github/requirementsManagement.md` - Canonical requirements workflow copied to generated repositories
 - Template Python modules (copied to new projects)
 
 ## Canonical Agent Instructions Access

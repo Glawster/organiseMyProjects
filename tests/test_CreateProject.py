@@ -217,6 +217,19 @@ class TestCreateProject:
         sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
         assert layoutFile.read_text() == sourceFile.read_text()
 
+    def testCreateProjectRequirementsManagement(self, temp_dir, sample_project_name):
+        """Test that the shared requirements guide is project documentation."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.createProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        guideFile = projectPath / ".github" / "requirementsManagement.md"
+        sourceFile = (
+            Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
+        )
+        assert guideFile.read_text() == sourceFile.read_text()
+
 
 class TestUpdateProject:
     """Test cases for updateProject function."""
@@ -290,6 +303,21 @@ class TestUpdateProject:
         layoutFile = projectPath / ".github" / "repositoryLayout.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
         assert layoutFile.read_text() == sourceFile.read_text()
+
+    def testUpdateProjectAddsRequirementsManagement(
+        self, temp_dir, sample_project_name
+    ):
+        """Test that updateProject adds the managed requirements guide."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        updateProject(str(projectPath))
+
+        guideFile = projectPath / ".github" / "requirementsManagement.md"
+        sourceFile = (
+            Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
+        )
+        assert guideFile.read_text() == sourceFile.read_text()
 
     def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
         """Test that updateProject updates pytest.ini if it is outdated."""

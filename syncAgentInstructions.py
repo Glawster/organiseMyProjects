@@ -56,6 +56,13 @@ SYNC_SPECS = [
         "targetPath": ".github/repositoryLayout.md",
         "commitMessage": "sync: update repository layout definition",
     },
+    {
+        "sourceFile": Path(__file__).resolve().parent
+        / ".github"
+        / "requirementsManagement.md",
+        "targetPath": ".github/requirementsManagement.md",
+        "commitMessage": "sync: update requirements management guide",
+    },
 ]
 SYNC_COMMENT = (
     "<!-- synced from Glawster/organiseMyProjects -- do not edit directly -->\n"

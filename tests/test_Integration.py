@@ -46,6 +46,7 @@ class TestEndToEndWorkflow:
         assert projectPath.exists()
         assert (projectPath / ".github" / "agent-instructions.md").exists()
         assert (projectPath / ".github" / "repositoryLayout.md").exists()
+        assert (projectPath / ".github" / "requirementsManagement.md").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
 
         # Step 2: Add some Python code with violations to the project
@@ -280,3 +281,9 @@ class TestResourceAccess:
             TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
         )
         assert copilotInstructions.read_text() == content
+
+        requirementsManagement = (
+            TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md"
+        )
+        assert requirementsManagement.is_file()
+        assert "# Requirements management" in requirementsManagement.read_text()

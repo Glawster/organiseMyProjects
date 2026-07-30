@@ -99,6 +99,12 @@ class TestSyncSpecs:
         layoutSpec = specsByTarget[".github/repositoryLayout.md"]
         assert layoutSpec["sourceFile"].name == "repositoryLayout.md"
 
+    def testIncludesRequirementsManagement(self):
+        """The shared requirements guide should be synced as documentation."""
+        specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
+        guideSpec = specsByTarget[".github/requirementsManagement.md"]
+        assert guideSpec["sourceFile"].name == "requirementsManagement.md"
+
 
 class TestGetRemoteFile:
     """Tests for getRemoteFile."""

@@ -58,7 +58,8 @@ myNewProject/
 ├── .github/
 │   ├── agent-instructions.md    # Canonical AI coding agent guidelines
 │   ├── copilot-instructions.md  # Generated GitHub Copilot compatibility copy
-│   └── repositoryLayout.md      # Project file and directory placement rules
+│   ├── repositoryLayout.md      # Project file and directory placement rules
+│   └── requirementsManagement.md # Shared requirements workflow
 ├── src/
 │   ├── __init__.py
 │   └── globalVars.py              # Project constants template
@@ -234,7 +235,8 @@ The `organiseMyProjects` package includes:
 `.github/copilot-instructions.md` is an identical compatibility copy for GitHub
 Copilot. Use `syncAgentInstructions.py` to push both instruction paths to all
 downstream Glawster repos. The same routine distributes the canonical
-repository layout to `.github/repositoryLayout.md`.
+repository layout to `.github/repositoryLayout.md` and the requirements guide
+to `.github/requirementsManagement.md`.
 
 Without `--repo`, every eligible repository is processed. `--repo` with no
 value opens a numbered selector; supplying a repository name avoids the prompt

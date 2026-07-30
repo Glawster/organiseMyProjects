@@ -2,6 +2,7 @@ include .github/agent-instructions.md
 include .github/copilot-instructions.md
 include .github/AGENTS.md
 include .github/repositoryLayout.md
+include .github/requirementsManagement.md
 include organiseMyProjects/logUtils.sh
 recursive-include organiseMyProjects/ui *.py
 recursive-include organiseMyProjects/qt *.py

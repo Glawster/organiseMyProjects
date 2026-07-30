@@ -205,9 +205,13 @@ After creating a project, pre-commit hooks are automatically installed to:
 - Use centralized logger from `logUtils.py`
 - All log messages in lowercase except ERROR messages
 - Format patterns:
-  - `"...message"` for ongoing steps
-  - `"message..."` when a step is done
+  - `"message..."` when starting a major step (`doing`)
+  - `"...message"` for an action or completed step (`action` / `done`)
   - `"...key: value"` for reporting variables
+- With `dryRun=True`, `doing`, `action`, and `done` include the `[] ` marker;
+  `info`, `value`, and `multiline` continue to report unmarked facts.
+- `doing`, `action`, and `done` accept an optional `dryRunMessage` used only in
+  dry-run mode, for example `logger.done("project updated", "project update simulated")`.
 
 ## Requirements
 

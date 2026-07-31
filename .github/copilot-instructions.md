@@ -203,6 +203,14 @@ Never expose `--dry-run` as the CLI flag. Use `dryRun` only as the internal bool
 -   Fail fast if external tools are missing\
 -   Validate system requirements explicitly
 
+## Python Environment Standard
+
+- Use Conda as the preferred Python environment manager.
+- Every Python application should provide an `environment.yml`.
+- Declare package dependencies in `pyproject.toml`.
+- Use the Conda environment to install the project in editable mode.
+- Document Conda installation before `venv` alternatives.
+
 # Patterns
 
 ## Logging Pattern (logUtils)

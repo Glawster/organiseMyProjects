@@ -40,6 +40,18 @@ Centralised logging utilities shared across organiseMyProjects tooling.
 - `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than the specified number of days
 - `drawBox(message, border_char, corner_char, side_char, padding, logger)` - Print or log a text message surrounded by a Unicode box
 
+**Dry-run progress logging:**
+
+`getLogger(..., dryRun=True)` marks the full progress sequence while preserving
+the ellipsis convention: `[] doing...`, `...[] action`, and `...[] done`.
+The `doing`, `action`, and `done` methods each accept an optional
+`dryRunMessage`; it replaces the normal message only during a dry-run. Calls
+that omit it remain valid. Informational methods (`info`, `value`, and
+`multiline`) are not marked because they report facts observed by the run.
+
+The shell equivalents accept the optional dry-run message as their second
+argument: `log_doing`, `log_action`, and `log_done`.
+
 **`drawBox` Details:**
 
 Draws an ASCII/Unicode box around a (potentially multi-line) message to make it visually prominent in logs or console output.

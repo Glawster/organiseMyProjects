@@ -70,17 +70,32 @@ class _OrganiseLoggerAdapter(logging.LoggerAdapter):
         '...variable name: variable value'."""
         self.logger.info(f"...{message}: {variable}")
 
-    def doing(self, message: str) -> None:
-        """Log a major action being taken: 'message...'."""
-        self.logger.info(f"{message}...")
+    def doing(self, message: str, dryRunMessage: Optional[str] = None) -> None:
+        """Log a major action being taken, with dry-run awareness."""
+        selectedMessage = (
+            dryRunMessage if self._dryRun and dryRunMessage is not None else message
+        )
+        self.logger.info(f"{self._prefix}{selectedMessage}...")
 
-    def done(self, message: str) -> None:
-        """Log a completed action: '...message'."""
-        self.logger.info(f"...{message}")
+    def done(self, message: str, dryRunMessage: Optional[str] = None) -> None:
+        """Log a completed action, with dry-run awareness."""
+        selectedMessage = (
+            dryRunMessage if self._dryRun and dryRunMessage is not None else message
+        )
+        self.logger.info(f"...{self._prefix}{selectedMessage}")
 
-    def action(self, message: str, *args, **kwargs) -> None:
-        """Log a dry-run-aware action: '{prefix}message...'."""
-        self.logger.info(f"{self._prefix}{message}...", *args, **kwargs)
+    def action(
+        self,
+        message: str,
+        *args,
+        dryRunMessage: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        """Log a dry-run-aware action: '...{prefix}message'."""
+        selectedMessage = (
+            dryRunMessage if self._dryRun and dryRunMessage is not None else message
+        )
+        self.logger.info(f"...{self._prefix}{selectedMessage}", *args, **kwargs)
 
 
 def setApplication(name: str, logDir: Optional[Path] = None) -> None:
@@ -155,7 +170,9 @@ def _setupLogging(
 
     if str(logFile) not in _initialized_log_files:
         fileHandler = logging.FileHandler(logFile, encoding="utf-8")
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
         fileHandler.setFormatter(formatter)
         logger.addHandler(fileHandler)
         _initialized_log_files.add(str(logFile))
@@ -185,13 +202,15 @@ def getLogger(
     is used. Passing name explicitly remains supported for specialised tools.
 
     Returns an _OrganiseLoggerAdapter with semantic log methods:
-      doing(message)           – logs 'message...'
-      done(message)            – logs '...message'
+      doing(message, dryRunMessage=None) – logs '{prefix}message...'
+      done(message, dryRunMessage=None)  – logs '...{prefix}message'
       info(message)            – logs '...message'
       multiline(lines)         – logs first line as info, remaining lines indented
       value(message, variable) – logs '...message: variable'
-      action(message)          – logs '{prefix}message...'
-    Pass dryRun=True to insert '[] ' only for action.
+      action(message, dryRunMessage=None) – logs '...{prefix}message'
+    Pass dryRun=True to insert '[] ' for doing, action, and done. The optional
+    dryRunMessage replaces message only in dry-run mode. Existing calls remain
+    valid; informational methods are deliberately not dry-run-prefixed.
     """
     loggerName = _resolveLoggerName(name)
     logger = _setupLogging(

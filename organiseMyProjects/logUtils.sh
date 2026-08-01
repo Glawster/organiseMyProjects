@@ -14,8 +14,8 @@
 #   log_init "myScript"                # calls setApplication "myScript"
 #
 # Semantic log functions (mirror Python logUtils conventions):
-#   log_doing "scanning files"           →  scanning files...
-#   log_done  "scan complete"            →  ...scan complete
+#   log_doing "scanning files"           →  [] scanning files...  (dry-run)
+#   log_done  "scan complete"            →  ...[] scan complete   (dry-run)
 #   log_info  "found 5 items"            →  ...found 5 items
 #   log_value "source dir" "/home/andy"  →  ...source dir: /home/andy
 #   log_action "moving file: a → b"      →  ...[] moving file: a → b  (when dryRun is set)
@@ -122,14 +122,26 @@ log_init() {
   setApplication "$@"
 }
 
-# log_doing <message>  →  message...
+# log_doing <message> [dryRunMessage]  →  {dry-run marker} message...
 log_doing() {
-  _log "$1..."
+  local message="$1"
+  if [[ -n "${dryRun:-}" ]]; then
+    message="${2:-$message}"
+    _log "[] $message..."
+  else
+    _log "$message..."
+  fi
 }
 
-# log_done <message>  →  ...message
+# log_done <message> [dryRunMessage]  →  ...{dry-run marker} message
 log_done() {
-  _log "...$1"
+  local message="$1"
+  if [[ -n "${dryRun:-}" ]]; then
+    message="${2:-$message}"
+    _log "...[] $message"
+  else
+    _log "...$message"
+  fi
 }
 
 # log_info <message>  →  ...message
@@ -142,12 +154,12 @@ log_value() {
   _log "...$1: $2"
 }
 
-# log_action <message>
+# log_action <message> [dryRunMessage]
 #   If the caller's $dryRun variable is non-empty, prefixes with "[] " (dry-run marker).
 #   Use for operations that are skipped in dry-run mode.
 log_action() {
   if [[ -n "${dryRun:-}" ]]; then
-    _log "...[] $1"
+    _log "...[] ${2:-$1}"
   else
     _log "...$1"
   fi

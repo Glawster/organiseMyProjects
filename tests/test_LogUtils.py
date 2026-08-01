@@ -308,30 +308,65 @@ class TestSemanticLogMethods:
         logger.info("moving file")
         assert records and records[0].getMessage() == "...moving file"
 
-    def testDoingDryRunNoPrefix(self, tmp_path):
-        """Test that doing() does not insert dry-run prefix even when dryRun=True."""
+    def testDoingDryRunPrefix(self, tmp_path):
+        """Test that doing() inserts the dry-run prefix."""
         logger = getLogger("testDoingDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.doing("processing files")
-        assert records and records[0].getMessage() == "processing files..."
+        assert records and records[0].getMessage() == "[] processing files..."
 
-    def testDoneDryRunNoPrefix(self, tmp_path):
-        """Test that done() does not insert dry-run prefix even when dryRun=True."""
+    def testDoneDryRunPrefix(self, tmp_path):
+        """Test that done() inserts the dry-run prefix after its ellipsis."""
         logger = getLogger("testDoneDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.done("processing files")
-        assert records and records[0].getMessage() == "...processing files"
+        assert records and records[0].getMessage() == "...[] processing files"
+
+    @pytest.mark.parametrize(
+        ("methodName", "expected"),
+        [
+            ("doing", "[] would process files..."),
+            ("action", "...[] would process files"),
+            ("done", "...[] file processing simulated"),
+        ],
+    )
+    def testProgressMethodsUseOptionalDryRunMessage(
+        self, tmp_path, methodName, expected
+    ):
+        """The alternate message is selected only in dry-run mode."""
+        logger = getLogger(f"test{methodName}DryMessage", logDir=tmp_path, dryRun=True)
+        records = self._captureRecords(logger)
+        dryRunMessage = (
+            "file processing simulated"
+            if methodName == "done"
+            else "would process files"
+        )
+        getattr(logger, methodName)("processing files", dryRunMessage=dryRunMessage)
+        assert records and records[0].getMessage() == expected
+
+    @pytest.mark.parametrize("methodName", ["doing", "action", "done"])
+    def testProgressMethodsIgnoreDryRunMessageDuringLiveRun(self, tmp_path, methodName):
+        """Supplying an alternate message does not change live output."""
+        logger = getLogger(f"test{methodName}LiveMessage", logDir=tmp_path)
+        records = self._captureRecords(logger)
+        getattr(logger, methodName)(
+            "processing files", dryRunMessage="would process files"
+        )
+        expected = (
+            "processing files..." if methodName == "doing" else "...processing files"
+        )
+        assert records and records[0].getMessage() == expected
 
     def testActionDryRunPrefixInserted(self, tmp_path):
         """Test that action() inserts '[] ' prefix when dryRun=True."""
         logger = getLogger("testActionDry", logDir=tmp_path, dryRun=True)
         records = self._captureRecords(logger)
         logger.action("moving file")
-        assert records and records[0].getMessage() == "[] moving file..."
+        assert records and records[0].getMessage() == "...[] moving file"
 
     def testActionLiveNoPrefixInserted(self, tmp_path):
         """Test that action() does not insert '[] ' prefix when dryRun=False."""
         logger = getLogger("testActionLive", logDir=tmp_path, dryRun=False)
         records = self._captureRecords(logger)
         logger.action("moving file")
-        assert records and records[0].getMessage() == "moving file..."
+        assert records and records[0].getMessage() == "...moving file"

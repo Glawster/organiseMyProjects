@@ -258,7 +258,7 @@ def test_file_creation(temp_dir):
 1. Clone the repository
 2. Install development dependencies:
    ```bash
-   pip install pytest black
+   pip install pytest black ruff
    ```
 3. Install the package in development mode:
    ```bash
@@ -269,6 +269,7 @@ def test_file_creation(temp_dir):
 
 #### Formatting
 - Use `black` for code formatting
+- Use `ruff check .` for static analysis
 - Line length: 88 characters (black default)
 - Use double quotes for strings
 
@@ -313,13 +314,15 @@ repos:
 
 ### Release Process
 
-1. Update version in `setup.py`
+1. Update `VERSION` in `organiseMyProjects/version.py`
 2. Update `CHANGELOG.md` (if exists)
 3. Run full test suite: `pytest`
 4. Run linter: `runLinter .`
 5. Format code: `black .`
-6. Build package: `python setup.py sdist`
-7. Test installation: `pip install dist/organiseMyProjects-*.tar.gz`
+6. Run static checks: `ruff check .`
+7. Build package: `python setup.py sdist`
+8. Test installation: `pip install dist/organiseMyProjects-*.tar.gz`
+9. Tag the commit with the same release value as `VERSION`
 
 ## Extending the Package
 

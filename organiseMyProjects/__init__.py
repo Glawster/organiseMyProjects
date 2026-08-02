@@ -23,7 +23,7 @@ Usage:
     from organiseMyProjects.logUtils import getLogger, thisApplication
 """
 
-__version__ = "0.2"
+from .version import VERSION as __version__
 
 # Expose main functionality for programmatic use
 from . import createProject

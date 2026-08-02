@@ -93,6 +93,14 @@ class TestSyncSpecs:
         copilotSpec = specsByTarget[".github/copilot-instructions.md"]
         assert copilotSpec["sourceFile"].name == "agent-instructions.md"
 
+    def testCheckedInCopilotFileMatchesCanonicalAgentInstructions(self):
+        """The repository's compatibility copy should not drift from its source."""
+        repoRoot = Path(__file__).parent.parent
+        canonicalContent = (repoRoot / ".github" / "agent-instructions.md").read_text()
+        copilotContent = (repoRoot / ".github" / "copilot-instructions.md").read_text()
+
+        assert copilotContent == canonicalContent
+
     def testIncludesRepositoryLayout(self):
         """The shared repository layout should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}

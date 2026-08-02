@@ -20,6 +20,8 @@ from organiseMyProjects.createProject import (
     _update_text_file,
     _build_env_content,
     _ensureEnvFile,
+    _build_managed_content,
+    DEPLOYMENT_COMMENT,
     GITIGNORE_CONTENT,
     REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
@@ -194,6 +196,7 @@ class TestCreateProject:
         assert agentGuidelines.exists()
         assert len(agentGuidelines.read_text()) > 0
         assert copilotGuidelines.read_text() == agentGuidelines.read_text()
+        assert agentGuidelines.read_text().startswith(DEPLOYMENT_COMMENT)
 
     def testCreateProjectAgentInstructions(self, temp_dir, sample_project_name):
         """Test that Codex agent instructions are copied to the project root."""
@@ -204,7 +207,7 @@ class TestCreateProject:
 
         agentFile = projectPath / "AGENTS.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
-        assert agentFile.read_text() == sourceFile.read_text()
+        assert agentFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testCreateProjectRepositoryLayout(self, temp_dir, sample_project_name):
         """Test that the shared repository layout is project documentation."""
@@ -215,7 +218,7 @@ class TestCreateProject:
 
         layoutFile = projectPath / ".github" / "repositoryLayout.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
-        assert layoutFile.read_text() == sourceFile.read_text()
+        assert layoutFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testCreateProjectRequirementsManagement(self, temp_dir, sample_project_name):
         """Test that the shared requirements guide is project documentation."""
@@ -228,7 +231,7 @@ class TestCreateProject:
         sourceFile = (
             Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
         )
-        assert guideFile.read_text() == sourceFile.read_text()
+        assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
 
 class TestUpdateProject:
@@ -291,7 +294,7 @@ class TestUpdateProject:
 
         agentFile = projectPath / "AGENTS.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
-        assert agentFile.read_text() == sourceFile.read_text()
+        assert agentFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testUpdateProjectAddsRepositoryLayout(self, temp_dir, sample_project_name):
         """Test that updateProject adds the managed repository layout."""
@@ -302,7 +305,7 @@ class TestUpdateProject:
 
         layoutFile = projectPath / ".github" / "repositoryLayout.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
-        assert layoutFile.read_text() == sourceFile.read_text()
+        assert layoutFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testUpdateProjectAddsRequirementsManagement(
         self, temp_dir, sample_project_name
@@ -317,7 +320,7 @@ class TestUpdateProject:
         sourceFile = (
             Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
         )
-        assert guideFile.read_text() == sourceFile.read_text()
+        assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
         """Test that updateProject updates pytest.ini if it is outdated."""

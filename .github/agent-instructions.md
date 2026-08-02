@@ -246,7 +246,7 @@ Examples:
     --verbose
     --quiet
     --json
-    
+
 ## Universal Options
 
 --help

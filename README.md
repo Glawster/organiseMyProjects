@@ -160,13 +160,16 @@ pytest --cov=organiseMyProjects
 ### Running Tests
 ```bash
 # Install development dependencies
-pip install pytest black
+pip install pytest black ruff
 
 # Run tests
 pytest
 
 # Run tests with coverage
 pytest --cov=organiseMyProjects --cov-report=html
+
+# Run static checks
+ruff check .
 ```
 
 ### Code Quality
@@ -174,6 +177,7 @@ The project uses several tools to maintain code quality:
 
 - **Black**: Automatic code formatting
 - **pytest**: Comprehensive test suite
+- **Ruff**: Fast static analysis and linting
 - **pre-commit**: Git hooks for quality checks
 - **Custom GUI Linter**: Enforces GUI naming conventions
 
@@ -222,6 +226,7 @@ After creating a project, pre-commit hooks are automatically installed to:
   - `pywin32`
   - `black`
   - `pytest`
+  - `ruff`
   - `pre-commit`
 
 ## Package Structure
@@ -241,6 +246,11 @@ Copilot. Use `syncAgentInstructions.py` to push both instruction paths to all
 downstream Glawster repos. The same routine distributes the canonical
 repository layout to `.github/repositoryLayout.md` and the requirements guide
 to `.github/requirementsManagement.md`.
+
+Synced and scaffolded managed files include the originating release number.
+Release tags should match `organiseMyProjects.version.VERSION` (for example,
+version `0.3` is tagged `0.3`) so downstream projects can identify the exact
+template release that produced their content.
 
 Without `--repo`, every eligible repository is processed. `--repo` with no
 value opens a numbered selector; supplying a repository name avoids the prompt

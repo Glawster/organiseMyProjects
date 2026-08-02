@@ -5,15 +5,21 @@ import argparse
 from pathlib import Path
 
 from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.version import VERSION
 
 thisApplication = Path(__file__).stem
 setApplication(thisApplication)
 logger = getLogger(includeConsole=False)
 
+DEPLOYMENT_COMMENT = (
+    f"<!-- deployed from Glawster/organiseMyProjects release {VERSION} "
+    "-- do not edit directly -->\n"
+)
+
 # text templates used when creating or updating projects
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
 REQUIREMENTS_CONTENT = "pywin32\n"
-DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\n"
+DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\nruff\n"
 MAIN_PY_CONTENT = """from pathlib import Path
 from organiseMyProjects.logUtils import getLogger, setApplication
 
@@ -248,7 +254,9 @@ def createProject(
     if srcGuidelines.exists():
         logger.action("copying project guidelines")
         if not dryRun:
-            shutil.copy(srcGuidelines, basePath / "projectGuidelines.md")
+            (basePath / "projectGuidelines.md").write_text(
+                _build_managed_content(srcGuidelines.read_text())
+            )
 
     # Copy the agent instructions file
     srcAgentGuidelines = TEMPLATE_DIR.parent / ".github" / "agent-instructions.md"
@@ -256,23 +264,26 @@ def createProject(
         logger.action("copying agent guidelines")
         if not dryRun:
             for fileName in ("agent-instructions.md", "copilot-instructions.md"):
-                shutil.copy(srcAgentGuidelines, basePath / ".github" / fileName)
+                (basePath / ".github" / fileName).write_text(
+                    _build_managed_content(srcAgentGuidelines.read_text())
+                )
 
     # Copy the Codex agent instructions file
     srcAgentInstructions = TEMPLATE_DIR.parent / ".github" / "AGENTS.md"
     if srcAgentInstructions.exists():
         logger.action("copying agent instructions")
         if not dryRun:
-            shutil.copy(srcAgentInstructions, basePath / "AGENTS.md")
+            (basePath / "AGENTS.md").write_text(
+                _build_managed_content(srcAgentInstructions.read_text())
+            )
 
     # Copy the repository layout definition
     srcRepositoryLayout = TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md"
     if srcRepositoryLayout.exists():
         logger.action("copying repository layout")
         if not dryRun:
-            shutil.copy(
-                srcRepositoryLayout,
-                basePath / ".github" / "repositoryLayout.md",
+            (basePath / ".github" / "repositoryLayout.md").write_text(
+                _build_managed_content(srcRepositoryLayout.read_text())
             )
 
     # Copy the requirements management guide
@@ -282,9 +293,8 @@ def createProject(
     if srcRequirementsManagement.exists():
         logger.action("copying requirements management guide")
         if not dryRun:
-            shutil.copy(
-                srcRequirementsManagement,
-                basePath / ".github" / "requirementsManagement.md",
+            (basePath / ".github" / "requirementsManagement.md").write_text(
+                _build_managed_content(srcRequirementsManagement.read_text())
             )
 
     # Copy template modules into the new project
@@ -348,6 +358,18 @@ def _update_text_file(dest: Path, content: str, dryRun: bool = False):
         logger.action(f"updated {dest}")
         if not dryRun:
             dest.write_bytes(new_bytes)
+
+
+def _build_managed_content(sourceContent: str) -> str:
+    """Add the scaffold release marker to canonical managed content."""
+    if sourceContent.startswith("<!-- synced from Glawster/organiseMyProjects"):
+        sourceContent = sourceContent.partition("\n")[2]
+    return DEPLOYMENT_COMMENT + sourceContent
+
+
+def _update_managed_copy(src: Path, dest: Path, dryRun: bool = False):
+    """Deploy a managed text file with its originating scaffold release."""
+    _update_text_file(dest, _build_managed_content(src.read_text()), dryRun)
 
 
 def _createTextFileIfMissing(dest: Path, content: str, dryRun: bool = False):
@@ -471,7 +493,7 @@ def updateProject(
 
     for src, destRel in MANAGED_COPY_TEMPLATES:
         if src.exists():
-            _copy_if_newer(src, basePath / destRel, dryRun)
+            _update_managed_copy(src, basePath / destRel, dryRun)
 
     logger.info("checking project-owned template modules")
     for src, destRel in _iter_template_modules(installUi, installQt):

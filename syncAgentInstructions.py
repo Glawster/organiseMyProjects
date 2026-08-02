@@ -24,6 +24,7 @@ from typing import Optional
 import requests
 
 from organiseMyProjects.logUtils import getLogger, thisApplication
+from organiseMyProjects.version import VERSION
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -65,7 +66,8 @@ SYNC_SPECS = [
     },
 ]
 SYNC_COMMENT = (
-    "<!-- synced from Glawster/organiseMyProjects -- do not edit directly -->\n"
+    f"<!-- synced from Glawster/organiseMyProjects release {VERSION} "
+    "-- do not edit directly -->\n"
 )
 API_BASE = "https://api.github.com"
 REPO_OWNER = "Glawster"

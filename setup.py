@@ -2,19 +2,19 @@ from setuptools import setup, find_packages
 
 setup(
     name="organiseMyProjects",
-    version="0.1",
-    packages=find_packages(exclude=['tests', 'tests.*']),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     include_package_data=True,
     install_requires=[
         'pywin32; sys_platform == "win32"',
         "black",
         "pytest",
-        "pre-commit"
+        "pre-commit",
+        "ruff",
     ],
     entry_points={
         "console_scripts": [
             "createProject=organiseMyProjects.createProject:main",
-            "runLinter=organiseMyProjects.runLinter:main"
+            "runLinter=organiseMyProjects.runLinter:main",
         ]
     },
     author="Andy Wilson (andyw@glawster.com)",
@@ -23,5 +23,5 @@ setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.7',
+    python_requires=">=3.7",
 )

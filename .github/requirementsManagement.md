@@ -35,9 +35,8 @@ project/requirements/
 │   ├── adapters/
 │   │   ├── codex.md
 │   │   └── copilot.md
-│   └── 003-viewManagement/
-│       ├── implement.md
-│       └── verify.md
+│   ├── 003a-viewManagement.prompt.md
+│   └── 003b-viewManagement.prompt.md
 ├── templates/
 │   └── requirement.md
 └── features/
@@ -48,8 +47,8 @@ project/requirements/
   next available number, workflow state and project-specific conventions.
 - `project/requirements/features/` contains every requirement at every
   lifecycle stage. Files are not moved when their status changes.
-- `project/requirements/prompt/` contains durable canonical prompts, grouped by
-  requirement, plus reusable agent adapters.
+- `project/requirements/prompt/` contains one or more durable prompts per
+  requirement in a flat layout, plus reusable agent adapters.
 - `project/requirements/templates/` contains the project's approved templates.
 - `documentation/<requirementName>/` contains living documentation owned by a
   single requirement. Cross-cutting documentation remains directly under
@@ -70,11 +69,36 @@ The three-digit number is sequential, permanent and never reused, including
 when a requirement is rejected or retired. The filename and identifier do not
 change after allocation. Update the next available number in the same change
 that creates the record so concurrent work cannot allocate it twice.
+The identifier must also appear inside the requirement record.
 
 Use the numeric identifier in the record heading and in relevant issue, branch,
 commit, pull-request, test and documentation references. Repository-specific
 prefixes may be used in external tools when necessary, but they are not part of
 the requirement filename.
+
+When a requirement has one prompt, its filename matches the requirement with
+`.prompt` inserted before the Markdown extension. When it has multiple prompts,
+append sequential lowercase letters to the requirement number and give each
+prompt the same requirement name:
+
+```text
+project/requirements/features/003-viewManagement.md
+project/requirements/prompt/003-viewManagement.prompt.md
+project/requirements/prompt/003a-viewManagement.prompt.md
+project/requirements/prompt/003b-viewManagement.prompt.md
+```
+
+Use the unsuffixed form only while there is a single prompt. For multiple
+prompts, `a` identifies the primary prompt and subsequent prompts use `b`, `c`
+and so on. Never reuse a suffix. If a second prompt is added later, rename the
+existing unsuffixed prompt to the `a` form while preserving its version-control
+history, create the `b` prompt, and update all references in the same change.
+The suffixed identities are stable after allocation.
+
+Living documentation owned by one requirement belongs in a directory named
+after the requirement without its number or extension, for example
+`documentation/viewManagement/`. General documentation spanning multiple
+requirements remains directly under the owning `documentation/` directory.
 
 ## Requirement record
 
@@ -155,21 +179,21 @@ than creating a parent record whose completion is ambiguous.
 
 ## Workflow
 
-The index in `project/requirements/README.md` has three sections:
-
-1. `ToDo` — captured and being refined, or ready but not yet started.
-2. `InProgress` — accepted for delivery and actively being implemented.
-3. `Completed` — verified as delivered, or closed with a recorded disposition
-   such as rejected, superseded or retired.
+The index in `project/requirements/README.md` contains a traceability matrix.
+Each requirement has one row whose `Status` is `ToDo`, `InProgress` or
+`Completed`. These states mean, respectively: captured or ready but not yet
+started; accepted and actively being delivered; or verified as delivered (or
+closed with a visible disposition such as rejected, superseded or retired).
 
 Use this operating process:
 
 ### 1. Capture
 
 Search the index and existing records for duplicates. Allocate the next number,
-create the record from the template, add it to `ToDo`, and record its origin and
-purpose. Early uncertainty should be written as an assumption or open question,
-not silently resolved.
+create the record and its primary prompt from the approved templates, add the
+matrix row with status `ToDo`, and record the requirement's origin and purpose.
+Early uncertainty should be written as an assumption or open question, not
+silently resolved.
 
 ### 2. Refine and agree
 
@@ -184,8 +208,8 @@ may be sufficient if the decision remains traceable.
 
 ### 3. Start delivery
 
-Move the index entry from `ToDo` to `InProgress` and update the record's status
-in the same change. Before coding, map each acceptance criterion to planned test
+Set the index entry to `InProgress` and update the record's status in the same
+change. Before coding, map each acceptance criterion to planned test
 coverage or another verification method. Link any implementation plan, issue or
 ADR; do not turn the requirement itself into a task-by-task coding diary.
 
@@ -207,7 +231,7 @@ includes automated test paths and results, plus manual or stakeholder validation
 where automated tests cannot prove the outcome. Confirm that relevant living
 documentation and ADRs are current and that no temporary assumption remains.
 
-Move the index entry to `Completed` and update the record only after all criteria
+Set the index entry to `Completed` and update the record only after all criteria
 pass. The completion change should include the final implementation, test,
 documentation and pull-request links. Keep the requirement file in
 `features/`; its stable path remains valid for future references.
@@ -256,28 +280,37 @@ without maintaining separate versions of the scope.
 
 ### Canonical prompt and agent adapters
 
-Write one canonical task brief from the requirement, then add only the minimum
-agent-specific wrapper needed for the selected tool. Do not create independent
-prompts whose acceptance criteria or scope can drift apart.
+Write each task brief from the authoritative requirement, then add only the
+minimum agent-specific wrapper needed for the selected tool. Multiple prompts
+must partition roles or scope clearly and must not redefine the requirement or
+allow their acceptance criteria to drift apart.
 
-Store prompts at:
+Store a single prompt at:
 
 ```text
-project/requirements/prompt/<ddd-requirementName>/<role>.md
+project/requirements/prompt/<ddd-requirementName>.prompt.md
 ```
 
-For example, implementation and independent verification prompts for
-`003-viewManagement.md` are `003-viewManagement/implement.md` and
-`003-viewManagement/verify.md`. Keep reusable tool-specific instructions in
-`project/requirements/prompt/adapters/<agent>.md` and combine the applicable
-adapter with the canonical role prompt when starting a run. Do not copy a full
-prompt merely to change the agent name.
+If separate prompts are needed, store them as:
 
-Prompt paths are durable delivery records. Do not move them when the requirement
-is completed. Update a prompt in place before it is issued; after it has been
-used, preserve the issued meaning and create a clearly named successor such as
-`implementRevision2.md` for a material change. Note the supersession in both
-files and in the requirement's Agent runs traceability.
+```text
+project/requirements/prompt/<ddd>a-<requirementName>.prompt.md
+project/requirements/prompt/<ddd>b-<requirementName>.prompt.md
+```
+
+For example, separate implementation and verification prompts for
+`003-viewManagement.md` are `003a-viewManagement.prompt.md` and
+`003b-viewManagement.prompt.md`. Keep reusable tool-specific instructions in
+`project/requirements/prompt/adapters/<agent>.md` and combine the applicable
+adapter with the relevant prompt when starting a run. Do not create an
+additional prompt merely to change the agent name.
+
+Prompt paths are durable delivery records. Apart from converting a single
+unsuffixed prompt to the required multi-prompt naming, do not move them when the
+requirement is completed or another prompt is added. Update a prompt in place
+before it is issued. After it has been used, preserve its issued meaning in
+version control; a material revision must be recorded in the requirement's
+change history and Agent runs traceability.
 
 The canonical brief contains:
 
@@ -402,25 +435,37 @@ Before moving it to `Completed`, confirm:
 - no unresolved item is being hidden by completion; and
 - the record and index are updated together.
 
-## Requirements index example
+## Requirements index
+
+The traceability matrix must use these columns in this order:
+
+| Column | Purpose |
+| --- | --- |
+| `Req ID` | Permanent zero-padded requirement identifier. |
+| `Requirement` | Link to the authoritative requirement record. |
+| `Description` | Concise statement of what the requirement is about. |
+| `Status` | Current lifecycle state: `ToDo`, `InProgress` or `Completed`. |
+| `Agent Prompt` | Links to the requirement's durable prompt or prompts. |
+| `Architecture Decisions` | Links to supporting ADRs, `Pending`, or `Not required`. |
+
+Keep descriptions short enough for the matrix to remain scannable; detailed
+scope belongs in the linked requirement. Every requirement links to at least
+one prompt; when there are several, list them in suffix order. A requirement
+may link to zero or more ADRs. ADRs link back to the requirements they support.
+The requirement record remains authoritative for scope and status.
+
+Example:
 
 ```markdown
 # Requirements
 
 Next available number: 006
 
-## ToDo
-
-- [004 — Export parsed messages](features/004-exportParsedMessages.md)
-
-## InProgress
-
-- [005 — Report malformed input](features/005-reportMalformedInput.md)
-
-## Completed
-
-- [003 — Manage views](features/003-viewManagement.md)
-- [002 — Legacy import mode](features/002-legacyImportMode.md) — retired
+| Req ID | Requirement | Description | Status | Agent Prompt | Architecture Decisions |
+| --- | --- | --- | --- | --- | --- |
+| 003 | [Manage views](features/003-viewManagement.md) | Create and manage saved views. | Completed | [Implement](prompt/003a-viewManagement.prompt.md), [verify](prompt/003b-viewManagement.prompt.md) | [ADR-002](../adr/002-viewStorage.md) |
+| 004 | [Export parsed messages](features/004-exportParsedMessages.md) | Export parsed messages in supported formats. | ToDo | [Prompt](prompt/004-exportParsedMessages.prompt.md) | Pending |
+| 005 | [Report malformed input](features/005-reportMalformedInput.md) | Explain malformed input without losing valid results. | InProgress | [Prompt](prompt/005-reportMalformedInput.prompt.md) | Not required |
 ```
 
 The index is a navigation and status view, not a substitute for the individual

@@ -124,69 +124,6 @@ When a repository uses requirements or ADR workflows, their detailed naming
 rules should live in `project/requirements/README.md` and
 `project/adr/README.md` respectively.
 
-## Requirement conventions
-
-Keep every requirement permanently under `project/requirements/features/`.
-Do not move completed or retired records: treat the allocated path as a stable
-interface for documentation, prompts, commits and external references. Record
-lifecycle changes in the requirement's status and requirements index instead.
-
-Keep durable requirement prompts directly under `project/requirements/prompt/`
-using a flat layout. A prompt filename must match its owning requirement with
-`.prompt` inserted before the Markdown extension:
-
-```text
-project/requirements/features/003-viewManagement.md
-project/requirements/prompt/003-viewManagement.prompt.md
-```
-
-This one-to-one naming keeps prompt ownership unambiguous without repeating
-`prompt` in a directory and filename. Shared agent adapters belong in
-`project/requirements/prompt/adapters/`. Prompt records stay at stable paths
-after completion so later work can reconstruct how an agent was briefed.
-
-The requirements index must contain a traceability matrix using these columns
-in order:
-
-| Column | Purpose |
-| --- | --- |
-| `Req ID` | Permanent zero-padded requirement identifier. |
-| `Requirement` | Link to the authoritative requirement record. |
-| `Description` | Concise statement of what the requirement is about. |
-| `Status` | Current lifecycle state: `ToDo`, `InProgress` or `Completed`. |
-| `Agent Prompt` | Link to the requirement's primary durable prompt. |
-| `Architecture Decisions` | Links to supporting ADRs, `Pending`, or `Not required`. |
-
-Place `Description` immediately after `Requirement`. Keep descriptions short
-enough for the matrix to remain scannable; detailed scope belongs in the linked
-requirement. The requirement record remains authoritative for scope and status.
-Every requirement must link to one primary prompt and may link to zero or more
-ADRs. ADRs must link back to the requirements they support.
-
-Requirement filenames use a permanent sequential identifier:
-
-```text
-ddd-name.md
-```
-
-- `ddd` is a zero-padded sequential number that is never changed or reused.
-- `name` is a concise camelCase description.
-
-Each project's `project/requirements/README.md` records its next available
-number, traceability matrix and any project-specific requirement details. The
-identifier must also appear inside the requirement record.
-
-Living documentation owned by one requirement belongs in a directory named
-after the requirement without its number or `.md` extension:
-
-```text
-project/requirements/features/003-viewManagement.md
-documentation/viewManagement/
-```
-
-General documentation spanning multiple requirements remains directly under
-the owning project's `documentation/` directory.
-
 ## Documentation conventions
 
 - Keep only `README.md` as the main documentation entry point at the repository
@@ -225,7 +162,6 @@ top-level directory should represent a real, distinct responsibility.
 | New item | Location | Reason |
 | --- | --- | --- |
 | A requirement at any lifecycle stage | `project/requirements/features/` | Its stable path remains valid as status changes. |
-| The durable agent prompt for a requirement | `project/requirements/prompt/ddd-name.prompt.md` | Its filename identifies the owning requirement in the flat prompt directory. |
 | The decision to use a particular implementation approach | `project/adr/` | It records a consequential choice and rationale. |
 | An explanation of implemented behaviour | `documentation/` | It is maintained product or technical knowledge. |
 | A review of project risks on a particular date | `project/reviews/` | It is a point-in-time assessment. |

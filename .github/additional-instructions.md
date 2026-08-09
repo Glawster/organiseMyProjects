@@ -88,7 +88,7 @@ organiseMyProjects/
 │   └── additional-instructions.md # Project-specific (this file, NOT template)
 ├── organiseMyProjects/                    # Main package
 │   ├── __init__.py                       # [PACKAGE] Package initialization with public API
-│   ├── createProject.py                   # [PACKAGE] Project scaffolding tool
+│   ├── manageProject.py                   # [PACKAGE] Project scaffolding tool
 │   ├── logUtils.py                       # [PACKAGE] Centralized logging utility
 │   ├── globalVars.py                     # [TEMPLATE] Global constants
 │   ├── HELP.md                           # [PACKAGE] GUI linter documentation
@@ -119,7 +119,7 @@ organiseMyProjects/
 ### File Categories
 
 **[PACKAGE]** - Package utilities that remain in organiseMyProjects and are NOT copied to new projects:
-- `createProject.py` - The scaffolding tool itself
+- `manageProject.py` - The scaffolding tool itself
 - `logUtils.py` - Package-level logging utility (accessible via `from organiseMyProjects.logUtils import getLogger, thisApplication`)
 - `HELP.md` - Documentation
 - `guiNamingLinter.py` - Naming linter used by this repo and by installed downstream projects
@@ -139,7 +139,7 @@ organiseMyProjects/
 
 ## Core Components
 
-### createProject.py
+### manageProject.py
 - **Purpose**: Creates and updates Python project scaffolds
 - **Key Functions**:
   - `createProject(projectName)` - Creates a new project structure
@@ -212,7 +212,7 @@ organiseMyProjects/
 The package contains two types of files:
 
 1. **Package Utilities** - Stay in the organiseMyProjects package:
-   - `createProject.py` - The tool that creates/updates projects
+   - `manageProject.py` - The tool that creates/updates projects
    - `logUtils.py` - Package-level logging (not distributed to projects)
    - `globalVars.py` - Package constants
    
@@ -247,7 +247,7 @@ except (ImportError, FileNotFoundError):
 ### Public API Usage Examples
 ```python
 # Create and update projects
-from organiseMyProjects import createProject, updateProject
+from organiseMyProjects import manageProject, updateProject
 createProject("myNewProject")
 updateProject("myExistingProject")
 

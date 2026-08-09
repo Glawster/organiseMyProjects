@@ -17,7 +17,7 @@ class TestPackageInstallation:
 
     def testCreateProjectEntryPointExists(self):
         """Test that createProject entry point is properly configured."""
-        from organiseMyProjects.createProject import main
+        from organiseMyProjects.manageProject import main
 
         assert callable(main)
 
@@ -37,9 +37,9 @@ class TestEndToEndWorkflow:
         projectPath = temp_dir / projectName
 
         # Step 1: Create a project
-        from organiseMyProjects.createProject import createProject
+        from organiseMyProjects.manageProject import createProject
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath), includeUi=True)
 
         # Verify project was created
@@ -92,14 +92,14 @@ class TestFrame:
         assert True  # Test passes if no exceptions were thrown
 
     def testUpdateExistingProject(self, temp_dir):
-        """Test updating an existing project."""
+        """Test updating an existing project without adding missing scaffold files."""
         projectName = "testUpdate"
         projectPath = temp_dir / projectName
 
         # Create initial project
-        from organiseMyProjects.createProject import createProject, updateProject
+        from organiseMyProjects.manageProject import createProject, updateProject
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         # Verify initial creation
@@ -110,10 +110,28 @@ class TestFrame:
         assert not (projectPath / "main.py").exists()
 
         # Update the project
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        # Verify file was restored
+        # Verify project-owned scaffold file was not recreated by default
+        assert not (projectPath / "main.py").exists()
+
+    def testUpdateExistingProjectCanAddMissingScaffoldWhenRequested(self, temp_dir):
+        """Test update mode can create missing scaffold files only with explicit opt-in."""
+        projectName = "testUpdateWithScaffold"
+        projectPath = temp_dir / projectName
+
+        from organiseMyProjects.manageProject import createProject, updateProject
+
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        (projectPath / "main.py").unlink()
+        assert not (projectPath / "main.py").exists()
+
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            updateProject(str(projectPath), allowScaffoldGrowth=True)
+
         assert (projectPath / "main.py").exists()
 
     def testUpdateExistingProjectPreservesCustomMain(self, temp_dir):
@@ -121,16 +139,20 @@ class TestFrame:
         projectName = "testUpdateCustomMain"
         projectPath = temp_dir / projectName
 
-        from organiseMyProjects.createProject import createProject, updateProject
+        from organiseMyProjects.manageProject import createProject, updateProject
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath), includeUi=True)
 
         customMain = "print('custom main')\n"
         (projectPath / "main.py").write_text(customMain)
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
-            updateProject(str(projectPath), includeQt=True)
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            updateProject(
+                str(projectPath),
+                includeQt=True,
+                allowScaffoldGrowth=True,
+            )
 
         assert (projectPath / "main.py").read_text() == customMain
         assert (projectPath / "qt" / "mainMenu.py").exists()
@@ -140,9 +162,9 @@ class TestFrame:
         projectName = "testStructure"
         projectPath = temp_dir / projectName
 
-        from organiseMyProjects.createProject import createProject
+        from organiseMyProjects.manageProject import createProject
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         # Define expected structure
@@ -186,7 +208,7 @@ class TestErrorHandling:
 
     def testCreateProjectInvalidPath(self, capsys):
         """Test creating project with invalid path."""
-        from organiseMyProjects.createProject import createProject
+        from organiseMyProjects.manageProject import createProject
 
         # Try to create project in a path that can't be created (e.g., inside a file)
         invalidPath = "/dev/null/impossible_project"
@@ -230,11 +252,11 @@ class TestModuleImports:
 
     def testImportCreateProject(self):
         """Test importing createProject module."""
-        from organiseMyProjects import createProject
+        from organiseMyProjects import manageProject
 
-        assert hasattr(createProject, "createProject")
-        assert hasattr(createProject, "updateProject")
-        assert hasattr(createProject, "main")
+        assert hasattr(manageProject, "createProject")
+        assert hasattr(manageProject, "updateProject")
+        assert hasattr(manageProject, "main")
 
     def testImportGuiNamingLinter(self):
         """Test importing guiNamingLinter module."""
@@ -264,7 +286,7 @@ class TestResourceAccess:
 
     def testAgentInstructionsFileAccess(self):
         """Test that agent instructions exist at the canonical .github/ path."""
-        from organiseMyProjects.createProject import TEMPLATE_DIR
+        from organiseMyProjects.manageProject import TEMPLATE_DIR
 
         srcAgentInstructions = (
             TEMPLATE_DIR.parent / ".github" / "agent-instructions.md"

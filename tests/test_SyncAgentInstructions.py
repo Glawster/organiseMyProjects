@@ -113,6 +113,12 @@ class TestSyncSpecs:
         guideSpec = specsByTarget[".github/requirementsManagement.md"]
         assert guideSpec["sourceFile"].name == "requirementsManagement.md"
 
+    def testIncludesHowToRelease(self):
+        """The shared release guide should be synced as documentation."""
+        specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
+        releaseSpec = specsByTarget[".github/howToRelease.md"]
+        assert releaseSpec["sourceFile"].name == "howToRelease.md"
+
 
 class TestGetRemoteFile:
     """Tests for getRemoteFile."""

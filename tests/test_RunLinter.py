@@ -151,6 +151,95 @@ class TestRunLinter:
         captured = capsys.readouterr()
         assert "No target supplied" in captured.out
 
+    def testMainWithMarkupCheck(self):
+        """Test running markup lint in check mode."""
+        testArgs = ["runLinter.py", "--markup"]
+
+        with patch("sys.argv", testArgs):
+            with patch("organiseMyProjects.runLinter.markupFix", return_value=0) as mockMarkupFix:
+                with patch("organiseMyProjects.runLinter.lintGuiNaming") as mockLintGui:
+                    with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
+                        main()
+
+        mockMarkupFix.assert_called_once_with(targets=None, fix=False, strict=False)
+        mockLintGui.assert_not_called()
+        mockLintFile.assert_not_called()
+
+    def testMainWithMarkupFix(self):
+        """Test running markup lint in fix mode."""
+        testArgs = ["runLinter.py", "--markup", "--fix"]
+
+        with patch("sys.argv", testArgs):
+            with patch("organiseMyProjects.runLinter.markupFix", return_value=0) as mockMarkupFix:
+                with patch("organiseMyProjects.runLinter.lintGuiNaming") as mockLintGui:
+                    with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
+                        main()
+
+        mockMarkupFix.assert_called_once_with(targets=None, fix=True, strict=False)
+        mockLintGui.assert_not_called()
+        mockLintFile.assert_not_called()
+
+    def testMainWithMarkupStrict(self):
+        """Test strict markup mode passes strict flag through to markupFix."""
+        testArgs = ["runLinter.py", "--markup", "--strict"]
+
+        with patch("sys.argv", testArgs):
+            with patch("organiseMyProjects.runLinter.markupFix", return_value=0) as mockMarkupFix:
+                main()
+
+        mockMarkupFix.assert_called_once_with(targets=None, fix=False, strict=True)
+
+    def testMainWithLegacyFixMarkupFlag(self):
+        """Test legacy --fix-markup flag still works for compatibility."""
+        testArgs = ["runLinter.py", "--fix-markup"]
+
+        with patch("sys.argv", testArgs):
+            with patch("organiseMyProjects.runLinter.markupFix", return_value=0) as mockMarkupFix:
+                main()
+
+        mockMarkupFix.assert_called_once_with(targets=None, fix=True, strict=False)
+
+    def testMainWithMarkupTarget(self):
+        """Test markup mode passes positional targets to markupFix."""
+        testArgs = ["runLinter.py", "--markup", "README.md"]
+
+        with patch("sys.argv", testArgs):
+            with patch("organiseMyProjects.runLinter.markupFix", return_value=0) as mockMarkupFix:
+                main()
+
+        mockMarkupFix.assert_called_once_with(targets=["README.md"], fix=False, strict=False)
+
+    def testMainMarkupFailureExits(self):
+        """Test non-zero markup lint exit code propagates as CLI failure."""
+        testArgs = ["runLinter.py", "--markup", "--fix"]
+
+        with patch("sys.argv", testArgs):
+            with patch("organiseMyProjects.runLinter.markupFix", return_value=1):
+                with pytest.raises(SystemExit) as exc:
+                    main()
+
+        assert exc.value.code == 1
+
+    def testMainFixWithoutMarkupFails(self):
+        """Test --fix by itself is rejected to avoid ambiguous intent."""
+        testArgs = ["runLinter.py", "--fix"]
+
+        with patch("sys.argv", testArgs):
+            with pytest.raises(SystemExit) as exc:
+                main()
+
+        assert exc.value.code == 2
+
+    def testMainStrictWithoutMarkupFails(self):
+        """Test --strict by itself is rejected because it only applies to markup mode."""
+        testArgs = ["runLinter.py", "--strict"]
+
+        with patch("sys.argv", testArgs):
+            with pytest.raises(SystemExit) as exc:
+                main()
+
+        assert exc.value.code == 2
+
 
 class TestIntegration:
     """Integration tests for the complete linting workflow."""

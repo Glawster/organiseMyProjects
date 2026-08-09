@@ -2,6 +2,8 @@ import os
 import shutil
 import subprocess
 import argparse
+import importlib.util
+import sys
 from pathlib import Path
 
 from organiseMyProjects.logUtils import getLogger, setApplication
@@ -176,6 +178,10 @@ MANAGED_COPY_TEMPLATES = [
         TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md",
         Path(".github") / "requirementsManagement.md",
     ),
+    (
+        TEMPLATE_DIR.parent / ".github" / "howToRelease.md",
+        Path(".github") / "howToRelease.md",
+    ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
@@ -207,6 +213,53 @@ def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
             for src_name in QT_TEMPLATE_FILES
         )
     return modules
+
+
+def _projectRoleDetect(basePath: Path) -> str:
+    """Infer the existing project role from common repository markers."""
+    if (basePath / "main.py").exists():
+        return "standalone-application"
+
+    pyproject = basePath / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            content = pyproject.read_text(encoding="utf-8")
+        except OSError:
+            content = ""
+        if "[project.scripts]" in content or "[project.gui-scripts]" in content:
+            return "packaged-cli"
+
+    setupCfg = basePath / "setup.cfg"
+    if setupCfg.exists():
+        try:
+            content = setupCfg.read_text(encoding="utf-8")
+        except OSError:
+            content = ""
+        if "console_scripts" in content:
+            return "packaged-cli"
+
+    if (basePath / "src").exists():
+        return "library"
+
+    return "unknown"
+
+
+def _loadSyncModule():
+    """Load syncAgentInstructions.py from the repository root path."""
+    modulePath = Path(__file__).resolve().parent.parent / "syncAgentInstructions.py"
+    if not modulePath.exists():
+        raise RuntimeError(f"sync utility not found at {modulePath}")
+
+    moduleSpec = importlib.util.spec_from_file_location(
+        "syncAgentInstructions",
+        modulePath,
+    )
+    if moduleSpec is None or moduleSpec.loader is None:
+        raise RuntimeError("could not load sync utility module spec")
+
+    module = importlib.util.module_from_spec(moduleSpec)
+    moduleSpec.loader.exec_module(module)
+    return module
 
 
 def createProject(
@@ -250,7 +303,7 @@ def createProject(
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
         (basePath / ".env").write_text(_build_env_content(includeUi, includeQt))
         (basePath / "README.md").write_text(
-            f"# {projectName}\n\nProject scaffold created by createProject.py\n"
+            f"# {projectName}\n\nProject scaffold created by manageProject.py\n"
         )
 
     # Copy the guidelines file
@@ -301,6 +354,15 @@ def createProject(
                 _build_managed_content(srcRequirementsManagement.read_text())
             )
 
+    # Copy the release process guide
+    srcHowToRelease = TEMPLATE_DIR.parent / ".github" / "howToRelease.md"
+    if srcHowToRelease.exists():
+        logger.action("copying release process guide")
+        if not dryRun:
+            (basePath / ".github" / "howToRelease.md").write_text(
+                _build_managed_content(srcHowToRelease.read_text())
+            )
+
     # Copy template modules into the new project
     logger.action("copying template modules")
     if not dryRun:
@@ -339,6 +401,8 @@ def createProject(
             logger.error(f"Could not initialize git or install pre-commit: {e}")
 
     logger.done(f"project '{projectName}' created")
+    if dryRun:
+        logger.info("create simulation complete: no changes were applied")
 
 def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
@@ -353,13 +417,17 @@ def _update_text_file(dest: Path, content: str, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     new_bytes = content.encode("utf-8")
+    existsAlready = dest.exists()
     try:
-        current = dest.read_bytes() if dest.exists() else None
+        current = dest.read_bytes() if existsAlready else None
     except OSError:
         current = None
 
     if current != new_bytes:
-        logger.action(f"updated {dest}")
+        if existsAlready:
+            logger.action(f"updated {dest}")
+        else:
+            logger.action(f"created {dest}")
         if not dryRun:
             dest.write_bytes(new_bytes)
 
@@ -463,6 +531,7 @@ def updateProject(
     dryRun: bool = False,
     includeUi: bool = False,
     includeQt: bool = False,
+    allowScaffoldGrowth: bool = False,
 ):
 
     basePath = Path(projectName)
@@ -471,27 +540,46 @@ def updateProject(
         return
 
     logger.doing(f"updating project at {basePath}")
+    detectedRole = _projectRoleDetect(basePath)
+    logger.value("detected role", detectedRole)
     installUi = includeUi or (basePath / "ui").exists()
     installQt = includeQt or (basePath / "qt").exists()
-    logger.action("ensuring directories and packages")
+    logger.action("ensuring managed directories")
     if not dryRun:
-        folders = ["src", "tests", "logs", ".github"]
-        if installUi:
-            folders.append("ui")
-        if installQt:
-            folders.append("qt")
-        for folder in folders:
-            (basePath / folder).mkdir(parents=True, exist_ok=True)
+        (basePath / ".github").mkdir(parents=True, exist_ok=True)
 
-        (basePath / "src" / "__init__.py").touch(exist_ok=True)
-        if installUi:
-            (basePath / "ui" / "__init__.py").touch(exist_ok=True)
-        if installQt:
-            (basePath / "qt" / "__init__.py").touch(exist_ok=True)
+    if allowScaffoldGrowth:
+        logger.action("ensuring scaffold directories and packages")
+        if not dryRun:
+            folders = ["src", "tests", "logs", ".github"]
+            if installUi:
+                folders.append("ui")
+            if installQt:
+                folders.append("qt")
+            for folder in folders:
+                (basePath / folder).mkdir(parents=True, exist_ok=True)
+
+            (basePath / "src" / "__init__.py").touch(exist_ok=True)
+            if installUi:
+                (basePath / "ui" / "__init__.py").touch(exist_ok=True)
+            if installQt:
+                (basePath / "qt" / "__init__.py").touch(exist_ok=True)
+    else:
+        logger.info(
+            "scaffold growth disabled; use --add-scaffold to create missing app/layout files"
+        )
 
     for destRel, contentTemplate in PROJECT_TEXT_TEMPLATES:
+        if not allowScaffoldGrowth and destRel in {
+            Path("main.py"),
+            Path("README.md"),
+            Path("requirements.txt"),
+            Path("dev-requirements.txt"),
+            Path(".gitignore"),
+        }:
+            continue
         content = (
-            f"# {projectName}\n\nProject scaffold created by createProject.py\n"
+            f"# {projectName}\n\nProject scaffold created by manageProject.py\n"
             if destRel == Path("README.md")
             else contentTemplate
         )
@@ -509,11 +597,16 @@ def updateProject(
         if src.exists():
             _update_managed_copy(src, basePath / destRel, dryRun)
 
-    logger.info("checking project-owned template modules")
-    for src, destRel in _iter_template_modules(installUi, installQt):
-        _copy_if_missing(src, basePath / destRel, dryRun)
+    if allowScaffoldGrowth:
+        logger.info("checking project-owned template modules")
+        for src, destRel in _iter_template_modules(installUi, installQt):
+            _copy_if_missing(src, basePath / destRel, dryRun)
+    else:
+        logger.info("skipping project-owned scaffold module creation")
 
     logger.done("project updated")
+    if dryRun:
+        logger.info("update simulation complete: no changes were applied")
 
 
 def main():
@@ -525,9 +618,15 @@ def main():
 
     parser = argparse.ArgumentParser(
         description=(
-            "Create or update a project scaffold. Pass the project positionally "
-            "(preferred) or with --project for compatibility."
+            "Create, update, or sync project scaffolding/instructions. "
+            "Pass the project positionally (preferred) or with --project for "
+            "compatibility."
         )
+    )
+    parser.add_argument(
+        "--create",
+        action="store_true",
+        help="explicitly run create mode",
     )
     parser.add_argument(
         "project",
@@ -552,6 +651,11 @@ def main():
         help="Refresh an existing project instead of creating a new one",
     )
     parser.add_argument(
+        "--sync",
+        action="store_true",
+        help="sync shared instruction files to downstream repositories",
+    )
+    parser.add_argument(
         "--ui",
         action="store_true",
         help="install tkinter UI templates in a ui package",
@@ -569,6 +673,40 @@ def main():
         action="store_true",
         help="execute changes (default is dry-run)",
     )
+    parser.add_argument(
+        "--add-scaffold",
+        action="store_true",
+        help=(
+            "allow update mode to create missing scaffold app/layout files "
+            "(main.py, src modules, and optional UI/Qt templates)"
+        ),
+    )
+    parser.add_argument(
+        "--merge",
+        action="store_true",
+        help="with --sync: create and merge conflict-free sync pull requests",
+    )
+    parser.add_argument(
+        "--repo",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="OWNER/REPO",
+        help=(
+            "with --sync: sync one repository; omit value to choose from a "
+            "numbered list"
+        ),
+    )
+    parser.add_argument(
+        "--token",
+        default=None,
+        help="with --sync: GitHub PAT (overrides GITHUB_TOKEN)",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="with --sync: show detailed output for each repository",
+    )
 
     args = parser.parse_args()
     dryRun = not args.confirm
@@ -577,6 +715,13 @@ def main():
         parser.error(
             "Use either the positional project argument or the --project flag, not both."
         )
+    modeCount = sum([bool(args.create), bool(args.update), bool(args.sync)])
+    if modeCount > 1:
+        parser.error("Use only one mode at a time: --create, --update, or --sync.")
+
+    if args.sync and (args.ui or args.qt or args.add_scaffold):
+        parser.error("--sync does not support --ui, -qt, or --add-scaffold.")
+
     projectPath = args.project if args.project is not None else args.projectOption
 
     logDir = Path.home() / ".local" / "state" / thisApplication
@@ -589,6 +734,32 @@ def main():
     )
     logger.doing(thisApplication)
 
+    if args.sync:
+        # Delegate sync workflow to the existing sync utility.
+        syncAgentInstructions = _loadSyncModule()
+
+        syncArgv = ["syncAgentInstructions.py"]
+        if args.confirm:
+            syncArgv.append("--confirm")
+        if args.merge:
+            syncArgv.append("--merge")
+        if args.repo is not None:
+            syncArgv.append("--repo")
+            if args.repo:
+                syncArgv.append(args.repo)
+        if args.token:
+            syncArgv.extend(["--token", args.token])
+        if args.verbose:
+            syncArgv.append("--verbose")
+
+        originalArgv = sys.argv
+        try:
+            sys.argv = syncArgv
+            syncAgentInstructions.main()
+        finally:
+            sys.argv = originalArgv
+        return
+
     if args.update:
         project_path = projectPath or Path.cwd()
         updateProject(
@@ -596,8 +767,13 @@ def main():
             dryRun=dryRun,
             includeUi=args.ui,
             includeQt=args.qt,
+            allowScaffoldGrowth=args.add_scaffold,
         )
     else:
+        if args.create is False and projectPath is None:
+            parser.error(
+                "Provide a project for create mode, or use --update/--sync explicitly."
+            )
         if projectPath is None:
             parser.error("the following arguments are required: project")
         createProject(

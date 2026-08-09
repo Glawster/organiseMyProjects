@@ -10,6 +10,7 @@ guides are:
 
 - [Developer Guide](documentation/developer.md)
 - [Git Guide](documentation/git.md)
+- [Release Guide](documentation/howToRelease.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Copilot Compatibility Instructions](.github/copilot-instructions.md)

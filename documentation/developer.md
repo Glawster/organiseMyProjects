@@ -9,7 +9,7 @@ The `organiseMyProjects` package consists of several key components:
 
 ### Core Modules
 
-#### `createProject.py`
+#### `manageProject.py`
 
 The main module responsible for project scaffolding functionality.
 
@@ -148,6 +148,25 @@ Command-line interface for the GUI naming linter.
 - `main()` - Entry point for command-line usage
 - `_lint_target(target)` - Lint a specific file or directory
 
+**Markup Linting Flags:**
+
+- `--markup` - Run markdown checks in check-only mode
+- `--markup --fix` - Run markdown checks and apply automatic fixes
+
+Legacy compatibility: `--fix-markup` is still supported.
+
+The markup flow calls `markdownlint-cli@0.31.1` through `npx` and ignores
+`build` and `.pytest_cache` by default.
+
+#### `fixMarkup.py`
+
+Markup lint helper used by the CLI and available as a standalone command.
+
+**Key Functions:**
+
+- `markupFix(targets=None, fix=True)` - Run markup lint with optional fixing
+- `main()` - CLI entry point (`fixMarkup`)
+
 ## Package Resources
 
 The package includes template files that are distributed with the package:
@@ -281,7 +300,7 @@ def test_example(temp_dir, sample_project_name):
 #### Mocking External Dependencies
 
 ```python
-@patch('organiseMyProjects.createProject.subprocess.run')
+@patch('organiseMyProjects.manageProject.subprocess.run')
 def test_with_mocked_subprocess(mock_subprocess):
     """Test with mocked subprocess calls."""
     createProject("test_project")
@@ -458,7 +477,7 @@ reusable library module or package does not require `main.py`.
 #### Debugging Project Creation
 
 ```python
-# Add debug prints to createProject.py
+# Add debug prints to manageProject.py
 print(f"Creating project at: {basePath}")
 print(f"Template dir: {TEMPLATE_DIR}")
 ```

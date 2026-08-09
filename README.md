@@ -10,7 +10,7 @@ guides are:
 
 - [Developer Guide](documentation/developer.md)
 - [Git Guide](documentation/git.md)
-- [Release Guide](documentation/howToRelease.md)
+- [Release Guide](.github/howToRelease.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Copilot Compatibility Instructions](.github/copilot-instructions.md)
@@ -126,6 +126,30 @@ runLinter <file_or_dir>
 
 Checks for violations of variable/class naming and logging message style.
 
+Without markup flags, `runLinter` performs Python GUI naming checks only.
+
+### Run markup lint checks and fixes
+
+```bash
+# check markdown files without modifying them
+runLinter --markup
+
+# check markdown files and apply auto-fixes where possible
+runLinter --markup --fix
+
+# run markup lint directly (fix mode by default)
+fixMarkup
+
+# run markup lint in check-only mode
+fixMarkup --check
+```
+
+Markup linting uses `markdownlint-cli@0.31.1` via `npx` and ignores
+`build` and `.pytest_cache` by default.
+
+When either markup flag is used, `runLinter` runs markup linting only.
+The legacy `--fix-markup` flag is still accepted for compatibility.
+
 ### Launch the generated application
 
 After creating a project, install its dependencies and run the starter script:
@@ -199,6 +223,7 @@ The project uses several tools to maintain code quality:
 - **Ruff**: Fast static analysis and linting
 - **pre-commit**: Git hooks for quality checks
 - **Custom GUI Linter**: Enforces GUI naming conventions
+- **Markdownlint CLI**: Markdown linting and automatic fixes via `fixMarkup`
 
 ### Pre-commit Hooks
 
@@ -259,7 +284,7 @@ After creating a project, pre-commit hooks are automatically installed to:
 
 The `organiseMyProjects` package includes:
 
-- `createProject.py` - Main project scaffolding functionality
+- `manageProject.py` - Main project scaffolding functionality
 - `guiNamingLinter.py` - GUI naming convention enforcement
 - `runLinter.py` - Command-line interface for the linter
 - `.github/agent-instructions.md` - Master AI coding agent development

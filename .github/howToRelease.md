@@ -31,7 +31,9 @@ This guide defines a safe, repeatable release workflow for this repository.
 1. Confirm the target release branch is green in CI.
 2. Run local validation:
    - `pytest`
-   - `npx --yes markdownlint-cli@0.31.1 "**/*.md" --ignore build --ignore .pytest_cache`
+   - `runLinter --markup`
+   - If markup issues are reported, run `runLinter --markup --fix` and then
+     rerun `runLinter --markup`.
 3. Update release notes and documentation.
 4. Merge the release branch into `main` through a pull request.
 5. Pull latest `main` locally with `git pull --ff-only`.

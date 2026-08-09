@@ -137,7 +137,32 @@ runLinter path/to/directory
 
 # Lint multiple targets
 runLinter file1.py directory2/ file3.py
+
+# Check markdown files without changing them
+runLinter --markup
+
+# Check markdown files and apply automatic fixes
+runLinter --markup --fix
 ```
+
+Default mode (no markup flag) runs Python GUI naming lint only. Markup flags
+switch `runLinter` into markup-only mode.
+Legacy compatibility: `--fix-markup` is still accepted.
+
+### Markup Lint Utility
+
+You can also run markdown linting directly:
+
+```bash
+# fix mode by default
+fixMarkup
+
+# check-only mode
+fixMarkup --check
+```
+
+The markup linter uses `markdownlint-cli@0.31.1` through `npx`, with
+`build` and `.pytest_cache` ignored by default.
 
 ### Integration with Development Workflow
 

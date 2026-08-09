@@ -6,7 +6,7 @@ ToDo
 
 ## Outcome
 
-As a <user or system>, I need <capability> so that <measurable benefit>.
+As a `user or system`, I need `capability` so that `measurable benefit`.
 
 ## Context
 
@@ -22,7 +22,11 @@ Describe the current problem and relevant constraints.
 
 ## Acceptance criteria
 
-1. Given <starting condition>, when <action>, then <observable result>.
+1. Given `starting condition`, when `action`, then `observable result`.
+
+For more complex conditions, use the following format:
+
+1. Given `starting condition`, and `another condition`, when `action`, then `observable result`, and `another observable result`.
 
 ## Dependencies and decisions
 

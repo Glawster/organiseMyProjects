@@ -1,4 +1,6 @@
-Requirement: 001 — project/requirements/features/001-projectRoleAwareUpdates.md
+# Requirement: 001
+
+Source: project/requirements/features/001-projectRoleAwareUpdates.md
 Role: implement
 
 Read the authoritative requirement and all applicable repository instructions

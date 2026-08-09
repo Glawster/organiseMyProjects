@@ -1,8 +1,9 @@
 # Git Commands Summary
 
-## This file is a summary of useful git commands the user has come across.
+## This file is a summary of useful git commands the user has come across
 
 ## 🛠 Setup
+
 ```bash
 git config --global user.name "Andy Wilson"
 git config --global user.email andyw@glawster.com
@@ -17,6 +18,7 @@ git config -e
 ```
 
 ## 🌐 Remotes
+
 ```bash
 # Check configured remotes
 git remote -v
@@ -31,6 +33,7 @@ git push -u origin main
 ```
 
 ## Branches
+
 ```bash
 # Prune Remote Tracking References
 git fetch -prune
@@ -46,8 +49,8 @@ You can delete them manually one by one:
 git branch -d branch-name
 ```
 
-
 ## 🔄 Sync with GitHub
+
 ```bash
 # Force overwrite local with GitHub (wipe local changes)
 git fetch origin
@@ -63,6 +66,7 @@ git push -u origin main --force
 ```
 
 ## 📂 File Management
+
 ```bash
 # List files tracked by Git
 git ls-files
@@ -76,6 +80,7 @@ git ls-tree --name-only -r HEAD
 ```
 
 ## Undoing Changes and Commits
+
 ```bash
 # Undo changes to a file (revert back to last commit)
 git checkout -- path/to/file
@@ -104,7 +109,9 @@ git stash list     # view stashes
 git stash pop      # re-apply last stash and remove it
 git stash apply    # re-apply last stash but keep it in the stash list
 ```
+
 ## 📜 Viewing Commit History
+
 ```bash
 # Show commit history (one line per commit)
 git log --oneline
@@ -115,7 +122,9 @@ git log --oneline --graph --decorate --all
 # Show last 5 commits
 git log -5 --oneline
 ```
+
 ## ⏪ Rewinding to a Specific Commit
+
 ```bash
 # Checkout a past commit (detached HEAD)
 git checkout <commit-hash>

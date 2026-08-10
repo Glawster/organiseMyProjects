@@ -345,6 +345,23 @@ Rules:
 - Any routine that produces output files must place them in an `output/` folder directly under the project root\
 - Core/business logic must remain testable without the UI
 
+### Shared Runtime Modules
+
+Projects may contain an `omp` package.
+
+`omp` stands for **organiseMyProjects**.
+
+The package contains synchronised runtime infrastructure copied from the
+canonical `organiseMyProjects` repository.
+
+Agents should:
+
+- import runtime utilities from `omp`
+- never introduce a runtime dependency on `organiseMyProjects`
+- treat `omp` files as synchronised assets
+- propose changes in `organiseMyProjects` before propagating them to
+  consuming repositories
+
 ## CLI Design Standards
 
 CLI interfaces should be consistent, discoverable and composable so that knowledge gained using one project naturally transfers to every other project.

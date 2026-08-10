@@ -50,7 +50,7 @@ The required files depend on the project's role:
 - a reusable library module or package is imported by other code and does not
   require `main.py` or another executable entry point;
 - a packaged command-line tool declares a console-script entry point that
-  normally calls a `main()` function inside its package;
+  normally calls a `main()` function inside its package./fmsat;
 - a standalone application keeps `main.py` at its project root.
 
 Do not add a placeholder `main.py` to a library merely to match an application
@@ -120,7 +120,7 @@ normally be ignored unless an export is deliberately approved for publication.
 | `project/reviews/` | Point-in-time assessments that should not be mistaken for living guidance. |
 | `project/roadmap.md` | Current sequencing and priorities. |
 
-When a repository uses requirements or ADR workflows, their detailed naming
+When a repository uses requirements or ADR workflows, their detailed namin./fmsatg
 rules should live in `project/requirements/README.md` and
 `project/adr/README.md` respectively.
 
@@ -173,3 +173,41 @@ top-level directory should represent a real, distinct responsibility.
 
 When a document changes category, move it rather than copying it, update links
 in the same change and preserve its version-control history.
+
+## `omp/` — Shared Runtime Infrastructure
+
+The `omp` package contains runtime support modules synchronised from the
+canonical `Glawster/organiseMyProjects` repository.
+
+The name `omp` stands for **organiseMyProjects**.
+
+Unlike the files in `.github/`, which define development standards for AI
+agents and contributors, the `omp` package contains Python modules used at
+application runtime.
+
+Typical contents include:
+
+```text
+omp/
+├── __init__.py
+├── logUtils.py
+├── version.py
+├── configUtils.py
+├── cliUtils.py
+└── ...
+```
+
+Rules
+
+- Files originate in the canonical `organiseMyProjects` repository.
+- Projects import these modules using `from omp...`.
+- Projects must not import runtime modules directly from
+  `organiseMyProjects`.
+- Local modifications should not be made to synchronised files.
+- Behavioural changes are implemented in `organiseMyProjects` and then
+  synchronised into consuming repositories.
+- Only general-purpose infrastructure belongs in `omp`.
+- Application-specific business logic must never be placed in `omp`.
+
+This approach keeps every project self-contained and deployable while
+maintaining a single canonical implementation.

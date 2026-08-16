@@ -13,7 +13,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "manageProject=organiseMyProjects.manageProject:main",
+            "manageProject=organiseMyProjects.manageProjectCli:main",
             "createProject=organiseMyProjects.manageProject:main",
             "updateProject=organiseMyProjects.manageProject:main",
             "runLinter=organiseMyProjects.runLinter:main",

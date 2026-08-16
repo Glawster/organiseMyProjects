@@ -114,13 +114,14 @@ normally be ignored unless an export is deliberately approved for publication.
 | Path | Purpose |
 | --- | --- |
 | `project/project.yaml` | Current project purpose, scope, audience, risks and milestones. |
+| `project/currentIncrement.md` | Active development objective, scope, in-progress tasks, and verification commands. |
 | `project/requirements/features/` | Requirement records at every lifecycle stage, kept at stable paths. |
 | `project/requirements/templates/` | Templates used to create consistent project records. |
 | `project/adr/` | Significant project-shaping decisions and their consequences. |
 | `project/reviews/` | Point-in-time assessments that should not be mistaken for living guidance. |
 | `project/roadmap.md` | Current sequencing and priorities. |
 
-When a repository uses requirements or ADR workflows, their detailed namin./fmsatg
+When a repository uses requirements or ADR workflows, their detailed naming
 rules should live in `project/requirements/README.md` and
 `project/adr/README.md` respectively.
 
@@ -161,6 +162,7 @@ top-level directory should represent a real, distinct responsibility.
 
 | New item | Location | Reason |
 | --- | --- | --- |
+| Active development state and handoff | `project/currentIncrement.md` | It records the active deliverable and operational handoff. |
 | A requirement at any lifecycle stage | `project/requirements/features/` | Its stable path remains valid as status changes. |
 | The decision to use a particular implementation approach | `project/adr/` | It records a consequential choice and rationale. |
 | An explanation of implemented behaviour | `documentation/` | It is maintained product or technical knowledge. |

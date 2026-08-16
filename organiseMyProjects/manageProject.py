@@ -24,7 +24,7 @@ PYTHON_DEPLOYMENT_COMMENT = (
 
 # text templates used when creating or updating projects
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
-REQUIREMENTS_CONTENT = "pywin32\n"
+REQUIREMENTS_CONTENT = ""
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\nruff\n"
 MAIN_PY_CONTENT = """from pathlib import Path
 from organiseMyProjects.logUtils import getLogger, setApplication
@@ -76,8 +76,7 @@ def main():
         qtMainMenu()
     else:
         logger.info(
-            "No UI scaffold installed. Run `createProject --update --ui` "
-            "and/or `createProject --update -qt` to add GUI templates."
+            "No UI scaffold installed."
         )
     logger.done("main")
 
@@ -130,6 +129,214 @@ VSCODE_SETTINGS_CONTENT = """{
 }
 """
 
+ARCHITECTURE_CONTENT = """# Architecture
+
+## Overview
+
+<!-- Describe the system architecture and its main responsibilities. -->
+
+## Components
+
+<!-- Describe the major components and their responsibilities. -->
+
+## Dependencies and Data Flow
+
+<!-- Describe important dependencies and how data flows through the system. -->
+
+## Architectural Decisions
+
+See `project/adr/` for significant architectural decisions.
+"""
+
+CURRENT_INCREMENT_CONTENT = """# Current Development Increment
+
+## Status
+
+Idle
+<!-- Options: Active, Idle, Blocked, InReview -->
+
+## Objective
+
+<!-- When work is active, describe the capability currently being delivered. -->
+
+## Governing References
+
+- Primary Requirement: None
+- Supporting ADRs: None
+- Milestone / Roadmap: None
+
+## Scope
+
+<!-- Work included in the current increment. -->
+
+## Explicit Exclusions
+
+<!-- Related work deliberately excluded from the current increment. -->
+
+## In-Progress Tasks
+
+<!-- Immediate work units, for example:
+- [ ] Implement capability
+-->
+
+## Relevant Files & Components
+
+<!-- Source, test and documentation paths relevant to the current increment. -->
+
+## Verification Procedures
+
+<!-- Reference the authoritative build/test instructions and add
+increment-specific verification only where necessary. -->
+
+## Definition of Done
+
+<!-- Observable conditions required to conclude this increment. -->
+
+## Handoff & Unresolved Context
+
+<!-- Context, assumptions, blockers or decisions needed by the next agent. -->
+
+## Agent Readiness
+
+Run:
+
+```bash
+manageProject --check
+```
+"""
+
+PROJECT_YAML_CONTENT = """name: "project"
+description: "Project description"
+version: "0.1.0"
+runtime: "python3.12"
+role: "standalone-application"
+"""
+
+ROADMAP_CONTENT = """# Project Roadmap
+
+## Current Milestone
+
+- Milestone 1: Initial core functionality.
+
+## Future Milestones
+
+- Milestone 2: Enhancements and integrations.
+"""
+
+REQUIREMENT_TEMPLATE_CONTENT = """# DDD: Requirement title
+
+## Status
+
+ToDo
+
+## Outcome
+
+As a <user or system>, I need <capability> so that <measurable benefit>.
+
+## Context
+
+Describe the current problem and relevant constraints.
+
+## Scope
+
+- Behaviour included in this requirement.
+
+## Out of scope
+
+- Closely related behaviour deliberately excluded.
+
+## Acceptance criteria
+
+1. Given <starting condition>, when <action>, then <observable result>.
+
+## Dependencies and decisions
+
+- None.
+
+## Verification
+
+- Planned tests or review evidence.
+
+## Traceability
+
+- Implementation: pending
+- Tests: pending
+- Documentation: pending
+- Pull request: pending
+- Agent runs: None
+
+## Change history
+
+- YYYY-MM-DD: created — reason or source.
+"""
+
+REQUIREMENTS_README_CONTENT = """# Requirements
+
+Next available number: 001
+
+## Requirement index
+
+| Req ID | Requirement | Description | Status | Agent Prompt | Architecture Decisions |
+| --- | --- | --- | --- | --- | --- |
+"""
+
+ADR_TEMPLATE_CONTENT = """# ADR-DDD: Decision title
+
+## Status
+
+Proposed
+<!-- Options: Proposed, Accepted, Rejected, Deprecated, Superseded -->
+
+## Context
+
+Describe the context and problem statement that requires a decision.
+
+## Decision Drivers
+
+- Key consideration 1
+- Key consideration 2
+
+## Considered Options
+
+1. Option 1
+2. Option 2
+
+## Decision Outcome
+
+Chosen option because rationale.
+
+### Consequences
+
+- Positive: Benefit of choice.
+- Negative: Trade-off or limitation.
+"""
+
+ADR_README_CONTENT = """# Architecture Decision Records
+
+Next available number: 001
+
+## Decision index
+
+| ADR ID | Decision | Status | Date |
+| --- | --- | --- | --- |
+"""
+
+def _build_readme_content(projectName: str) -> str:
+    return f"""# {projectName}
+
+Project scaffold created by manageProject.py.
+
+## Documentation
+
+- [Architecture](documentation/architecture.md)
+- [Roadmap](project/roadmap.md)
+- [Current Increment](project/currentIncrement.md)
+- [Requirements](project/requirements/README.md)
+- [Architecture Decisions](project/adr/README.md)
+- [Release Guide](.github/howToRelease.md)
+- [Master Agent Instructions](.github/agent-instructions.md)
+"""
+
 TEMPLATE_DIR = Path(__file__).resolve().parent
 UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
 QT_TEMPLATE_DIR = TEMPLATE_DIR / "qt"
@@ -158,6 +365,31 @@ PROJECT_TEXT_TEMPLATES = [
     (Path("dev-requirements.txt"), DEV_REQUIREMENTS_CONTENT),
     (Path("README.md"), None),
     (Path("main.py"), MAIN_PY_CONTENT),
+    (Path("documentation") / "architecture.md", ARCHITECTURE_CONTENT),
+    (Path("project") / "currentIncrement.md", CURRENT_INCREMENT_CONTENT),
+    (Path("project") / "project.yaml", PROJECT_YAML_CONTENT),
+    (Path("project") / "roadmap.md", ROADMAP_CONTENT),
+    (Path("project") / "requirements" / "README.md", REQUIREMENTS_README_CONTENT),
+    (
+        Path("project") / "requirements" / "templates" / "requirement.md",
+        REQUIREMENT_TEMPLATE_CONTENT,
+    ),
+    (Path("project") / "adr" / "README.md", ADR_README_CONTENT),
+    (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
+]
+
+PROJECT_CONTEXT_TEMPLATES = [
+    (Path("documentation") / "architecture.md", ARCHITECTURE_CONTENT),
+    (Path("project") / "currentIncrement.md", CURRENT_INCREMENT_CONTENT),
+    (Path("project") / "project.yaml", PROJECT_YAML_CONTENT),
+    (Path("project") / "roadmap.md", ROADMAP_CONTENT),
+    (Path("project") / "requirements" / "README.md", REQUIREMENTS_README_CONTENT),
+    (
+        Path("project") / "requirements" / "templates" / "requirement.md",
+        REQUIREMENT_TEMPLATE_CONTENT,
+    ),
+    (Path("project") / "adr" / "README.md", ADR_README_CONTENT),
+    (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
 ]
 MANAGED_COPY_TEMPLATES = [
     (TEMPLATE_DIR.parent / ".github" / "AGENTS.md", Path("AGENTS.md")),
@@ -167,8 +399,12 @@ MANAGED_COPY_TEMPLATES = [
         Path(".github") / "agent-instructions.md",
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "agent-instructions.md",
+        TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md",
         Path(".github") / "copilot-instructions.md",
+    ),
+    (
+        TEMPLATE_DIR.parent / ".github" / "CLAUDE.md",
+        Path("CLAUDE.md"),
     ),
     (
         TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md",
@@ -185,15 +421,6 @@ MANAGED_COPY_TEMPLATES = [
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
-
-
-def _build_env_content(includeUi: bool = False, includeQt: bool = False) -> str:
-    pythonPaths = ["src"]
-    if includeUi:
-        pythonPaths.append("ui")
-    if includeQt:
-        pythonPaths.append("qt")
-    return f"PYTHONPATH={';'.join(pythonPaths)}\n"
 
 
 def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
@@ -279,21 +506,34 @@ def createProject(
     # Create folders
     logger.action("creating directories")
     if not dryRun:
-        (basePath / "src").mkdir(parents=True)
-        (basePath / "tests").mkdir()
-        (basePath / "logs").mkdir()
-        (basePath / ".github").mkdir()
+        folders = [
+            "src",
+            "tests",
+            "logs",
+            ".github",
+            "documentation",
+            "project",
+            "project/requirements",
+            "project/requirements/features",
+            "project/requirements/prompt",
+            "project/requirements/templates",
+            "project/adr",
+            "project/adr/templates",
+            "project/reviews",
+        ]
         if includeUi:
-            (basePath / "ui").mkdir()
+            folders.append("ui")
         if includeQt:
-            (basePath / "qt").mkdir()
+            folders.append("qt")
+        for folder in folders:
+            (basePath / folder).mkdir(parents=True, exist_ok=True)
 
         # Make directories importable packages
-        (basePath / "src" / "__init__.py").touch()
+        (basePath / "src" / "__init__.py").touch(exist_ok=True)
         if includeUi:
-            (basePath / "ui" / "__init__.py").touch()
+            (basePath / "ui" / "__init__.py").touch(exist_ok=True)
         if includeQt:
-            (basePath / "qt" / "__init__.py").touch()
+            (basePath / "qt" / "__init__.py").touch(exist_ok=True)
 
     # Create core files
     logger.action("writing core files")
@@ -301,10 +541,17 @@ def createProject(
         (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
-        (basePath / ".env").write_text(_build_env_content(includeUi, includeQt))
-        (basePath / "README.md").write_text(
-            f"# {projectName}\n\nProject scaffold created by manageProject.py\n"
-        )
+        (basePath / "README.md").write_text(_build_readme_content(projectName))
+        (basePath / "documentation" / "architecture.md").write_text(ARCHITECTURE_CONTENT)
+        (basePath / "project" / "currentIncrement.md").write_text(CURRENT_INCREMENT_CONTENT)
+        (basePath / "project" / "project.yaml").write_text(PROJECT_YAML_CONTENT)
+        (basePath / "project" / "roadmap.md").write_text(ROADMAP_CONTENT)
+        (basePath / "project" / "requirements" / "README.md").write_text(REQUIREMENTS_README_CONTENT)
+        (
+            basePath / "project" / "requirements" / "templates" / "requirement.md"
+        ).write_text(REQUIREMENT_TEMPLATE_CONTENT)
+        (basePath / "project" / "adr" / "README.md").write_text(ADR_README_CONTENT)
+        (basePath / "project" / "adr" / "templates" / "adr.md").write_text(ADR_TEMPLATE_CONTENT)
 
     # Copy the guidelines file
     srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
@@ -320,10 +567,25 @@ def createProject(
     if srcAgentGuidelines.exists():
         logger.action("copying agent guidelines")
         if not dryRun:
-            for fileName in ("agent-instructions.md", "copilot-instructions.md"):
-                (basePath / ".github" / fileName).write_text(
-                    _build_managed_content(srcAgentGuidelines.read_text())
-                )
+            (basePath / ".github" / "agent-instructions.md").write_text(
+                _build_managed_content(srcAgentGuidelines.read_text())
+            )
+
+    srcCopilot = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+    if srcCopilot.exists():
+        logger.action("copying copilot shim")
+        if not dryRun:
+            (basePath / ".github" / "copilot-instructions.md").write_text(
+                _build_managed_content(srcCopilot.read_text())
+            )
+
+    srcClaude = TEMPLATE_DIR.parent / ".github" / "CLAUDE.md"
+    if srcClaude.exists():
+        logger.action("copying claude shim")
+        if not dryRun:
+            (basePath / "CLAUDE.md").write_text(
+                _build_managed_content(srcClaude.read_text())
+            )
 
     # Copy the Codex agent instructions file
     srcAgentInstructions = TEMPLATE_DIR.parent / ".github" / "AGENTS.md"
@@ -474,64 +736,42 @@ def _copy_if_missing(src: Path, dest: Path, dryRun: bool = False):
         shutil.copy(src, dest)
 
 
-def _ensureEnvFile(
-    dest: Path,
-    includeUi: bool = False,
-    includeQt: bool = False,
-    dryRun: bool = False,
-):
-    desiredPaths = ["src"]
-    if includeUi:
-        desiredPaths.append("ui")
-    if includeQt:
-        desiredPaths.append("qt")
-
-    if not dest.exists():
-        _createTextFileIfMissing(dest, _build_env_content(includeUi, includeQt), dryRun)
+def migrateProject(projectName, dryRun: bool = False):
+    """ Add missing OMP project-management/context structures without creating application scaffolding or overwriting project-owned files. """
+    basePath = Path(projectName)
+    if not basePath.exists():
+        logger.info(f"project '{projectName}' does not exist")
         return
 
-    try:
-        currentText = dest.read_text()
-    except OSError:
-        currentText = ""
+    logger.doing(f"migrating project context at {basePath}")
+    contextFolders = [
+        "documentation",
+        "project",
+        "project/requirements",
+        "project/requirements/features",
+        "project/requirements/prompt",
+        "project/requirements/templates",
+        "project/adr",
+        "project/adr/templates",
+        "project/reviews",
+    ]
 
-    lines = currentText.splitlines()
-    updatedLines = []
-    pathLineUpdated = False
-    changed = False
+    logger.action("ensuring project context directories")
+    if not dryRun:
+        for folder in contextFolders:
+            (basePath / folder).mkdir(parents=True, exist_ok=True)
 
-    for line in lines:
-        if line.startswith("PYTHONPATH="):
-            existingPaths = [
-                entry for entry in line.partition("=")[2].split(";") if entry
-            ]
-            mergedPaths = []
-            for entry in existingPaths + desiredPaths:
-                if entry not in mergedPaths:
-                    mergedPaths.append(entry)
-            newLine = f"PYTHONPATH={';'.join(mergedPaths)}"
-            updatedLines.append(newLine)
-            pathLineUpdated = True
-            if newLine != line:
-                changed = True
-        else:
-            updatedLines.append(line)
+    for destRel, content in PROJECT_CONTEXT_TEMPLATES:
+        _createTextFileIfMissing(basePath / destRel, content, dryRun)
 
-    if not pathLineUpdated:
-        updatedLines.append(f"PYTHONPATH={';'.join(desiredPaths)}")
-        changed = True
-
-    newText = "\n".join(updatedLines) + "\n"
-    if changed or newText != currentText:
-        _update_text_file(dest, newText, dryRun)
+    logger.done("project context migrated")
+    if dryRun:
+        logger.info("migration simulation complete: no changes were applied")
 
 
 def updateProject(
     projectName,
-    dryRun: bool = False,
-    includeUi: bool = False,
-    includeQt: bool = False,
-    allowScaffoldGrowth: bool = False,
+    dryRun: bool = False
 ):
 
     basePath = Path(projectName)
@@ -542,53 +782,9 @@ def updateProject(
     logger.doing(f"updating project at {basePath}")
     detectedRole = _projectRoleDetect(basePath)
     logger.value("detected role", detectedRole)
-    installUi = includeUi or (basePath / "ui").exists()
-    installQt = includeQt or (basePath / "qt").exists()
     logger.action("ensuring managed directories")
     if not dryRun:
         (basePath / ".github").mkdir(parents=True, exist_ok=True)
-
-    if allowScaffoldGrowth:
-        logger.action("ensuring scaffold directories and packages")
-        if not dryRun:
-            folders = ["src", "tests", "logs", ".github"]
-            if installUi:
-                folders.append("ui")
-            if installQt:
-                folders.append("qt")
-            for folder in folders:
-                (basePath / folder).mkdir(parents=True, exist_ok=True)
-
-            (basePath / "src" / "__init__.py").touch(exist_ok=True)
-            if installUi:
-                (basePath / "ui" / "__init__.py").touch(exist_ok=True)
-            if installQt:
-                (basePath / "qt" / "__init__.py").touch(exist_ok=True)
-    else:
-        logger.info(
-            "scaffold growth disabled; use --add-scaffold to create missing app/layout files"
-        )
-
-    for destRel, contentTemplate in PROJECT_TEXT_TEMPLATES:
-        if not allowScaffoldGrowth and destRel in {
-            Path("main.py"),
-            Path("README.md"),
-            Path("requirements.txt"),
-            Path("dev-requirements.txt"),
-            Path(".gitignore"),
-        }:
-            continue
-        content = (
-            f"# {projectName}\n\nProject scaffold created by manageProject.py\n"
-            if destRel == Path("README.md")
-            else contentTemplate
-        )
-        _createTextFileIfMissing(
-            basePath / destRel,
-            content,
-            dryRun,
-        )
-    _ensureEnvFile(basePath / ".env", installUi, installQt, dryRun)
 
     for destRel, content in MANAGED_TEXT_TEMPLATES:
         _update_text_file(basePath / destRel, content, dryRun)
@@ -596,13 +792,6 @@ def updateProject(
     for src, destRel in MANAGED_COPY_TEMPLATES:
         if src.exists():
             _update_managed_copy(src, basePath / destRel, dryRun)
-
-    if allowScaffoldGrowth:
-        logger.info("checking project-owned template modules")
-        for src, destRel in _iter_template_modules(installUi, installQt):
-            _copy_if_missing(src, basePath / destRel, dryRun)
-    else:
-        logger.info("skipping project-owned scaffold module creation")
 
     logger.done("project updated")
     if dryRun:
@@ -651,6 +840,14 @@ def main():
         help="Refresh an existing project instead of creating a new one",
     )
     parser.add_argument(
+        "--migrate",
+        action="store_true",
+        help=(
+            "adopt missing OMP project-management/context structures without "
+            "creating application scaffolding or overwriting project-owned files"
+        ),
+    )
+    parser.add_argument(
         "--sync",
         action="store_true",
         help="sync shared instruction files to downstream repositories",
@@ -672,14 +869,6 @@ def main():
         dest="confirm",
         action="store_true",
         help="execute changes (default is dry-run)",
-    )
-    parser.add_argument(
-        "--add-scaffold",
-        action="store_true",
-        help=(
-            "allow update mode to create missing scaffold app/layout files "
-            "(main.py, src modules, and optional UI/Qt templates)"
-        ),
     )
     parser.add_argument(
         "--merge",
@@ -715,12 +904,18 @@ def main():
         parser.error(
             "Use either the positional project argument or the --project flag, not both."
         )
-    modeCount = sum([bool(args.create), bool(args.update), bool(args.sync)])
+    modeCount = sum(
+        [bool(args.create), bool(args.update), bool(args.migrate), bool(args.sync)]
+    )
     if modeCount > 1:
-        parser.error("Use only one mode at a time: --create, --update, or --sync.")
+        parser.error(
+            "Use only one mode at a time: --create, --update, --migrate, or --sync."
+        )
 
-    if args.sync and (args.ui or args.qt or args.add_scaffold):
-        parser.error("--sync does not support --ui, -qt, or --add-scaffold.")
+    if args.sync and (args.ui or args.qt):
+        parser.error("--sync does not support --ui or --qt.")
+    if args.migrate and (args.ui or args.qt):
+        parser.error("--migrate does not support --ui or --qt.")
 
     projectPath = args.project if args.project is not None else args.projectOption
 
@@ -760,19 +955,20 @@ def main():
             sys.argv = originalArgv
         return
 
-    if args.update:
+    if args.migrate:
+        project_path = projectPath or Path.cwd()
+        migrateProject(project_path, dryRun=dryRun)
+    elif args.update:
         project_path = projectPath or Path.cwd()
         updateProject(
             project_path,
-            dryRun=dryRun,
-            includeUi=args.ui,
-            includeQt=args.qt,
-            allowScaffoldGrowth=args.add_scaffold,
+            dryRun=dryRun
         )
     else:
         if args.create is False and projectPath is None:
             parser.error(
-                "Provide a project for create mode, or use --update/--sync explicitly."
+                "Provide a project for create mode, or use "
+                "--update/--migrate/--sync explicitly."
             )
         if projectPath is None:
             parser.error("the following arguments are required: project")

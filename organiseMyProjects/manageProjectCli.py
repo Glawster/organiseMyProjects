@@ -69,6 +69,7 @@ def main() -> int:
             "--create",
             "--update",
             "-u",
+            "--migrate",
             "--sync",
             "--confirm",
             "-y",

@@ -175,7 +175,6 @@ class TestFrame:
             ".gitignore",
             "requirements.txt",
             "dev-requirements.txt",
-            ".env",
             "README.md",
             ".pre-commit-config.yaml",
             "src/__init__.py",

@@ -24,7 +24,7 @@ PYTHON_DEPLOYMENT_COMMENT = (
 
 # text templates used when creating or updating projects
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
-REQUIREMENTS_CONTENT = "pywin32\n"
+REQUIREMENTS_CONTENT = ""
 DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\nruff\n"
 MAIN_PY_CONTENT = """from pathlib import Path
 from organiseMyProjects.logUtils import getLogger, setApplication
@@ -76,8 +76,8 @@ def main():
         qtMainMenu()
     else:
         logger.info(
-            "No UI scaffold installed. Run `createProject --update --ui` "
-            "and/or `createProject --update -qt` to add GUI templates."
+            "No UI scaffold installed. Run `manageProject --update --ui` "
+            "and/or `manageProject --update -qt` to add GUI templates."
         )
     logger.done("main")
 
@@ -378,6 +378,20 @@ PROJECT_TEXT_TEMPLATES = [
     (Path("project") / "adr" / "README.md", ADR_README_CONTENT),
     (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
 ]
+
+PROJECT_CONTEXT_TEMPLATES = [
+    (Path("documentation") / "architecture.md", ARCHITECTURE_CONTENT),
+    (Path("project") / "currentIncrement.md", CURRENT_INCREMENT_CONTENT),
+    (Path("project") / "project.yaml", PROJECT_YAML_CONTENT),
+    (Path("project") / "roadmap.md", ROADMAP_CONTENT),
+    (Path("project") / "requirements" / "README.md", REQUIREMENTS_README_CONTENT),
+    (
+        Path("project") / "requirements" / "templates" / "requirement.md",
+        REQUIREMENT_TEMPLATE_CONTENT,
+    ),
+    (Path("project") / "adr" / "README.md", ADR_README_CONTENT),
+    (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
+]
 MANAGED_COPY_TEMPLATES = [
     (TEMPLATE_DIR.parent / ".github" / "AGENTS.md", Path("AGENTS.md")),
     (TEMPLATE_DIR.parent / "projectGuidelines.md", Path("projectGuidelines.md")),
@@ -408,15 +422,6 @@ MANAGED_COPY_TEMPLATES = [
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
-
-
-def _build_env_content(includeUi: bool = False, includeQt: bool = False) -> str:
-    pythonPaths = ["src"]
-    if includeUi:
-        pythonPaths.append("ui")
-    if includeQt:
-        pythonPaths.append("qt")
-    return f"PYTHONPATH={';'.join(pythonPaths)}\n"
 
 
 def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
@@ -537,7 +542,6 @@ def createProject(
         (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
-        (basePath / ".env").write_text(_build_env_content(includeUi, includeQt))
         (basePath / "README.md").write_text(_build_readme_content(projectName))
         (basePath / "documentation" / "architecture.md").write_text(ARCHITECTURE_CONTENT)
         (basePath / "project" / "currentIncrement.md").write_text(CURRENT_INCREMENT_CONTENT)
@@ -733,56 +737,37 @@ def _copy_if_missing(src: Path, dest: Path, dryRun: bool = False):
         shutil.copy(src, dest)
 
 
-def _ensureEnvFile(
-    dest: Path,
-    includeUi: bool = False,
-    includeQt: bool = False,
-    dryRun: bool = False,
-):
-    desiredPaths = ["src"]
-    if includeUi:
-        desiredPaths.append("ui")
-    if includeQt:
-        desiredPaths.append("qt")
-
-    if not dest.exists():
-        _createTextFileIfMissing(dest, _build_env_content(includeUi, includeQt), dryRun)
+def migrateProject(projectName, dryRun: bool = False):
+    """ Add missing OMP project-management/context structures without creating application scaffolding or overwriting project-owned files. """
+    basePath = Path(projectName)
+    if not basePath.exists():
+        logger.info(f"project '{projectName}' does not exist")
         return
 
-    try:
-        currentText = dest.read_text()
-    except OSError:
-        currentText = ""
+    logger.doing(f"migrating project context at {basePath}")
+    contextFolders = [
+        "documentation",
+        "project",
+        "project/requirements",
+        "project/requirements/features",
+        "project/requirements/prompt",
+        "project/requirements/templates",
+        "project/adr",
+        "project/adr/templates",
+        "project/reviews",
+    ]
 
-    lines = currentText.splitlines()
-    updatedLines = []
-    pathLineUpdated = False
-    changed = False
+    logger.action("ensuring project context directories")
+    if not dryRun:
+        for folder in contextFolders:
+            (basePath / folder).mkdir(parents=True, exist_ok=True)
 
-    for line in lines:
-        if line.startswith("PYTHONPATH="):
-            existingPaths = [
-                entry for entry in line.partition("=")[2].split(";") if entry
-            ]
-            mergedPaths = []
-            for entry in existingPaths + desiredPaths:
-                if entry not in mergedPaths:
-                    mergedPaths.append(entry)
-            newLine = f"PYTHONPATH={';'.join(mergedPaths)}"
-            updatedLines.append(newLine)
-            pathLineUpdated = True
-            if newLine != line:
-                changed = True
-        else:
-            updatedLines.append(line)
+    for destRel, content in PROJECT_CONTEXT_TEMPLATES:
+        _createTextFileIfMissing(basePath / destRel, content, dryRun)
 
-    if not pathLineUpdated:
-        updatedLines.append(f"PYTHONPATH={';'.join(desiredPaths)}")
-        changed = True
-
-    newText = "\n".join(updatedLines) + "\n"
-    if changed or newText != currentText:
-        _update_text_file(dest, newText, dryRun)
+    logger.done("project context migrated")
+    if dryRun:
+        logger.info("migration simulation complete: no changes were applied")
 
 
 def updateProject(
@@ -870,8 +855,6 @@ def updateProject(
                 content,
                 dryRun,
             )
-    _ensureEnvFile(basePath / ".env", installUi, installQt, dryRun)
-
     for destRel, content in MANAGED_TEXT_TEMPLATES:
         _update_text_file(basePath / destRel, content, dryRun)
 
@@ -931,6 +914,14 @@ def main():
         "--update",
         action="store_true",
         help="Refresh an existing project instead of creating a new one",
+    )
+    parser.add_argument(
+        "--migrate",
+        action="store_true",
+        help=(
+            "adopt missing OMP project-management/context structures without "
+            "creating application scaffolding or overwriting project-owned files"
+        ),
     )
     parser.add_argument(
         "--sync",
@@ -997,12 +988,18 @@ def main():
         parser.error(
             "Use either the positional project argument or the --project flag, not both."
         )
-    modeCount = sum([bool(args.create), bool(args.update), bool(args.sync)])
+    modeCount = sum(
+        [bool(args.create), bool(args.update), bool(args.migrate), bool(args.sync)]
+    )
     if modeCount > 1:
-        parser.error("Use only one mode at a time: --create, --update, or --sync.")
+        parser.error(
+            "Use only one mode at a time: --create, --update, --migrate, or --sync."
+        )
 
     if args.sync and (args.ui or args.qt or args.add_scaffold):
         parser.error("--sync does not support --ui, -qt, or --add-scaffold.")
+    if args.migrate and (args.ui or args.qt or args.add_scaffold):
+        parser.error("--migrate does not support --ui, -qt, or --add-scaffold.")
 
     projectPath = args.project if args.project is not None else args.projectOption
 
@@ -1042,7 +1039,10 @@ def main():
             sys.argv = originalArgv
         return
 
-    if args.update:
+    if args.migrate:
+        project_path = projectPath or Path.cwd()
+        migrateProject(project_path, dryRun=dryRun)
+    elif args.update:
         project_path = projectPath or Path.cwd()
         updateProject(
             project_path,
@@ -1054,7 +1054,8 @@ def main():
     else:
         if args.create is False and projectPath is None:
             parser.error(
-                "Provide a project for create mode, or use --update/--sync explicitly."
+                "Provide a project for create mode, or use "
+                "--update/--migrate/--sync explicitly."
             )
         if projectPath is None:
             parser.error("the following arguments are required: project")

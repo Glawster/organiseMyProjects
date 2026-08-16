@@ -19,8 +19,6 @@ from organiseMyProjects.manageProject import (
     main as createProjectMain,
     _copy_if_newer,
     _update_text_file,
-    _build_env_content,
-    _ensureEnvFile,
     _build_managed_content,
     DEPLOYMENT_COMMENT,
     PYTHON_DEPLOYMENT_COMMENT,
@@ -72,7 +70,6 @@ class TestCreateProject:
         assert (projectPath / ".gitignore").exists()
         assert (projectPath / "requirements.txt").exists()
         assert (projectPath / "dev-requirements.txt").exists()
-        assert (projectPath / ".env").exists()
         assert (projectPath / "README.md").exists()
         assert (projectPath / "main.py").exists()
         assert (projectPath / ".pre-commit-config.yaml").exists()
@@ -90,7 +87,6 @@ class TestCreateProject:
         assert (
             projectPath / "dev-requirements.txt"
         ).read_text() == DEV_REQUIREMENTS_CONTENT
-        assert (projectPath / ".env").read_text() == _build_env_content()
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (
             projectPath / ".pre-commit-config.yaml"
@@ -154,7 +150,6 @@ class TestCreateProject:
             createProject(str(projectPath), includeUi=True)
 
         assert (projectPath / "ui" / "__init__.py").exists()
-        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
         assert (projectPath / "ui" / "styleUtils.py").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
         assert (projectPath / "ui" / "baseFrame.py").exists()
@@ -169,7 +164,6 @@ class TestCreateProject:
             createProject(str(projectPath), includeQt=True)
 
         assert (projectPath / "qt" / "__init__.py").exists()
-        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
         assert (projectPath / "qt" / "styleUtils.py").exists()
         assert (projectPath / "qt" / "mainMenu.py").exists()
         assert (projectPath / "qt" / "baseFrame.py").exists()
@@ -417,7 +411,6 @@ class TestUpdateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath), allowScaffoldGrowth=True)
 
-        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
         assert (projectPath / "ui" / "mainMenu.py").exists()
 
     def testUpdateProjectCanAddQtTemplates(self, temp_dir, sample_project_name):
@@ -432,7 +425,6 @@ class TestUpdateProject:
                 allowScaffoldGrowth=True,
             )
 
-        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
         assert (projectPath / "qt" / "__init__.py").exists()
         assert (projectPath / "qt" / "mainMenu.py").exists()
 
@@ -466,27 +458,6 @@ class TestUpdateProject:
 
         assert (projectPath / "ui" / "mainMenu.py").read_text() == customMainMenu
         assert (projectPath / "ui" / "statusFrame.py").exists()
-
-    def testUpdateProjectEnvAddsUiWithoutRemovingOtherSettings(
-        self, temp_dir, sample_project_name
-    ):
-        """Test that updateProject extends PYTHONPATH in .env instead of overwriting the file."""
-        projectPath = temp_dir / sample_project_name
-        projectPath.mkdir()
-        (projectPath / ".env").write_text(
-            "API_URL=https://example.test\nPYTHONPATH=src\n"
-        )
-
-        with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(
-                str(projectPath),
-                includeUi=True,
-                allowScaffoldGrowth=True,
-            )
-
-        envText = (projectPath / ".env").read_text()
-        assert "API_URL=https://example.test" in envText
-        assert "PYTHONPATH=src;ui" in envText
 
 
 class TestUtilityFunctions:
@@ -571,16 +542,6 @@ class TestUtilityFunctions:
         _update_text_file(dest, newContent)
 
         assert dest.read_text() == newContent
-
-    def testEnsureEnvFilePreservesExistingLines(self, temp_dir):
-        """Test that _ensureEnvFile updates PYTHONPATH without discarding other entries."""
-        dest = temp_dir / ".env"
-        dest.write_text("ONE=1\nPYTHONPATH=src\nTWO=2\n")
-
-        _ensureEnvFile(dest, includeUi=True, includeQt=True)
-
-        assert dest.read_text() == "ONE=1\nPYTHONPATH=src;ui;qt\nTWO=2\n"
-
 
 class TestUpdateHelpers:
     """Test helper behavior used during project updates."""

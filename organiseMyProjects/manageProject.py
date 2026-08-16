@@ -134,82 +134,76 @@ ARCHITECTURE_CONTENT = """# Architecture
 
 ## Overview
 
-High-level description of the system architecture and its core responsibilities.
+<!-- Describe the system architecture and its main responsibilities. -->
 
-## Component Boundaries
+## Components
 
-- `src/` (or package): Reusable core domain logic, independent of any UI framework.
-- `ui/` or `qt/` or `app/`: User-interface orchestration (strictly depends on core, never vice versa).
-- `tests/`: Automated test suite mirroring source component structure.
+<!-- Describe the major components and their responsibilities. -->
 
-## Architectural Principles
+## Dependencies and Data Flow
 
-1. Core domain logic must never import UI frameworks.
-2. File and persistence operations must be centralized.
-3. Configuration and state must follow platform standards.
+<!-- Describe important dependencies and how data flows through the system. -->
+
+## Architectural Decisions
+
+See `project/adr/` for significant architectural decisions.
 """
 
 CURRENT_INCREMENT_CONTENT = """# Current Development Increment
 
 ## Status
 
-Active
+Idle
 <!-- Options: Active, Idle, Blocked, InReview -->
 
 ## Objective
 
-<!-- Concise 1-2 sentence statement of what capability is being delivered right now -->
+<!-- When work is active, describe the capability currently being delivered. -->
 
 ## Governing References
 
-- Primary Requirement: `project/requirements/features/001-featureName.md`
+- Primary Requirement: None
 - Supporting ADRs: None
-- Milestone / Roadmap: `project/roadmap.md`
+- Milestone / Roadmap: None
 
 ## Scope
 
-<!-- Key user or system behaviors included in this active increment -->
-- Feature capability to deliver
+<!-- Work included in the current increment. -->
 
 ## Explicit Exclusions
 
-<!-- Adjacent work deliberately excluded from this increment -->
-- Out of scope work
+<!-- Related work deliberately excluded from the current increment. -->
 
 ## In-Progress Tasks
 
-<!-- Checkbox list of immediate work units -->
-- [ ] Initial task
+<!-- Immediate work units, for example:
+- [ ] Implement capability
+-->
 
 ## Relevant Files & Components
 
-<!-- Authoritative list of source, test, and documentation paths for this increment -->
-- Implementation: `src/`
-- Tests: `tests/`
-- Documentation: `documentation/`
+<!-- Source, test and documentation paths relevant to the current increment. -->
 
 ## Verification Procedures
 
-<!-- Concrete commands an agent must run to verify changes -->
-```bash
-pytest
-ruff check .
-black --check .
-```
+<!-- Reference the authoritative build/test instructions and add
+increment-specific verification only where necessary. -->
 
 ## Definition of Done
 
-<!-- Observable conditions required to conclude this increment -->
-1. Acceptance criteria in governing requirement demonstrated.
-2. Automated tests pass with zero regressions.
-3. Relevant living documentation updated.
-4. `agentCheck` passes with zero errors.
+<!-- Observable conditions required to conclude this increment. -->
 
 ## Handoff & Unresolved Context
 
-<!-- Context, assumptions, or decisions needed by the next agent -->
-- Current state: Started increment.
-- Blockers: None.
+<!-- Context, assumptions, blockers or decisions needed by the next agent. -->
+
+## Agent Readiness
+
+Run:
+
+```bash
+manageProject --check
+```
 """
 
 PROJECT_YAML_CONTENT = """name: "project"
@@ -413,7 +407,6 @@ MANAGED_COPY_TEMPLATES = [
     ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
-    (TEMPLATE_DIR / "agentCheck.py", Path("tests") / "agentCheck.py"),
 ]
 
 
@@ -431,7 +424,6 @@ def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
         (TEMPLATE_DIR / "globalVars.py", Path("src") / "globalVars.py"),
         (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
         (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
-        (TEMPLATE_DIR / "agentCheck.py", Path("tests") / "agentCheck.py"),
     ]
     if includeUi:
         modules.extend(

@@ -136,7 +136,6 @@ class TestCreateProject:
         ).exists(), "globalVars.py should be copied to new projects"
         assert (projectPath / "tests" / "runLinter.py").exists()
         assert (projectPath / "tests" / "guiNamingLinter.py").exists()
-        assert (projectPath / "tests" / "agentCheck.py").exists()
         assert_no_gui_scaffolds(projectPath)
 
         # Verify package utilities are NOT copied
@@ -268,7 +267,6 @@ class TestCreateProject:
         ).exists()
         assert (projectPath / "project" / "adr" / "README.md").exists()
         assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
-        assert (projectPath / "tests" / "agentCheck.py").exists()
 
 
 class TestUpdateProject:

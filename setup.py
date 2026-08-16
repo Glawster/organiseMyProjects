@@ -13,12 +13,11 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "manageProject=organiseMyProjects.manageProject:main",
+            "manageProject=organiseMyProjects.manageProjectCli:main",
             "createProject=organiseMyProjects.manageProject:main",
             "updateProject=organiseMyProjects.manageProject:main",
             "runLinter=organiseMyProjects.runLinter:main",
             "fixMarkup=organiseMyProjects.fixMarkup:main",
-            "agentCheck=organiseMyProjects.agentCheck:main",
         ]
     },
     author="Andy Wilson (andyw@glawster.com)",

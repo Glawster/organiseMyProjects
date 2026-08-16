@@ -76,8 +76,7 @@ def main():
         qtMainMenu()
     else:
         logger.info(
-            "No UI scaffold installed. Run `manageProject --update --ui` "
-            "and/or `manageProject --update -qt` to add GUI templates."
+            "No UI scaffold installed."
         )
     logger.done("main")
 
@@ -772,9 +771,7 @@ def migrateProject(projectName, dryRun: bool = False):
 
 def updateProject(
     projectName,
-    dryRun: bool = False,
-    includeUi: bool = False,
-    includeQt: bool = False,
+    dryRun: bool = False
 ):
 
     basePath = Path(projectName)
@@ -785,8 +782,6 @@ def updateProject(
     logger.doing(f"updating project at {basePath}")
     detectedRole = _projectRoleDetect(basePath)
     logger.value("detected role", detectedRole)
-    installUi = includeUi or (basePath / "ui").exists()
-    installQt = includeQt or (basePath / "qt").exists()
     logger.action("ensuring managed directories")
     if not dryRun:
         (basePath / ".github").mkdir(parents=True, exist_ok=True)
@@ -967,9 +962,7 @@ def main():
         project_path = projectPath or Path.cwd()
         updateProject(
             project_path,
-            dryRun=dryRun,
-            includeUi=args.ui,
-            includeQt=args.qt,
+            dryRun=dryRun
         )
     else:
         if args.create is False and projectPath is None:

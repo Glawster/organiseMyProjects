@@ -1,27 +1,27 @@
 """
-Tests for createProject.py functionality.
+Tests for manageProject.py functionality.
 """
 
 import logging
 import pytest
 import os
 import sys
+import types
 from pathlib import Path
 from unittest.mock import patch
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.createProject import (
+from organiseMyProjects.manageProject import (
     createProject,
     updateProject,
     main as createProjectMain,
     _copy_if_newer,
     _update_text_file,
-    _build_env_content,
-    _ensureEnvFile,
     _build_managed_content,
     DEPLOYMENT_COMMENT,
+    PYTHON_DEPLOYMENT_COMMENT,
     GITIGNORE_CONTENT,
     REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
@@ -45,7 +45,7 @@ class TestCreateProject:
         projectPath = temp_dir / sample_project_name
 
         # Mock subprocess to avoid git/pre-commit dependencies
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         # Verify directory structure
@@ -63,14 +63,13 @@ class TestCreateProject:
         """Test that createProject creates core configuration files."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         # Verify core files exist
         assert (projectPath / ".gitignore").exists()
         assert (projectPath / "requirements.txt").exists()
         assert (projectPath / "dev-requirements.txt").exists()
-        assert (projectPath / ".env").exists()
         assert (projectPath / "README.md").exists()
         assert (projectPath / "main.py").exists()
         assert (projectPath / ".pre-commit-config.yaml").exists()
@@ -79,7 +78,7 @@ class TestCreateProject:
         """Test that createProject creates files with correct content."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         # Verify file contents
@@ -88,7 +87,6 @@ class TestCreateProject:
         assert (
             projectPath / "dev-requirements.txt"
         ).read_text() == DEV_REQUIREMENTS_CONTENT
-        assert (projectPath / ".env").read_text() == _build_env_content()
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (
             projectPath / ".pre-commit-config.yaml"
@@ -97,13 +95,13 @@ class TestCreateProject:
         # Verify README content
         readmeContent = (projectPath / "README.md").read_text()
         assert sample_project_name in readmeContent
-        assert "Project scaffold created by createProject.py" in readmeContent
+        assert "Project scaffold created by manageProject.py" in readmeContent
 
     def testCreateProjectPytestIni(self, temp_dir, sample_project_name):
         """Test that createProject creates pytest.ini with the correct content."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         assert (projectPath / "pytest.ini").exists()
@@ -113,7 +111,7 @@ class TestCreateProject:
         """Test that createProject creates .vscode/settings.json with the correct content."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         assert (projectPath / ".vscode" / "settings.json").exists()
@@ -125,7 +123,7 @@ class TestCreateProject:
         """Test that only non-UI template files are copied by default."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         # Verify template files are copied
@@ -141,18 +139,17 @@ class TestCreateProject:
             projectPath / "src" / "logUtils.py"
         ).exists(), "logUtils.py should NOT be copied to new projects"
         assert not (
-            projectPath / "createProject.py"
-        ).exists(), "createProject.py should NOT be copied to new projects"
+            projectPath / "manageProject.py"
+        ).exists(), "manageProject.py should NOT be copied to new projects"
 
     def testCreateProjectUiTemplates(self, temp_dir, sample_project_name):
         """Test that tkinter UI templates are copied only when requested."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath), includeUi=True)
 
         assert (projectPath / "ui" / "__init__.py").exists()
-        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
         assert (projectPath / "ui" / "styleUtils.py").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
         assert (projectPath / "ui" / "baseFrame.py").exists()
@@ -163,11 +160,10 @@ class TestCreateProject:
         """Test that Qt templates are copied only when requested."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath), includeQt=True)
 
         assert (projectPath / "qt" / "__init__.py").exists()
-        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
         assert (projectPath / "qt" / "styleUtils.py").exists()
         assert (projectPath / "qt" / "mainMenu.py").exists()
         assert (projectPath / "qt" / "baseFrame.py").exists()
@@ -188,21 +184,25 @@ class TestCreateProject:
         """Test that agent guidelines are copied from the .github/ directory."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         agentGuidelines = projectPath / ".github" / "agent-instructions.md"
         copilotGuidelines = projectPath / ".github" / "copilot-instructions.md"
+        claudeGuidelines = projectPath / "CLAUDE.md"
         assert agentGuidelines.exists()
         assert len(agentGuidelines.read_text()) > 0
-        assert copilotGuidelines.read_text() == agentGuidelines.read_text()
+        assert copilotGuidelines.exists()
+        assert "agent-instructions.md" in copilotGuidelines.read_text()
+        assert claudeGuidelines.exists()
+        assert "agent-instructions.md" in claudeGuidelines.read_text()
         assert agentGuidelines.read_text().startswith(DEPLOYMENT_COMMENT)
 
     def testCreateProjectAgentInstructions(self, temp_dir, sample_project_name):
         """Test that Codex agent instructions are copied to the project root."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         agentFile = projectPath / "AGENTS.md"
@@ -213,7 +213,7 @@ class TestCreateProject:
         """Test that the shared repository layout is project documentation."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         layoutFile = projectPath / ".github" / "repositoryLayout.md"
@@ -224,7 +224,7 @@ class TestCreateProject:
         """Test that the shared requirements guide is project documentation."""
         projectPath = temp_dir / sample_project_name
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
         guideFile = projectPath / ".github" / "requirementsManagement.md"
@@ -233,23 +233,53 @@ class TestCreateProject:
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
+    def testCreateProjectHowToRelease(self, temp_dir, sample_project_name):
+        """Test that the shared release guide is project documentation."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        guideFile = projectPath / ".github" / "howToRelease.md"
+        sourceFile = Path(__file__).parent.parent / ".github" / "howToRelease.md"
+        assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+
+    def testCreateProjectAgentPortabilityStructure(self, temp_dir, sample_project_name):
+        """Test that project creation scaffolds architecture, currentIncrement, project.yaml, and roadmap."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        assert (projectPath / "documentation" / "architecture.md").exists()
+        assert (projectPath / "project" / "currentIncrement.md").exists()
+        assert (projectPath / "project" / "project.yaml").exists()
+        assert (projectPath / "project" / "roadmap.md").exists()
+        assert (projectPath / "project" / "requirements" / "README.md").exists()
+        assert (
+            projectPath / "project" / "requirements" / "templates" / "requirement.md"
+        ).exists()
+        assert (projectPath / "project" / "adr" / "README.md").exists()
+        assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
+
 
 class TestUpdateProject:
     """Test cases for updateProject function."""
 
     def testUpdateProjectExisting(self, temp_dir, sample_project_name):
-        """Test updating an existing project."""
+        """Test updating an existing project without scaffold growth."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        # Verify directories are created
-        assert (projectPath / "src").exists()
-        assert (projectPath / "tests").exists()
-        assert (projectPath / "logs").exists()
+        # Verify only managed metadata folders are created by default
         assert (projectPath / ".github").exists()
+        assert not (projectPath / "src").exists()
+        # Managed test helper files are still deployed under tests/
+        assert (projectPath / "tests").exists()
+        assert not (projectPath / "logs").exists()
         assert_no_gui_scaffolds(projectPath)
 
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
@@ -266,7 +296,7 @@ class TestUpdateProject:
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (projectPath / "pytest.ini").exists()
@@ -277,7 +307,7 @@ class TestUpdateProject:
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (projectPath / ".vscode" / "settings.json").exists()
@@ -322,13 +352,24 @@ class TestUpdateProject:
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
+    def testUpdateProjectAddsHowToRelease(self, temp_dir, sample_project_name):
+        """Test that updateProject adds the managed release process guide."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+
+        updateProject(str(projectPath))
+
+        guideFile = projectPath / ".github" / "howToRelease.md"
+        sourceFile = Path(__file__).parent.parent / ".github" / "howToRelease.md"
+        assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+
     def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
         """Test that updateProject updates pytest.ini if it is outdated."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
         (projectPath / "pytest.ini").write_text("old content")
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (projectPath / "pytest.ini").read_text() == PYTEST_INI_CONTENT
@@ -340,36 +381,27 @@ class TestUpdateProject:
         (projectPath / ".vscode").mkdir()
         (projectPath / ".vscode" / "settings.json").write_text('{"old": true}')
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (
             projectPath / ".vscode" / "settings.json"
         ).read_text() == VSCODE_SETTINGS_CONTENT
 
-    def testUpdateProjectExistingUiTemplates(self, temp_dir, sample_project_name):
-        """Test that updateProject preserves and refreshes existing tkinter scaffolds."""
+    def testUpdateProjectPreservesExistingUiTemplates(
+        self, temp_dir, sample_project_name
+    ):
+        """Test that updateProject does not modify project-owned tkinter scaffolds."""
         projectPath = temp_dir / sample_project_name
         (projectPath / "ui").mkdir(parents=True)
-        (projectPath / "ui" / "__init__.py").touch()
+        customMainMenu = "print('custom ui')\n"
+        (projectPath / "ui" / "mainMenu.py").write_text(customMainMenu)
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
-        assert (projectPath / "ui" / "mainMenu.py").exists()
-
-    def testUpdateProjectCanAddQtTemplates(self, temp_dir, sample_project_name):
-        """Test that updateProject can add Qt scaffolding when requested."""
-        projectPath = temp_dir / sample_project_name
-        projectPath.mkdir()
-
-        with patch("organiseMyProjects.createProject.subprocess.run"):
-            updateProject(str(projectPath), includeQt=True)
-
-        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
-        assert (projectPath / "qt" / "__init__.py").exists()
-        assert (projectPath / "qt" / "mainMenu.py").exists()
+        assert (projectPath / "ui" / "mainMenu.py").read_text() == customMainMenu
+        assert not (projectPath / "ui" / "statusFrame.py").exists()
 
     def testUpdateProjectPreservesExistingMainPy(self, temp_dir, sample_project_name):
         """Test that updateProject does not overwrite project-owned main.py code."""
@@ -378,46 +410,26 @@ class TestUpdateProject:
         customMain = "print('custom main')\n"
         (projectPath / "main.py").write_text(customMain)
 
-        with patch("organiseMyProjects.createProject.subprocess.run"):
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
         assert (projectPath / "main.py").read_text() == customMain
 
-    def testUpdateProjectPreservesExistingUiTemplateFile(
-        self, temp_dir, sample_project_name
-    ):
-        """Test that updateProject adds missing UI templates without overwriting existing code."""
-        projectPath = temp_dir / sample_project_name
-        (projectPath / "ui").mkdir(parents=True)
-        customMainMenu = "print('custom ui')\n"
-        (projectPath / "ui" / "mainMenu.py").write_text(customMainMenu)
-
-        with patch("organiseMyProjects.createProject.subprocess.run"):
-            updateProject(str(projectPath), includeUi=True)
-
-        assert (projectPath / "ui" / "mainMenu.py").read_text() == customMainMenu
-        assert (projectPath / "ui" / "statusFrame.py").exists()
-
-    def testUpdateProjectEnvAddsUiWithoutRemovingOtherSettings(
-        self, temp_dir, sample_project_name
-    ):
-        """Test that updateProject extends PYTHONPATH in .env instead of overwriting the file."""
-        projectPath = temp_dir / sample_project_name
-        projectPath.mkdir()
-        (projectPath / ".env").write_text(
-            "API_URL=https://example.test\nPYTHONPATH=src\n"
-        )
-
-        with patch("organiseMyProjects.createProject.subprocess.run"):
-            updateProject(str(projectPath), includeUi=True)
-
-        envText = (projectPath / ".env").read_text()
-        assert "API_URL=https://example.test" in envText
-        assert "PYTHONPATH=src;ui" in envText
-
-
 class TestUtilityFunctions:
     """Test cases for utility functions."""
+
+    def testBuildManagedPythonContentPreservesShebang(self):
+        """Python deployment comments must follow the interpreter directive."""
+        source = '#!/usr/bin/env python3\n"""CLI entry point."""\n'
+
+        content = _build_managed_content(source, suffix=".py")
+
+        assert content == (
+            "#!/usr/bin/env python3\n"
+            + PYTHON_DEPLOYMENT_COMMENT
+            + '"""CLI entry point."""\n'
+        )
+        compile(content, "runLinter.py", "exec")
 
     def testCopyIfNewerNewFile(self, temp_dir):
         """Test copying when destination doesn't exist."""
@@ -485,16 +497,6 @@ class TestUtilityFunctions:
         _update_text_file(dest, newContent)
 
         assert dest.read_text() == newContent
-
-    def testEnsureEnvFilePreservesExistingLines(self, temp_dir):
-        """Test that _ensureEnvFile updates PYTHONPATH without discarding other entries."""
-        dest = temp_dir / ".env"
-        dest.write_text("ONE=1\nPYTHONPATH=src\nTWO=2\n")
-
-        _ensureEnvFile(dest, includeUi=True, includeQt=True)
-
-        assert dest.read_text() == "ONE=1\nPYTHONPATH=src;ui;qt\nTWO=2\n"
-
 
 class TestUpdateHelpers:
     """Test helper behavior used during project updates."""
@@ -606,10 +608,10 @@ class TestCliFlags:
     """Test CLI flag handling for createProject."""
 
     def testMainPassesUiAndQtFlagsToCreateProject(self):
-        with patch("organiseMyProjects.createProject.createProject") as mockCreate:
+        with patch("organiseMyProjects.manageProject.createProject") as mockCreate:
             with patch(
                 "sys.argv",
-                ["createProject.py", "demo", "--ui", "-qt", "--confirm"],
+                ["manageProject.py", "demo", "--ui", "-qt", "--confirm"],
             ):
                 createProjectMain()
 
@@ -621,10 +623,10 @@ class TestCliFlags:
         )
 
     def testMainPassesQtFlagToUpdateProject(self):
-        with patch("organiseMyProjects.createProject.updateProject") as mockUpdate:
+        with patch("organiseMyProjects.manageProject.updateProject") as mockUpdate:
             with patch(
                 "sys.argv",
-                ["createProject.py", "--update", "-qt", "--confirm"],
+                ["manageProject.py", "--update", "-qt", "--confirm"],
             ):
                 createProjectMain()
 
@@ -636,10 +638,10 @@ class TestCliFlags:
         )
 
     def testMainPassesLegacyProjectFlagToCreateProject(self):
-        with patch("organiseMyProjects.createProject.createProject") as mockCreate:
+        with patch("organiseMyProjects.manageProject.createProject") as mockCreate:
             with patch(
                 "sys.argv",
-                ["createProject.py", "--project", "demo", "--confirm"],
+                ["manageProject.py", "--project", "demo", "--confirm"],
             ):
                 createProjectMain()
 
@@ -651,10 +653,10 @@ class TestCliFlags:
         )
 
     def testMainPassesLegacyProjectFlagToUpdateProject(self):
-        with patch("organiseMyProjects.createProject.updateProject") as mockUpdate:
+        with patch("organiseMyProjects.manageProject.updateProject") as mockUpdate:
             with patch(
                 "sys.argv",
-                ["createProject.py", "--update", "--project", "demo", "--confirm"],
+                ["manageProject.py", "--update", "--project", "demo", "--confirm"],
             ):
                 createProjectMain()
 
@@ -664,3 +666,42 @@ class TestCliFlags:
             includeUi=False,
             includeQt=False,
         )
+
+    def testMainPassesSyncFlagsToSyncModule(self):
+        capturedArgv = []
+
+        def fakeSyncMain():
+            capturedArgv.extend(sys.argv)
+
+        fakeSyncModule = types.SimpleNamespace(main=fakeSyncMain)
+
+        with patch(
+            "organiseMyProjects.manageProject._loadSyncModule",
+            return_value=fakeSyncModule,
+        ):
+            with patch(
+                "sys.argv",
+                [
+                    "manageProject.py",
+                    "--sync",
+                    "--confirm",
+                    "--merge",
+                    "--repo",
+                    "Glawster/demo",
+                    "--token",
+                    "token123",
+                    "--verbose",
+                ],
+            ):
+                createProjectMain()
+
+        assert capturedArgv == [
+            "syncAgentInstructions.py",
+            "--confirm",
+            "--merge",
+            "--repo",
+            "Glawster/demo",
+            "--token",
+            "token123",
+            "--verbose",
+        ]

@@ -1,6 +1,7 @@
 # Developer Documentation
 
-This document provides detailed information for developers working on the `organiseMyProjects` package.
+This document provides detailed information for developers working on the
+`organiseMyProjects` package.
 
 ## Architecture Overview
 
@@ -8,16 +9,45 @@ The `organiseMyProjects` package consists of several key components:
 
 ### Core Modules
 
-#### `createProject.py`
+#### `manageProject.py`
+
 The main module responsible for project scaffolding functionality.
 
 **Key Functions:**
-- `createProject(projectName, includeUi=False, includeQt=False)` - Creates a new project with optional tkinter and Qt scaffolds
-- `updateProject(projectName)` - Updates scaffold-managed files and fills in any missing project files without overwriting project-owned code
-- `_copy_if_newer(src, dest)` - Utility for conditional file copying
-- `_update_text_file(dest, content)` - Utility for updating managed text files with binary comparison
+
+Create
+  Creates a new project.
+  May create application scaffold, dependencies and requested UI/Qt scaffold.
+
+Update
+  Refreshes OMP-owned managed files.
+  Never creates or modifies project-owned application scaffold.
+
+Migrate
+  Adds missing modern OMP project-management/context structures.
+  Never overwrites existing project-owned content.
+  Never creates generic application/UI scaffold.
+
+Check
+  Read-only validation of repository and agent readiness.
+
+**Changes from previous behaviour:**
+
+.env
+  OMP no longer creates one merely to manipulate PYTHONPATH.
+
+requirements.txt
+  No universal pywin32 dependency.
+
+UI / Qt
+  Creation-time scaffold options.
+  Not update behaviour.
+
+DOC-001
+  Root README is not the authoritative index of project/agent knowledge.
 
 **Templates and Constants:**
+
 - `GITIGNORE_CONTENT` - Standard .gitignore content for Python projects
 - `REQUIREMENTS_CONTENT` - Base production dependencies
 - `DEV_REQUIREMENTS_CONTENT` - Development dependencies
@@ -30,15 +60,22 @@ resulting Git/VS Code changed files and revert any scaffold-managed updates they
 do not want before committing.
 
 #### `logUtils.py`
+
 Centralised logging utilities shared across organiseMyProjects tooling.
 
 **Key Functions:**
-- `thisApplication` - Name of the application 
-- `setupLogging(thisApplication, logDir, level, includeConsole)` - Create/retrieve a named logger with a `FileHandler`
-- `getLogger(thisApplication, logDir, level, includeConsole)` - Convenience wrapper around `setupLogging`
-- `setLogLevel(level, targetLogger)` - Change the log level of a logger at runtime
-- `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than the specified number of days
-- `drawBox(message, border_char, corner_char, side_char, padding, logger)` - Print or log a text message surrounded by a Unicode box
+
+- `thisApplication` - Name of the application
+- `setupLogging(thisApplication, logDir, level, includeConsole)` -
+    Create/retrieve a named logger with a `FileHandler`
+- `getLogger(thisApplication, logDir, level, includeConsole)` - Convenience
+    wrapper around `setupLogging`
+- `setLogLevel(level, targetLogger)` - Change the log level of a logger at
+    runtime
+- `cleanOldLogFiles(logDir, daysToKeep)` - Remove log files older than the
+    specified number of days
+- `drawBox(message, border_char, corner_char, side_char, padding, logger)` -
+    Print or log a text message surrounded by a Unicode box
 
 **Dry-run progress logging:**
 
@@ -54,23 +91,28 @@ argument: `log_doing`, `log_action`, and `log_done`.
 
 **`drawBox` Details:**
 
-Draws an ASCII/Unicode box around a (potentially multi-line) message to make it visually prominent in logs or console output.
+Draws an ASCII/Unicode box around a (potentially multi-line) message to make
+it visually prominent in logs or console output.
 
-```
-+──────────────────────────────────────────────────────────+
-│  [ERROR] Database connection failed                      │
-│  Attempted 3 retries. Check credentials and network.     │
-+──────────────────────────────────────────────────────────+
+```text
++--------------------------------------------------------+
+|  [ERROR] Database connection failed                    |
+|  Attempted 3 retries. Check credentials and network.   |
++--------------------------------------------------------+
 ```
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `message` | `str` | *(required)* | Text to display; may contain `\n` for multiple lines |
-| `border_char` | `str` | `"─"` | Character used for horizontal border lines |
-| `corner_char` | `str` | `"+"` | Character used at the four corners |
-| `side_char` | `str` | `"│"` | Character used for vertical side borders |
-| `padding` | `int` | `2` | Spaces between text and the side borders |
-| `logger` | `logging.Logger` or `None` | `None` | If provided, each line is emitted via `logger.info()`; otherwise output goes to `print()` |
+Parameter details:
+
+- `message` (`str`, required): Text to display; may contain `\n` for multiple
+    lines.
+- `border_char` (`str`, default `"-"`): Character used for horizontal border
+    lines.
+- `corner_char` (`str`, default `"+"`): Character used at the four corners.
+- `side_char` (`str`, default `"|"`): Character used for vertical side
+    borders.
+- `padding` (`int`, default `2`): Spaces between text and the side borders.
+- `logger` (`logging.Logger` or `None`, default `None`): If provided, each line
+    is emitted via `logger.info()`; otherwise output goes to `print()`.
 
 **Usage Examples:**
 
@@ -89,16 +131,20 @@ drawBox("Warning", border_char="-", corner_char="*", side_char="|")
 ```
 
 #### `guiNamingLinter.py`
+
 Implements custom linting rules for GUI naming conventions and code formatting.
 
 **Key Classes:**
+
 - `GuiNamingVisitor(ast.NodeVisitor)` - AST visitor for analyzing Python code
 
 **Key Functions:**
+
 - `lintFile(filename)` - Lint a single Python file
 - `lintGuiNaming(directory)` - Recursively lint a directory
 
 **Naming Rules:**
+
 ```python
 namingRules = {
     'Button': r'^btn[A-Z]\w+',
@@ -117,25 +163,51 @@ namingRules = {
 ```
 
 #### `runLinter.py`
+
 Command-line interface for the GUI naming linter.
 
 **Key Functions:**
+
 - `main()` - Entry point for command-line usage
 - `_lint_target(target)` - Lint a specific file or directory
+
+**Markup Linting Flags:**
+
+- `--markup` - Run markdown checks in check-only mode
+- `--markup --fix` - Run markdown checks and apply automatic fixes
+
+Legacy compatibility: `--fix-markup` is still supported.
+
+The markup flow calls `markdownlint-cli@0.31.1` through `npx`, disables
+MD013 (line-length), and ignores `build` and `.pytest_cache` by default.
+
+#### `fixMarkup.py`
+
+Markup lint helper used by the CLI and available as a standalone command.
+
+**Key Functions:**
+
+- `markupFix(targets=None, fix=True)` - Run markup lint with optional fixing
+- `main()` - CLI entry point (`fixMarkup`)
 
 ## Package Resources
 
 The package includes template files that are distributed with the package:
 
-- `.github/agent-instructions.md` - Master AI coding agent development guidelines
-- `.github/copilot-instructions.md` - Identical GitHub Copilot compatibility copy
-- `.github/repositoryLayout.md` - Canonical project layout definition copied to generated repositories
-- `.github/requirementsManagement.md` - Canonical requirements workflow copied to generated repositories
+- `.github/agent-instructions.md` - Master AI coding agent development
+    guidelines
+- `.github/copilot-instructions.md` - Identical GitHub Copilot compatibility
+    copy
+- `.github/repositoryLayout.md` - Canonical project layout definition copied to
+    generated repositories
+- `.github/requirementsManagement.md` - Canonical requirements workflow copied
+    to generated repositories
 - Template Python modules (copied to new projects)
 
 ## Canonical Agent Instructions Access
 
-The canonical Agent instructions live in the repository root `.github/` directory and are copied into generated projects from there:
+The canonical Agent instructions live in the repository root `.github/`
+directory and are copied into generated projects from there:
 
 ```python
 try:
@@ -157,35 +229,47 @@ content = agent_file.read_text()
 The test suite is organized into several modules:
 
 #### `tests/conftest.py`
+
 Shared test fixtures and configuration:
+
 - `temp_dir` - Temporary directory fixture
 - `sample_project_name` - Standard test project name
 - `mockPythonFile` - Sample Python file with violations
 
 #### `tests/test_LogUtils.py`
+
 Tests for logging utilities:
+
 - `TestDrawBox` - Box-drawing function tests
 
 #### `tests/test_CreateProject.py`
+
 Tests for project creation functionality:
+
 - `TestCreateProject` - Basic project creation tests
 - `TestUpdateProject` - Project update functionality tests
 - `TestUtilityFunctions` - Utility function tests
 
 #### `tests/test_GuiNamingLinter.py`
+
 Tests for linting functionality:
+
 - `TestGuiNamingVisitor` - AST visitor tests
 - `TestLintFile` - File linting tests
 - `TestLintGuiNaming` - Directory linting tests
 - `TestNamingPatterns` - Naming pattern validation tests
 
 #### `tests/test_RunLinter.py`
+
 Tests for command-line interface:
+
 - `TestRunLinter` - CLI functionality tests
 - `TestIntegration` - Complete workflow tests
 
 #### `tests/test_Integration.py`
+
 End-to-end integration tests:
+
 - `TestPackageInstallation` - Entry point tests
 - `TestEndToEndWorkflow` - Complete workflow tests
 - `TestErrorHandling` - Error scenario tests
@@ -193,7 +277,9 @@ End-to-end integration tests:
 - `TestResourceAccess` - Package resource tests
 
 #### `tests/test_SyncAgentInstructions.py`
+
 Tests for Agent instructions sync utility:
+
 - `TestBuildTargetContent` - Content building tests
 - `TestBuildHeaders` - HTTP header tests
 - `TestGetRemoteFile` - Remote file retrieval tests
@@ -219,12 +305,14 @@ pytest --cov=organiseMyProjects
 pytest tests/test_CreateProject.py::TestCreateProject
 
 # Run specific test method
-pytest tests/test_CreateProject.py::TestCreateProject::testCreateProjectBasicStructure
+pytest tests/test_CreateProject.py::TestCreateProject::\
+testCreateProjectBasicStructure
 ```
 
 ### Test Patterns
 
 #### Using Fixtures
+
 ```python
 def test_example(temp_dir, sample_project_name):
     """Test using shared fixtures."""
@@ -233,8 +321,9 @@ def test_example(temp_dir, sample_project_name):
 ```
 
 #### Mocking External Dependencies
+
 ```python
-@patch('organiseMyProjects.createProject.subprocess.run')
+@patch('organiseMyProjects.manageProject.subprocess.run')
 def test_with_mocked_subprocess(mock_subprocess):
     """Test with mocked subprocess calls."""
     createProject("test_project")
@@ -242,6 +331,7 @@ def test_with_mocked_subprocess(mock_subprocess):
 ```
 
 #### Testing File Operations
+
 ```python
 def test_file_creation(temp_dir):
     """Test file creation in temporary directory."""
@@ -257,10 +347,13 @@ def test_file_creation(temp_dir):
 
 1. Clone the repository
 2. Install development dependencies:
+
    ```bash
    pip install pytest black ruff
    ```
+
 3. Install the package in development mode:
+
    ```bash
    pip install -e .
    ```
@@ -268,23 +361,27 @@ def test_file_creation(temp_dir):
 ### Code Quality Standards
 
 #### Formatting
+
 - Use `black` for code formatting
 - Use `ruff check .` for static analysis
 - Line length: 88 characters (black default)
 - Use double quotes for strings
 
 #### Naming Conventions
+
 - Functions and variables: `camelCase`
 - Classes: `PascalCase`
 - Constants: `UPPER_CASE_WITH_UNDERSCORES`
 - Private members: `_leadingUnderscore`
 
 #### Documentation
+
 - Use docstrings for all public functions and classes
 - Follow Google docstring format
 - Include type hints where appropriate
 
 #### Testing
+
 - Write tests for all new functionality
 - Maintain test coverage above 80%
 - Use descriptive test names
@@ -335,6 +432,7 @@ To add new linting rules to `guiNamingLinter.py`:
 3. Add tests for the new rule in `tests/test_GuiNamingLinter.py`
 
 Example:
+
 ```python
 # In namingRules
 'NewWidget': r'^new[A-Z]\w+',
@@ -364,6 +462,7 @@ reusable library module or package does not require `main.py`.
 
 1. Create the module with a `main()` function
 2. Add entry point to `setup.py`:
+
    ```python
    entry_points={
        "console_scripts": [
@@ -371,6 +470,7 @@ reusable library module or package does not require `main.py`.
        ]
    }
    ```
+
 3. Add tests for the new tool
 
 ## Troubleshooting
@@ -378,16 +478,19 @@ reusable library module or package does not require `main.py`.
 ### Common Issues
 
 #### Import Errors
+
 - Ensure the package is installed: `pip install -e .`
 - Check Python path includes the package directory
 - Verify all `__init__.py` files exist
 
 #### Resource Access Issues
+
 - Ensure files are included in `MANIFEST.in`
 - Check that `include_package_data=True` in `setup.py`
 - Verify resource access uses `importlib.resources`
 
 #### Test Failures
+
 - Run tests with `-v` flag for verbose output
 - Check that fixtures are properly imported
 - Ensure test isolation (use `temp_dir` fixture)
@@ -395,13 +498,15 @@ reusable library module or package does not require `main.py`.
 ### Debugging Tips
 
 #### Debugging Project Creation
+
 ```python
-# Add debug prints to createProject.py
+# Add debug prints to manageProject.py
 print(f"Creating project at: {basePath}")
 print(f"Template dir: {TEMPLATE_DIR}")
 ```
 
 #### Debugging Linting Issues
+
 ```python
 # Add debug prints to guiNamingLinter.py
 print(f"Checking node: {ast.dump(node)}")
@@ -409,6 +514,7 @@ print(f"Current violations: {self.violations}")
 ```
 
 #### Debugging Resource Access
+
 ```python
 # Check package resource availability
 from importlib.resources import files
@@ -437,6 +543,7 @@ print(list(package_files.iterdir()))
 ### Issue Reporting
 
 When reporting issues:
+
 - Include Python version and OS
 - Provide minimal reproduction case
 - Include full error traceback

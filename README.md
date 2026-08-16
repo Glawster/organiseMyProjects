@@ -1,13 +1,17 @@
 # organiseMyProjects
 
-A Python toolkit to scaffold new projects with predefined structure, logging, GUI naming conventions, and enforceable coding standards.
+A Python toolkit to scaffold new projects with predefined structure, logging,
+GUI naming conventions, and enforceable coding standards.
 
 ## Documentation
 
-The README is the canonical entry point for repo documentation. The living guides are:
+The README is the canonical entry point for repo documentation. The living
+guides are:
 
 - [Developer Guide](documentation/developer.md)
 - [Git Guide](documentation/git.md)
+- [Release Guide](.github/howToRelease.md)
+- [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Copilot Compatibility Instructions](.github/copilot-instructions.md)
@@ -21,7 +25,8 @@ The README is the canonical entry point for repo documentation. The living guide
 - 🔄 Update an existing scaffold with `createProject <name> --update` or run
   `createProject --update` inside the project directory
 - 🧪 Automatically include logging setup, dev tools, and layout
-- 🧼 Run a custom GUI naming linter with `runLinter` (default scans the current project)
+- 🧼 Run a custom GUI naming linter with `runLinter` (default scans the current
+  project)
 - 🧰 Includes pre-commit support and code style guidelines
 - 🤖 Includes AI coding agent instructions for consistent development guidelines
 
@@ -34,6 +39,7 @@ pip install .
 ## Usage
 
 ### Create a new project
+
 ```bash
 createProject myNewProject
 ```
@@ -52,7 +58,8 @@ createProject myNewProject --ui -qt
 ```
 
 Creates:
-```
+
+```text
 myNewProject/
 ├── AGENTS.md                   # Agent discovery and instruction entry point
 ├── .github/
@@ -83,12 +90,14 @@ myNewProject/
 ```
 
 ### Update an existing project
+
 Refresh a project scaffold and replace missing scaffold files. Managed
 instructional/config files such as `pytest.ini`, `.pre-commit-config.yaml`,
 `.vscode/settings.json`, `tests/runLinter.py`, and Agent instructions are
 refreshed in place, while project-owned code such as `main.py`, `.env`,
 `requirements.txt`, and UI/Qt modules is only created when missing. Provide the
 project name or run inside the target directory:
+
 ```bash
 # from anywhere
 createProject myExistingProject --update
@@ -107,6 +116,7 @@ Control/Changed Files view and revert the files you do not want before
 committing.
 
 ### Run the GUI naming linter
+
 ```bash
 # lint the whole project from its root
 runLinter
@@ -117,8 +127,34 @@ runLinter <file_or_dir>
 
 Checks for violations of variable/class naming and logging message style.
 
+Without markup flags, `runLinter` performs Python GUI naming checks only.
+
+### Run markup lint checks and fixes
+
+```bash
+# check markdown files without modifying them
+runLinter --markup
+
+# check markdown files and apply auto-fixes where possible
+runLinter --markup --fix
+
+# run markup lint directly (fix mode by default)
+fixMarkup
+
+# run markup lint in check-only mode
+fixMarkup --check
+```
+
+Markup linting uses `markdownlint-cli@0.31.1` via `npx`, ignores `MD013`
+(line-length), and ignores `build` and `.pytest_cache` by default.
+
+When either markup flag is used, `runLinter` runs markup linting only.
+The legacy `--fix-markup` flag is still accepted for compatibility.
+
 ### Launch the generated application
+
 After creating a project, install its dependencies and run the starter script:
+
 ```bash
 cd myNewProject
 pip install -r requirements.txt
@@ -128,7 +164,10 @@ python main.py
 
 ## Testing
 
-The project includes a comprehensive test suite using pytest for **development and validation of this project**. These tests are not part of the distributed package but are used to ensure the reliability of the project scaffolding and linting functionality.
+The project includes a comprehensive test suite using pytest for
+**development and validation of this project**. These tests are not part of the
+distributed package but are used to ensure the reliability of the project
+scaffolding and linting functionality.
 
 ```bash
 # Run all tests
@@ -145,6 +184,7 @@ pytest --cov=organiseMyProjects
 ```
 
 ### Test Structure
+
 - `tests/test_CreateProject.py` - Tests for project creation and updating
 - `tests/test_GuiNamingLinter.py` - Tests for GUI naming convention linting
 - `tests/test_RunLinter.py` - Tests for the linter CLI interface
@@ -153,11 +193,14 @@ pytest --cov=organiseMyProjects
 - `tests/test_SyncAgentInstructions.py` - Tests for Agent instructions sync
 - `tests/conftest.py` - Shared test fixtures and configuration
 
-**Note**: The `tests/` directory is for development and testing of this project itself. It is not included in the installed package, so end users won't get these test files when they install `organiseMyProjects`.
+**Note**: The `tests/` directory is for development and testing of this project
+itself. It is not included in the installed package, so end users won't get
+these test files when they install `organiseMyProjects`.
 
 ## Development
 
 ### Running Tests
+
 ```bash
 # Install development dependencies
 pip install pytest black ruff
@@ -173,6 +216,7 @@ ruff check .
 ```
 
 ### Code Quality
+
 The project uses several tools to maintain code quality:
 
 - **Black**: Automatic code formatting
@@ -180,9 +224,12 @@ The project uses several tools to maintain code quality:
 - **Ruff**: Fast static analysis and linting
 - **pre-commit**: Git hooks for quality checks
 - **Custom GUI Linter**: Enforces GUI naming conventions
+- **Markdownlint CLI**: Markdown linting and automatic fixes via `fixMarkup`
 
 ### Pre-commit Hooks
+
 After creating a project, pre-commit hooks are automatically installed to:
+
 - Format code with Black
 - Run the custom GUI naming linter
 - Ensure code quality before commits
@@ -190,12 +237,15 @@ After creating a project, pre-commit hooks are automatically installed to:
 ## Project Guidelines
 
 ### Naming Conventions
+
 - **Functions and Variables**: camelCase (e.g., `processFiles`, `userName`)
 - **Classes**: PascalCase (e.g., `MainFrame`, `ContactSheetFrame`)
-- **Constants**: UPPERCASE_WITH_UNDERSCORES (e.g., `WINDOW_WIDTH`, `MAX_RETRIES`)
+- **Constants**: UPPERCASE_WITH_UNDERSCORES (e.g., `WINDOW_WIDTH`,
+  `MAX_RETRIES`)
 - **GUI Components**: Prefixed naming (e.g., `btnSave`, `lblStatus`, `frmMain`)
 
 ### GUI Component Prefixes
+
 - `btn` - Buttons (`btnSave`, `btnCancel`)
 - `lbl` - Labels (`lblStatus`, `lblInfo`)
 - `frm` - Frames (`frmMain`, `frmSettings`)
@@ -207,16 +257,18 @@ After creating a project, pre-commit hooks are automatically installed to:
 - `vrt` - Vertical widgets (`vrtSpacer`, `vrtLayout`)
 
 ### Logging Standards
+
 - Use centralized logger from `logUtils.py`
 - All log messages in lowercase except ERROR messages
 - Format patterns:
   - `"message..."` when starting a major step (`doing`)
   - `"...message"` for an action or completed step (`action` / `done`)
   - `"...key: value"` for reporting variables
-- With `dryRun=True`, `doing`, `action`, and `done` include the `[] ` marker;
+- With `dryRun=True`, `doing`, `action`, and `done` include the `[]` marker;
   `info`, `value`, and `multiline` continue to report unmarked facts.
 - `doing`, `action`, and `done` accept an optional `dryRunMessage` used only in
-  dry-run mode, for example `logger.done("project updated", "project update simulated")`.
+  dry-run mode, for example
+  `logger.done("project updated", "project update simulated")`.
 
 ## Requirements
 
@@ -232,15 +284,18 @@ After creating a project, pre-commit hooks are automatically installed to:
 ## Package Structure
 
 The `organiseMyProjects` package includes:
-- `createProject.py` - Main project scaffolding functionality
+
+- `manageProject.py` - Main project scaffolding functionality
 - `guiNamingLinter.py` - GUI naming convention enforcement
 - `runLinter.py` - Command-line interface for the linter
-- `.github/agent-instructions.md` - Master AI coding agent development guidelines
+- `.github/agent-instructions.md` - Master AI coding agent development
+  guidelines
 - Template files for GUI components and utilities
 
 ### Sync Agent Instructions to other repos
 
-`organiseMyProjects` is the single source of truth for `.github/agent-instructions.md`.
+`organiseMyProjects` is the single source of truth for
+`.github/agent-instructions.md`.
 `.github/copilot-instructions.md` is an identical compatibility copy for GitHub
 Copilot. Use `syncAgentInstructions.py` to push both instruction paths to all
 downstream Glawster repos. The same routine distributes the canonical

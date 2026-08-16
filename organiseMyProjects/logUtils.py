@@ -1,3 +1,12 @@
+"""Application logging utilities.
+
+Canonical source:
+    Glawster/organiseMyProjects
+
+This file may be a local deployment copy.
+Keep behavioural changes synchronized with the canonical implementation.
+"""
+
 from __future__ import annotations
 
 import datetime

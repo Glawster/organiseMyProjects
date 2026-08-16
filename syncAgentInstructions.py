@@ -41,9 +41,14 @@ SYNC_SPECS = [
     {
         "sourceFile": Path(__file__).resolve().parent
         / ".github"
-        / "agent-instructions.md",
+        / "copilot-instructions.md",
         "targetPath": ".github/copilot-instructions.md",
         "commitMessage": "sync: update Copilot compatibility instructions",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent / ".github" / "CLAUDE.md",
+        "targetPath": "CLAUDE.md",
+        "commitMessage": "sync: update Claude Code instructions pointer",
     },
     {
         "sourceFile": Path(__file__).resolve().parent / ".github" / "AGENTS.md",
@@ -63,6 +68,11 @@ SYNC_SPECS = [
         / "requirementsManagement.md",
         "targetPath": ".github/requirementsManagement.md",
         "commitMessage": "sync: update requirements management guide",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent / ".github" / "howToRelease.md",
+        "targetPath": ".github/howToRelease.md",
+        "commitMessage": "sync: update release process guide",
     },
 ]
 SYNC_COMMENT = (
@@ -530,17 +540,26 @@ def main() -> None:
     repoResults = {repo: [] for repo in targetRepos}
     preparedBranches: set[str] = set()
 
+    sourcePayloads = []
     for spec in SYNC_SPECS:
-        logger.doing(f"updating file {spec['sourceFile']}")
         sourceContent = spec["sourceFile"].read_text(encoding="utf-8")
-        targetContent = buildTargetContent(sourceContent)
+        sourcePayloads.append(
+            {
+                "sourceFile": spec["sourceFile"],
+                "targetPath": spec["targetPath"],
+                "commitMessage": spec["commitMessage"],
+                "targetContent": buildTargetContent(sourceContent),
+            }
+        )
 
-        for repo in targetRepos:
+    for repo in targetRepos:
+        logger.doing(f"syncing repository {repo}")
+        for payload in sourcePayloads:
             result = syncRepo(
                 repo,
-                spec["targetPath"],
-                targetContent,
-                spec["commitMessage"],
+                payload["targetPath"],
+                payload["targetContent"],
+                payload["commitMessage"],
                 dryRun,
                 headers,
                 logger,

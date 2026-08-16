@@ -19,8 +19,6 @@ from organiseMyProjects.manageProject import (
     main as createProjectMain,
     _copy_if_newer,
     _update_text_file,
-    _build_env_content,
-    _ensureEnvFile,
     _build_managed_content,
     DEPLOYMENT_COMMENT,
     PYTHON_DEPLOYMENT_COMMENT,
@@ -72,7 +70,6 @@ class TestCreateProject:
         assert (projectPath / ".gitignore").exists()
         assert (projectPath / "requirements.txt").exists()
         assert (projectPath / "dev-requirements.txt").exists()
-        assert (projectPath / ".env").exists()
         assert (projectPath / "README.md").exists()
         assert (projectPath / "main.py").exists()
         assert (projectPath / ".pre-commit-config.yaml").exists()
@@ -90,7 +87,6 @@ class TestCreateProject:
         assert (
             projectPath / "dev-requirements.txt"
         ).read_text() == DEV_REQUIREMENTS_CONTENT
-        assert (projectPath / ".env").read_text() == _build_env_content()
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (
             projectPath / ".pre-commit-config.yaml"
@@ -154,7 +150,6 @@ class TestCreateProject:
             createProject(str(projectPath), includeUi=True)
 
         assert (projectPath / "ui" / "__init__.py").exists()
-        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
         assert (projectPath / "ui" / "styleUtils.py").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
         assert (projectPath / "ui" / "baseFrame.py").exists()
@@ -169,7 +164,6 @@ class TestCreateProject:
             createProject(str(projectPath), includeQt=True)
 
         assert (projectPath / "qt" / "__init__.py").exists()
-        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
         assert (projectPath / "qt" / "styleUtils.py").exists()
         assert (projectPath / "qt" / "mainMenu.py").exists()
         assert (projectPath / "qt" / "baseFrame.py").exists()
@@ -288,20 +282,6 @@ class TestUpdateProject:
         assert not (projectPath / "logs").exists()
         assert_no_gui_scaffolds(projectPath)
 
-    def testUpdateProjectCanAddScaffoldWhenRequested(self, temp_dir, sample_project_name):
-        """Test update mode can still add scaffold files when explicitly requested."""
-        projectPath = temp_dir / sample_project_name
-        projectPath.mkdir()
-
-        with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(str(projectPath), allowScaffoldGrowth=True)
-
-        assert (projectPath / "src").exists()
-        assert (projectPath / "tests").exists()
-        assert (projectPath / "logs").exists()
-        assert (projectPath / "main.py").exists()
-        assert (projectPath / "src" / "globalVars.py").exists()
-
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
         projectPath = temp_dir / sample_project_name
@@ -408,33 +388,20 @@ class TestUpdateProject:
             projectPath / ".vscode" / "settings.json"
         ).read_text() == VSCODE_SETTINGS_CONTENT
 
-    def testUpdateProjectExistingUiTemplates(self, temp_dir, sample_project_name):
-        """Test that updateProject can refresh existing tkinter scaffolds when requested."""
+    def testUpdateProjectPreservesExistingUiTemplates(
+        self, temp_dir, sample_project_name
+    ):
+        """Test that updateProject does not modify project-owned tkinter scaffolds."""
         projectPath = temp_dir / sample_project_name
         (projectPath / "ui").mkdir(parents=True)
-        (projectPath / "ui" / "__init__.py").touch()
+        customMainMenu = "print('custom ui')\n"
+        (projectPath / "ui" / "mainMenu.py").write_text(customMainMenu)
 
         with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(str(projectPath), allowScaffoldGrowth=True)
+            updateProject(str(projectPath))
 
-        assert (projectPath / ".env").read_text() == _build_env_content(includeUi=True)
-        assert (projectPath / "ui" / "mainMenu.py").exists()
-
-    def testUpdateProjectCanAddQtTemplates(self, temp_dir, sample_project_name):
-        """Test that updateProject can add Qt scaffolding when requested."""
-        projectPath = temp_dir / sample_project_name
-        projectPath.mkdir()
-
-        with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(
-                str(projectPath),
-                includeQt=True,
-                allowScaffoldGrowth=True,
-            )
-
-        assert (projectPath / ".env").read_text() == _build_env_content(includeQt=True)
-        assert (projectPath / "qt" / "__init__.py").exists()
-        assert (projectPath / "qt" / "mainMenu.py").exists()
+        assert (projectPath / "ui" / "mainMenu.py").read_text() == customMainMenu
+        assert not (projectPath / "ui" / "statusFrame.py").exists()
 
     def testUpdateProjectPreservesExistingMainPy(self, temp_dir, sample_project_name):
         """Test that updateProject does not overwrite project-owned main.py code."""
@@ -447,47 +414,6 @@ class TestUpdateProject:
             updateProject(str(projectPath))
 
         assert (projectPath / "main.py").read_text() == customMain
-
-    def testUpdateProjectPreservesExistingUiTemplateFile(
-        self, temp_dir, sample_project_name
-    ):
-        """Test that updateProject adds missing UI templates without overwriting existing code."""
-        projectPath = temp_dir / sample_project_name
-        (projectPath / "ui").mkdir(parents=True)
-        customMainMenu = "print('custom ui')\n"
-        (projectPath / "ui" / "mainMenu.py").write_text(customMainMenu)
-
-        with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(
-                str(projectPath),
-                includeUi=True,
-                allowScaffoldGrowth=True,
-            )
-
-        assert (projectPath / "ui" / "mainMenu.py").read_text() == customMainMenu
-        assert (projectPath / "ui" / "statusFrame.py").exists()
-
-    def testUpdateProjectEnvAddsUiWithoutRemovingOtherSettings(
-        self, temp_dir, sample_project_name
-    ):
-        """Test that updateProject extends PYTHONPATH in .env instead of overwriting the file."""
-        projectPath = temp_dir / sample_project_name
-        projectPath.mkdir()
-        (projectPath / ".env").write_text(
-            "API_URL=https://example.test\nPYTHONPATH=src\n"
-        )
-
-        with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(
-                str(projectPath),
-                includeUi=True,
-                allowScaffoldGrowth=True,
-            )
-
-        envText = (projectPath / ".env").read_text()
-        assert "API_URL=https://example.test" in envText
-        assert "PYTHONPATH=src;ui" in envText
-
 
 class TestUtilityFunctions:
     """Test cases for utility functions."""
@@ -571,16 +497,6 @@ class TestUtilityFunctions:
         _update_text_file(dest, newContent)
 
         assert dest.read_text() == newContent
-
-    def testEnsureEnvFilePreservesExistingLines(self, temp_dir):
-        """Test that _ensureEnvFile updates PYTHONPATH without discarding other entries."""
-        dest = temp_dir / ".env"
-        dest.write_text("ONE=1\nPYTHONPATH=src\nTWO=2\n")
-
-        _ensureEnvFile(dest, includeUi=True, includeQt=True)
-
-        assert dest.read_text() == "ONE=1\nPYTHONPATH=src;ui;qt\nTWO=2\n"
-
 
 class TestUpdateHelpers:
     """Test helper behavior used during project updates."""
@@ -719,7 +635,6 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=True,
-            allowScaffoldGrowth=False,
         )
 
     def testMainPassesLegacyProjectFlagToCreateProject(self):
@@ -750,7 +665,6 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=False,
-            allowScaffoldGrowth=False,
         )
 
     def testMainPassesSyncFlagsToSyncModule(self):

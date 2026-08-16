@@ -177,28 +177,6 @@ class AgentCheckValidator:
             )
             return
 
-        # Check for Documentation section in README
-        if "## Documentation" not in readmeText:
-            self.report.add(
-                "DOC-001",
-                Severity.FAILURE,
-                "README.md is missing the required '## Documentation' section",
-                readme,
-            )
-
-        # Check that all living markdown files in documentation/ are linked from README.md
-        docDir = self.rootPath / "documentation"
-        if docDir.exists() and docDir.is_dir():
-            for docFile in sorted(docDir.glob("*.md")):
-                relPath = f"documentation/{docFile.name}"
-                if relPath not in readmeText and docFile.name not in readmeText:
-                    self.report.add(
-                        "DOC-001",
-                        Severity.WARNING,
-                        f"Living document '{relPath}' is not linked in README.md documentation section",
-                        docFile,
-                    )
-
         # Check single H1 rule and relative link validity across markdown files
         for mdFile in self.rootPath.glob("**/*.md"):
             # Skip virtualenvs or cache directories

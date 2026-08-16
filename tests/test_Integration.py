@@ -116,24 +116,6 @@ class TestFrame:
         # Verify project-owned scaffold file was not recreated by default
         assert not (projectPath / "main.py").exists()
 
-    def testUpdateExistingProjectCanAddMissingScaffoldWhenRequested(self, temp_dir):
-        """Test update mode can create missing scaffold files only with explicit opt-in."""
-        projectName = "testUpdateWithScaffold"
-        projectPath = temp_dir / projectName
-
-        from organiseMyProjects.manageProject import createProject, updateProject
-
-        with patch("organiseMyProjects.manageProject.subprocess.run"):
-            createProject(str(projectPath))
-
-        (projectPath / "main.py").unlink()
-        assert not (projectPath / "main.py").exists()
-
-        with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(str(projectPath), allowScaffoldGrowth=True)
-
-        assert (projectPath / "main.py").exists()
-
     def testUpdateExistingProjectPreservesCustomMain(self, temp_dir):
         """Test that scaffold refresh does not overwrite custom main.py code."""
         projectName = "testUpdateCustomMain"
@@ -148,14 +130,9 @@ class TestFrame:
         (projectPath / "main.py").write_text(customMain)
 
         with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject(
-                str(projectPath),
-                includeQt=True,
-                allowScaffoldGrowth=True,
-            )
+            updateProject( str(projectPath))
 
         assert (projectPath / "main.py").read_text() == customMain
-        assert (projectPath / "qt" / "mainMenu.py").exists()
 
     def testProjectStructureCompleteness(self, temp_dir):
         """Test that created projects have all expected files and directories."""
@@ -175,7 +152,6 @@ class TestFrame:
             ".gitignore",
             "requirements.txt",
             "dev-requirements.txt",
-            ".env",
             "README.md",
             ".pre-commit-config.yaml",
             "src/__init__.py",

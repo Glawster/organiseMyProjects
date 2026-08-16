@@ -15,13 +15,36 @@ The main module responsible for project scaffolding functionality.
 
 **Key Functions:**
 
-- `createProject(projectName, includeUi=False, includeQt=False)` - Creates a
-    new project with optional tkinter and Qt scaffolds
-- `updateProject(projectName)` - Updates scaffold-managed files and fills in
-    any missing project files without overwriting project-owned code
-- `_copy_if_newer(src, dest)` - Utility for conditional file copying
-- `_update_text_file(dest, content)` - Utility for updating managed text files
-    with binary comparison
+Create
+  Creates a new project.
+  May create application scaffold, dependencies and requested UI/Qt scaffold.
+
+Update
+  Refreshes OMP-owned managed files.
+  Never creates or modifies project-owned application scaffold.
+
+Migrate
+  Adds missing modern OMP project-management/context structures.
+  Never overwrites existing project-owned content.
+  Never creates generic application/UI scaffold.
+
+Check
+  Read-only validation of repository and agent readiness.
+
+**Changes from previous behaviour:**
+
+.env
+  OMP no longer creates one merely to manipulate PYTHONPATH.
+
+requirements.txt
+  No universal pywin32 dependency.
+
+UI / Qt
+  Creation-time scaffold options.
+  Not update behaviour.
+
+DOC-001
+  Root README is not the authoritative index of project/agent knowledge.
 
 **Templates and Constants:**
 

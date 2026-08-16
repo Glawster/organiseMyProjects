@@ -37,9 +37,9 @@ Implement AI Agent Portability and Context Integrity (Increment 1: vendor-neutra
 - [x] Update `manageProject.py` with project-owned templates and non-destructive update guards
 - [x] Update `syncAgentInstructions.py` sync specs
 - [x] Add validator tests and `manageProject --check` routing tests
-- [ ] Review the large `.github/agent-instructions.md` change separately
-- [ ] Remove or simplify obsolete downstream `tests/agentCheck.py` deployment once `manageProject.py` template wiring is updated
-- [ ] Run full test suite and validation checks in a working checkout
+- [x] Review the large `.github/agent-instructions.md` change separately
+- [x] Remove or simplify obsolete downstream `tests/agentCheck.py` deployment once `manageProject.py` template wiring is updated
+- [x] Run full test suite and validation checks in a working checkout
 
 ## Relevant Files & Components
 

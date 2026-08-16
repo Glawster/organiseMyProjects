@@ -87,19 +87,23 @@ class TestSyncSpecs:
         targetPaths = [spec["targetPath"] for spec in sci.SYNC_SPECS]
         assert ".github/copilot-instructions.md" in targetPaths
 
-    def testCopilotSpecUsesCanonicalAgentSource(self):
-        """The Copilot mirror should be generated from the canonical source."""
+    def testCopilotSpecUsesCopilotSource(self):
+        """The Copilot shim should be synced from its dedicated source file."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
         copilotSpec = specsByTarget[".github/copilot-instructions.md"]
-        assert copilotSpec["sourceFile"].name == "agent-instructions.md"
+        assert copilotSpec["sourceFile"].name == "copilot-instructions.md"
 
-    def testCheckedInCopilotFileMatchesCanonicalAgentInstructions(self):
-        """The repository's compatibility copy should not drift from its source."""
+    def testIncludesClaudeShim(self):
+        """The Claude Code instruction pointer shim should be synced."""
+        specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
+        claudeSpec = specsByTarget["CLAUDE.md"]
+        assert claudeSpec["sourceFile"].name == "CLAUDE.md"
+
+    def testCheckedInCopilotFilePointsToCanonicalAgentInstructions(self):
+        """The repository's copilot shim should point to agent-instructions.md."""
         repoRoot = Path(__file__).parent.parent
-        canonicalContent = (repoRoot / ".github" / "agent-instructions.md").read_text()
         copilotContent = (repoRoot / ".github" / "copilot-instructions.md").read_text()
-
-        assert copilotContent == canonicalContent
+        assert "agent-instructions.md" in copilotContent
 
     def testIncludesRepositoryLayout(self):
         """The shared repository layout should be synced as documentation."""

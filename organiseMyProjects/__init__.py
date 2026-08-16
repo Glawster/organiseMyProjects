@@ -30,6 +30,7 @@ from . import manageProject
 from .guiNamingLinter import lintFile, lintGuiNaming
 from . import runLinter
 from . import logUtils
+from . import agentCheck
 
 __all__ = [
     "manageProject",
@@ -37,4 +38,5 @@ __all__ = [
     "lintGuiNaming",
     "runLinter",
     "logUtils",
+    "agentCheck",
 ]

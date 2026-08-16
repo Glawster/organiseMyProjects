@@ -41,9 +41,14 @@ SYNC_SPECS = [
     {
         "sourceFile": Path(__file__).resolve().parent
         / ".github"
-        / "agent-instructions.md",
+        / "copilot-instructions.md",
         "targetPath": ".github/copilot-instructions.md",
         "commitMessage": "sync: update Copilot compatibility instructions",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent / ".github" / "CLAUDE.md",
+        "targetPath": "CLAUDE.md",
+        "commitMessage": "sync: update Claude Code instructions pointer",
     },
     {
         "sourceFile": Path(__file__).resolve().parent / ".github" / "AGENTS.md",

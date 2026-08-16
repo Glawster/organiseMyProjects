@@ -1,4 +1,4 @@
-# Codex instructions
+# Agent instructions
 
 Read and follow `.github/agent-instructions.md`.
 

@@ -297,12 +297,15 @@ class TestResourceAccess:
         content = srcAgentInstructions.read_text()
         assert len(content) > 0
         assert "Agent Instructions" in content
-        assert "output/" in content
-
         copilotInstructions = (
             TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
         )
-        assert copilotInstructions.read_text() == content
+        assert copilotInstructions.is_file()
+        assert "agent-instructions.md" in copilotInstructions.read_text()
+
+        claudeInstructions = TEMPLATE_DIR.parent / ".github" / "CLAUDE.md"
+        assert claudeInstructions.is_file()
+        assert "agent-instructions.md" in claudeInstructions.read_text()
 
         requirementsManagement = (
             TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md"

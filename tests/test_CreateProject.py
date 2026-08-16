@@ -136,6 +136,7 @@ class TestCreateProject:
         ).exists(), "globalVars.py should be copied to new projects"
         assert (projectPath / "tests" / "runLinter.py").exists()
         assert (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert (projectPath / "tests" / "agentCheck.py").exists()
         assert_no_gui_scaffolds(projectPath)
 
         # Verify package utilities are NOT copied
@@ -195,9 +196,13 @@ class TestCreateProject:
 
         agentGuidelines = projectPath / ".github" / "agent-instructions.md"
         copilotGuidelines = projectPath / ".github" / "copilot-instructions.md"
+        claudeGuidelines = projectPath / "CLAUDE.md"
         assert agentGuidelines.exists()
         assert len(agentGuidelines.read_text()) > 0
-        assert copilotGuidelines.read_text() == agentGuidelines.read_text()
+        assert copilotGuidelines.exists()
+        assert "agent-instructions.md" in copilotGuidelines.read_text()
+        assert claudeGuidelines.exists()
+        assert "agent-instructions.md" in claudeGuidelines.read_text()
         assert agentGuidelines.read_text().startswith(DEPLOYMENT_COMMENT)
 
     def testCreateProjectAgentInstructions(self, temp_dir, sample_project_name):
@@ -245,6 +250,25 @@ class TestCreateProject:
         guideFile = projectPath / ".github" / "howToRelease.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "howToRelease.md"
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+
+    def testCreateProjectAgentPortabilityStructure(self, temp_dir, sample_project_name):
+        """Test that project creation scaffolds architecture, currentIncrement, project.yaml, and roadmap."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        assert (projectPath / "documentation" / "architecture.md").exists()
+        assert (projectPath / "project" / "currentIncrement.md").exists()
+        assert (projectPath / "project" / "project.yaml").exists()
+        assert (projectPath / "project" / "roadmap.md").exists()
+        assert (projectPath / "project" / "requirements" / "README.md").exists()
+        assert (
+            projectPath / "project" / "requirements" / "templates" / "requirement.md"
+        ).exists()
+        assert (projectPath / "project" / "adr" / "README.md").exists()
+        assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
+        assert (projectPath / "tests" / "agentCheck.py").exists()
 
 
 class TestUpdateProject:

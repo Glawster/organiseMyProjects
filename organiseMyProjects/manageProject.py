@@ -130,6 +130,220 @@ VSCODE_SETTINGS_CONTENT = """{
 }
 """
 
+ARCHITECTURE_CONTENT = """# Architecture
+
+## Overview
+
+High-level description of the system architecture and its core responsibilities.
+
+## Component Boundaries
+
+- `src/` (or package): Reusable core domain logic, independent of any UI framework.
+- `ui/` or `qt/` or `app/`: User-interface orchestration (strictly depends on core, never vice versa).
+- `tests/`: Automated test suite mirroring source component structure.
+
+## Architectural Principles
+
+1. Core domain logic must never import UI frameworks.
+2. File and persistence operations must be centralized.
+3. Configuration and state must follow platform standards.
+"""
+
+CURRENT_INCREMENT_CONTENT = """# Current Development Increment
+
+## Status
+
+Active
+<!-- Options: Active, Idle, Blocked, InReview -->
+
+## Objective
+
+<!-- Concise 1-2 sentence statement of what capability is being delivered right now -->
+
+## Governing References
+
+- Primary Requirement: `project/requirements/features/001-featureName.md`
+- Supporting ADRs: None
+- Milestone / Roadmap: `project/roadmap.md`
+
+## Scope
+
+<!-- Key user or system behaviors included in this active increment -->
+- Feature capability to deliver
+
+## Explicit Exclusions
+
+<!-- Adjacent work deliberately excluded from this increment -->
+- Out of scope work
+
+## In-Progress Tasks
+
+<!-- Checkbox list of immediate work units -->
+- [ ] Initial task
+
+## Relevant Files & Components
+
+<!-- Authoritative list of source, test, and documentation paths for this increment -->
+- Implementation: `src/`
+- Tests: `tests/`
+- Documentation: `documentation/`
+
+## Verification Procedures
+
+<!-- Concrete commands an agent must run to verify changes -->
+```bash
+pytest
+ruff check .
+black --check .
+```
+
+## Definition of Done
+
+<!-- Observable conditions required to conclude this increment -->
+1. Acceptance criteria in governing requirement demonstrated.
+2. Automated tests pass with zero regressions.
+3. Relevant living documentation updated.
+4. `agentCheck` passes with zero errors.
+
+## Handoff & Unresolved Context
+
+<!-- Context, assumptions, or decisions needed by the next agent -->
+- Current state: Started increment.
+- Blockers: None.
+"""
+
+PROJECT_YAML_CONTENT = """name: "project"
+description: "Project description"
+version: "0.1.0"
+runtime: "python3.12"
+role: "standalone-application"
+"""
+
+ROADMAP_CONTENT = """# Project Roadmap
+
+## Current Milestone
+
+- Milestone 1: Initial core functionality.
+
+## Future Milestones
+
+- Milestone 2: Enhancements and integrations.
+"""
+
+REQUIREMENT_TEMPLATE_CONTENT = """# DDD: Requirement title
+
+## Status
+
+ToDo
+
+## Outcome
+
+As a <user or system>, I need <capability> so that <measurable benefit>.
+
+## Context
+
+Describe the current problem and relevant constraints.
+
+## Scope
+
+- Behaviour included in this requirement.
+
+## Out of scope
+
+- Closely related behaviour deliberately excluded.
+
+## Acceptance criteria
+
+1. Given <starting condition>, when <action>, then <observable result>.
+
+## Dependencies and decisions
+
+- None.
+
+## Verification
+
+- Planned tests or review evidence.
+
+## Traceability
+
+- Implementation: pending
+- Tests: pending
+- Documentation: pending
+- Pull request: pending
+- Agent runs: None
+
+## Change history
+
+- YYYY-MM-DD: created — reason or source.
+"""
+
+REQUIREMENTS_README_CONTENT = """# Requirements
+
+Next available number: 001
+
+## Requirement index
+
+| Req ID | Requirement | Description | Status | Agent Prompt | Architecture Decisions |
+| --- | --- | --- | --- | --- | --- |
+"""
+
+ADR_TEMPLATE_CONTENT = """# ADR-DDD: Decision title
+
+## Status
+
+Proposed
+<!-- Options: Proposed, Accepted, Rejected, Deprecated, Superseded -->
+
+## Context
+
+Describe the context and problem statement that requires a decision.
+
+## Decision Drivers
+
+- Key consideration 1
+- Key consideration 2
+
+## Considered Options
+
+1. Option 1
+2. Option 2
+
+## Decision Outcome
+
+Chosen option because rationale.
+
+### Consequences
+
+- Positive: Benefit of choice.
+- Negative: Trade-off or limitation.
+"""
+
+ADR_README_CONTENT = """# Architecture Decision Records
+
+Next available number: 001
+
+## Decision index
+
+| ADR ID | Decision | Status | Date |
+| --- | --- | --- | --- |
+"""
+
+def _build_readme_content(projectName: str) -> str:
+    return f"""# {projectName}
+
+Project scaffold created by manageProject.py.
+
+## Documentation
+
+- [Architecture](documentation/architecture.md)
+- [Roadmap](project/roadmap.md)
+- [Current Increment](project/currentIncrement.md)
+- [Requirements](project/requirements/README.md)
+- [Architecture Decisions](project/adr/README.md)
+- [Release Guide](.github/howToRelease.md)
+- [Master Agent Instructions](.github/agent-instructions.md)
+"""
+
 TEMPLATE_DIR = Path(__file__).resolve().parent
 UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
 QT_TEMPLATE_DIR = TEMPLATE_DIR / "qt"
@@ -158,6 +372,17 @@ PROJECT_TEXT_TEMPLATES = [
     (Path("dev-requirements.txt"), DEV_REQUIREMENTS_CONTENT),
     (Path("README.md"), None),
     (Path("main.py"), MAIN_PY_CONTENT),
+    (Path("documentation") / "architecture.md", ARCHITECTURE_CONTENT),
+    (Path("project") / "currentIncrement.md", CURRENT_INCREMENT_CONTENT),
+    (Path("project") / "project.yaml", PROJECT_YAML_CONTENT),
+    (Path("project") / "roadmap.md", ROADMAP_CONTENT),
+    (Path("project") / "requirements" / "README.md", REQUIREMENTS_README_CONTENT),
+    (
+        Path("project") / "requirements" / "templates" / "requirement.md",
+        REQUIREMENT_TEMPLATE_CONTENT,
+    ),
+    (Path("project") / "adr" / "README.md", ADR_README_CONTENT),
+    (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
 ]
 MANAGED_COPY_TEMPLATES = [
     (TEMPLATE_DIR.parent / ".github" / "AGENTS.md", Path("AGENTS.md")),
@@ -167,8 +392,12 @@ MANAGED_COPY_TEMPLATES = [
         Path(".github") / "agent-instructions.md",
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "agent-instructions.md",
+        TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md",
         Path(".github") / "copilot-instructions.md",
+    ),
+    (
+        TEMPLATE_DIR.parent / ".github" / "CLAUDE.md",
+        Path("CLAUDE.md"),
     ),
     (
         TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md",
@@ -184,6 +413,7 @@ MANAGED_COPY_TEMPLATES = [
     ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
+    (TEMPLATE_DIR / "agentCheck.py", Path("tests") / "agentCheck.py"),
 ]
 
 
@@ -201,6 +431,7 @@ def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
         (TEMPLATE_DIR / "globalVars.py", Path("src") / "globalVars.py"),
         (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
         (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
+        (TEMPLATE_DIR / "agentCheck.py", Path("tests") / "agentCheck.py"),
     ]
     if includeUi:
         modules.extend(
@@ -279,21 +510,34 @@ def createProject(
     # Create folders
     logger.action("creating directories")
     if not dryRun:
-        (basePath / "src").mkdir(parents=True)
-        (basePath / "tests").mkdir()
-        (basePath / "logs").mkdir()
-        (basePath / ".github").mkdir()
+        folders = [
+            "src",
+            "tests",
+            "logs",
+            ".github",
+            "documentation",
+            "project",
+            "project/requirements",
+            "project/requirements/features",
+            "project/requirements/prompt",
+            "project/requirements/templates",
+            "project/adr",
+            "project/adr/templates",
+            "project/reviews",
+        ]
         if includeUi:
-            (basePath / "ui").mkdir()
+            folders.append("ui")
         if includeQt:
-            (basePath / "qt").mkdir()
+            folders.append("qt")
+        for folder in folders:
+            (basePath / folder).mkdir(parents=True, exist_ok=True)
 
         # Make directories importable packages
-        (basePath / "src" / "__init__.py").touch()
+        (basePath / "src" / "__init__.py").touch(exist_ok=True)
         if includeUi:
-            (basePath / "ui" / "__init__.py").touch()
+            (basePath / "ui" / "__init__.py").touch(exist_ok=True)
         if includeQt:
-            (basePath / "qt" / "__init__.py").touch()
+            (basePath / "qt" / "__init__.py").touch(exist_ok=True)
 
     # Create core files
     logger.action("writing core files")
@@ -302,9 +546,17 @@ def createProject(
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
         (basePath / ".env").write_text(_build_env_content(includeUi, includeQt))
-        (basePath / "README.md").write_text(
-            f"# {projectName}\n\nProject scaffold created by manageProject.py\n"
-        )
+        (basePath / "README.md").write_text(_build_readme_content(projectName))
+        (basePath / "documentation" / "architecture.md").write_text(ARCHITECTURE_CONTENT)
+        (basePath / "project" / "currentIncrement.md").write_text(CURRENT_INCREMENT_CONTENT)
+        (basePath / "project" / "project.yaml").write_text(PROJECT_YAML_CONTENT)
+        (basePath / "project" / "roadmap.md").write_text(ROADMAP_CONTENT)
+        (basePath / "project" / "requirements" / "README.md").write_text(REQUIREMENTS_README_CONTENT)
+        (
+            basePath / "project" / "requirements" / "templates" / "requirement.md"
+        ).write_text(REQUIREMENT_TEMPLATE_CONTENT)
+        (basePath / "project" / "adr" / "README.md").write_text(ADR_README_CONTENT)
+        (basePath / "project" / "adr" / "templates" / "adr.md").write_text(ADR_TEMPLATE_CONTENT)
 
     # Copy the guidelines file
     srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
@@ -320,10 +572,25 @@ def createProject(
     if srcAgentGuidelines.exists():
         logger.action("copying agent guidelines")
         if not dryRun:
-            for fileName in ("agent-instructions.md", "copilot-instructions.md"):
-                (basePath / ".github" / fileName).write_text(
-                    _build_managed_content(srcAgentGuidelines.read_text())
-                )
+            (basePath / ".github" / "agent-instructions.md").write_text(
+                _build_managed_content(srcAgentGuidelines.read_text())
+            )
+
+    srcCopilot = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
+    if srcCopilot.exists():
+        logger.action("copying copilot shim")
+        if not dryRun:
+            (basePath / ".github" / "copilot-instructions.md").write_text(
+                _build_managed_content(srcCopilot.read_text())
+            )
+
+    srcClaude = TEMPLATE_DIR.parent / ".github" / "CLAUDE.md"
+    if srcClaude.exists():
+        logger.action("copying claude shim")
+        if not dryRun:
+            (basePath / "CLAUDE.md").write_text(
+                _build_managed_content(srcClaude.read_text())
+            )
 
     # Copy the Codex agent instructions file
     srcAgentInstructions = TEMPLATE_DIR.parent / ".github" / "AGENTS.md"
@@ -551,7 +818,21 @@ def updateProject(
     if allowScaffoldGrowth:
         logger.action("ensuring scaffold directories and packages")
         if not dryRun:
-            folders = ["src", "tests", "logs", ".github"]
+            folders = [
+                "src",
+                "tests",
+                "logs",
+                ".github",
+                "documentation",
+                "project",
+                "project/requirements",
+                "project/requirements/features",
+                "project/requirements/prompt",
+                "project/requirements/templates",
+                "project/adr",
+                "project/adr/templates",
+                "project/reviews",
+            ]
             if installUi:
                 folders.append("ui")
             if installQt:
@@ -576,18 +857,27 @@ def updateProject(
             Path("requirements.txt"),
             Path("dev-requirements.txt"),
             Path(".gitignore"),
+            Path("documentation") / "architecture.md",
+            Path("project") / "currentIncrement.md",
+            Path("project") / "project.yaml",
+            Path("project") / "roadmap.md",
+            Path("project") / "requirements" / "README.md",
+            Path("project") / "requirements" / "templates" / "requirement.md",
+            Path("project") / "adr" / "README.md",
+            Path("project") / "adr" / "templates" / "adr.md",
         }:
             continue
         content = (
-            f"# {projectName}\n\nProject scaffold created by manageProject.py\n"
+            _build_readme_content(projectName)
             if destRel == Path("README.md")
             else contentTemplate
         )
-        _createTextFileIfMissing(
-            basePath / destRel,
-            content,
-            dryRun,
-        )
+        if content is not None:
+            _createTextFileIfMissing(
+                basePath / destRel,
+                content,
+                dryRun,
+            )
     _ensureEnvFile(basePath / ".env", installUi, installQt, dryRun)
 
     for destRel, content in MANAGED_TEXT_TEMPLATES:

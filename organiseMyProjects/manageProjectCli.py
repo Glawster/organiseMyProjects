@@ -8,6 +8,7 @@ agent-readiness validation can remain a reusable module while being exposed as
 import argparse
 import sys
 from pathlib import Path
+from typing import List
 
 from organiseMyProjects import manageProject
 from organiseMyProjects.agentCheck import checkProject
@@ -46,7 +47,7 @@ def _checkParser() -> argparse.ArgumentParser:
     return parser
 
 
-def _checkMain(argv: list[str]) -> int:
+def _checkMain(argv: List[str]) -> int:
     parser = _checkParser()
     args = parser.parse_args(argv)
 

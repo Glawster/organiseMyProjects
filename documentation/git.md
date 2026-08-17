@@ -49,6 +49,66 @@ You can delete them manually one by one:
 git branch -d branch-name
 ```
 
+## Squashing Feature Branch Commits
+
+Before merging a long-running feature branch into `main`, its incremental development commits can be consolidated into a smaller number of meaningful commits.
+
+First switch to the feature branch and make sure the working tree is clean:
+
+```bash
+git switch feature/007-squad-viewer
+git status
+```
+
+Find the point where the feature branch diverged from `main`:
+
+```bash
+git merge-base main HEAD
+```
+
+Review all commits on the feature branch since that point:
+
+```bash
+git log --oneline $(git merge-base main HEAD)..HEAD
+```
+
+Start an interactive rebase from the branch point:
+
+```bash
+git rebase -i $(git merge-base main HEAD)
+```
+
+The editor will show the commits from oldest to newest. Keep `pick` for the first commit that should remain and change subsequent related commits from `pick` to `squash` (or `s`).
+
+For example:
+
+```text
+pick 51c6e769 feat: add persisted tactic rename service
+s 6607a941 feat: allow tactic rename from detail header
+s 76ad0c6f fix: persist tactic rename from detail view
+```
+
+For a large feature, prefer a small number of logical commits rather than automatically reducing everything to one commit. For example:
+
+```text
+feat(squad): implement squad viewer and role analysis
+feat(tactic): support tactic evidence and regeneration
+style(ui): standardise squad and tactic presentation
+docs(test): complete requirement documentation and coverage
+```
+
+When Git asks for the resulting commit message, replace the accumulated incremental messages with a clear description of the logical change.
+
+After the rebase, run the project's tests before updating the remote branch.
+
+If the feature branch has already been pushed, its history has now been rewritten. Update the remote using:
+
+```bash
+git push --force-with-lease origin feature/007-squad-viewer
+```
+
+Use `--force-with-lease` rather than `--force`. It refuses to overwrite the remote branch if it has changed since the local repository last fetched it.
+
 ## 🔄 Sync with GitHub
 
 ```bash

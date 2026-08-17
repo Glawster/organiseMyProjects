@@ -4,7 +4,7 @@
    "python.testing.nosetestsEnabled": false,
    "python.testing.pytestArgs": [
       "tests",
-      "--override-ini=python_files=test_[A-Z]*.py"
+      "--override-ini=python_files=test_[a-z]*.py"
    ],
    "python-envs.pythonProjects": [
       {

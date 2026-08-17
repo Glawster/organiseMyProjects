@@ -469,7 +469,7 @@ def testFileCheck(filepath: str) -> list[tuple[str, str, int]]:
             return [
                 (
                     filename,
-                    "Test file naming (test_[A-Z]*)",
+                    "Test file naming (test_[a-z]*)",
                     0,
                 )
             ]

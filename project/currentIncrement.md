@@ -48,7 +48,7 @@ Implement AI Agent Portability and Context Integrity (Increment 1: vendor-neutra
 - Scaffolding: `organiseMyProjects/manageProject.py`
 - Packaging: `setup.py`
 - Sync: `syncAgentInstructions.py`
-- Tests: `tests/test_AgentCheck.py`, `tests/test_ManageProjectCli.py`
+- Tests: `tests/test_agentCheck.py`, `tests/test_manageProjectCli.py`
 - Documentation: `documentation/agentPortabilityDesign.md`
 
 ## Verification Procedures

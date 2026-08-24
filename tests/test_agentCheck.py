@@ -77,12 +77,12 @@ Next available number: 002
 
 | Req ID | Requirement | Description | Status | Agent Prompt | Architecture Decisions |
 | --- | --- | --- | --- | --- | --- |
-| 001 | [Test feature](features/001-testFeature.md) | Test feature desc | InProgress | [Prompt](prompt/001.prompt.md) | None |
+| 001 | [Test feature](features/001-testFeature.md) | Test feature desc | InProgress | [Prompt](prompt/001-testFeature.md) | None |
 """,
         encoding="utf-8",
     )
 
-    promptFile = repo / "project" / "requirements" / "prompt" / "001.prompt.md"
+    promptFile = repo / "project" / "requirements" / "prompt" / "001-testFeature.md"
     promptFile.write_text("# 001 Prompt\n\nPrompt content\n", encoding="utf-8")
 
     incFile = repo / "project" / "currentIncrement.md"
@@ -170,6 +170,38 @@ class TestAgentCheckValidator:
         assert not report.isSuccess
         assert any(f.ruleId == "ENT-001" for f in report.failures)
 
+    def testAgentInstructionsMustRequireRequirementsGuide(self, validRepo: Path):
+        instructions = validRepo / ".github" / "agent-instructions.md"
+        content = instructions.read_text(encoding="utf-8")
+        instructions.write_text(
+            content.replace("Read `.github/requirementsManagement.md`.\n", ""),
+            encoding="utf-8",
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        assert any(f.ruleId == "ENT-004" for f in report.failures)
+
+    def testLegacyTestFilenameFails(self, validRepo: Path):
+        legacyTest = validRepo / "tests" / "test_Foo.py"
+        legacyTest.write_text("def test_example(): pass\n", encoding="utf-8")
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        assert any(f.ruleId == "TST-002" for f in report.failures)
+
+    def testLegacyPromptInfixFails(self, validRepo: Path):
+        reqReadme = validRepo / "project" / "requirements" / "README.md"
+        content = reqReadme.read_text(encoding="utf-8")
+        reqReadme.write_text(
+            content.replace("001-testFeature.md", "001-testFeature.prompt.md"),
+            encoding="utf-8",
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        assert any(f.ruleId == "REQ-005" for f in report.failures)
+
     def testMissingReadmeFails(self, validRepo: Path):
         (validRepo / "README.md").unlink()
         validator = AgentCheckValidator(validRepo)
@@ -201,14 +233,18 @@ class TestAgentCheckValidator:
         assert any(f.ruleId == "INC-002" for f in report.failures)
 
     def testActiveIncrementReferencingCompletedRequirementFails(self, validRepo: Path):
-        reqFile = validRepo / "project" / "requirements" / "features" / "001-testFeature.md"
+        reqFile = (
+            validRepo / "project" / "requirements" / "features" / "001-testFeature.md"
+        )
         content = reqFile.read_text(encoding="utf-8")
         reqFile.write_text(content.replace("InProgress", "Completed"), encoding="utf-8")
 
         # Also update README table so REQ-002 doesn't trigger
         reqReadme = validRepo / "project" / "requirements" / "README.md"
         rContent = reqReadme.read_text(encoding="utf-8")
-        reqReadme.write_text(rContent.replace("InProgress", "Completed"), encoding="utf-8")
+        reqReadme.write_text(
+            rContent.replace("InProgress", "Completed"), encoding="utf-8"
+        )
 
         validator = AgentCheckValidator(validRepo)
         report = validator.runAll()
@@ -226,7 +262,9 @@ class TestAgentCheckValidator:
         assert any(f.ruleId == "REQ-002" for f in report.failures)
 
     def testMissingAdrReferenceFails(self, validRepo: Path):
-        reqFile = validRepo / "project" / "requirements" / "features" / "001-testFeature.md"
+        reqFile = (
+            validRepo / "project" / "requirements" / "features" / "001-testFeature.md"
+        )
         content = reqFile.read_text(encoding="utf-8")
         reqFile.write_text(
             content.replace("None.", "Follow `project/adr/001-missingAdr.md`"),
@@ -271,9 +309,7 @@ Active
             encoding="utf-8",
         )
 
-        monkeypatch.setattr(
-            sys, "argv", ["agentCheck", str(validRepo), "--strict"]
-        )
+        monkeypatch.setattr(sys, "argv", ["agentCheck", str(validRepo), "--strict"])
         exitCode = main()
         assert exitCode == 1
 

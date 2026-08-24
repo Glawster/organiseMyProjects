@@ -35,8 +35,8 @@ project/requirements/
 │   ├── adapters/
 │   │   ├── codex.md
 │   │   └── copilot.md
-│   ├── 003a-viewManagement.prompt.md
-│   └── 003b-viewManagement.prompt.md
+│   ├── 003a-viewManagement.md
+│   └── 003b-viewManagement.md
 ├── templates/
 │   └── requirement.md
 └── features/
@@ -76,16 +76,16 @@ commit, pull-request, test and documentation references. Repository-specific
 prefixes may be used in external tools when necessary, but they are not part of
 the requirement filename.
 
-When a requirement has one prompt, its filename matches the requirement with
-`.prompt` inserted before the Markdown extension. When it has multiple prompts,
-append sequential lowercase letters to the requirement number and give each
-prompt the same requirement name:
+When a requirement has one prompt, its filename is identical to the requirement
+filename and differs only by directory. When it has multiple prompts, append
+sequential lowercase letters to the requirement number and give each prompt the
+same requirement name:
 
 ```text
 project/requirements/features/003-viewManagement.md
-project/requirements/prompt/003-viewManagement.prompt.md
-project/requirements/prompt/003a-viewManagement.prompt.md
-project/requirements/prompt/003b-viewManagement.prompt.md
+project/requirements/prompt/003-viewManagement.md
+project/requirements/prompt/003a-viewManagement.md
+project/requirements/prompt/003b-viewManagement.md
 ```
 
 Use the unsuffixed form only while there is a single prompt. For multiple
@@ -209,9 +209,12 @@ may be sufficient if the decision remains traceable.
 ### 3. Start delivery
 
 Set the index entry to `InProgress` and update the record's status in the same
-change. Before coding, map each acceptance criterion to planned test
-coverage or another verification method. Link any implementation plan, issue or
-ADR; do not turn the requirement itself into a task-by-task coding diary.
+change. Before coding, map each acceptance criterion to planned test coverage or
+another verification method. For substantial requirements, use the test-plan
+table and production-path guidance in
+[`documentation/testingProcess.md`](../documentation/testingProcess.md). Link
+any implementation plan, issue or ADR; do not turn the requirement itself into
+a task-by-task coding diary.
 
 ### 4. Implement and maintain traceability
 
@@ -288,19 +291,19 @@ allow their acceptance criteria to drift apart.
 Store a single prompt at:
 
 ```text
-project/requirements/prompt/<ddd-requirementName>.prompt.md
+project/requirements/prompt/<ddd-requirementName>.md
 ```
 
 If separate prompts are needed, store them as:
 
 ```text
-project/requirements/prompt/<ddd>a-<requirementName>.prompt.md
-project/requirements/prompt/<ddd>b-<requirementName>.prompt.md
+project/requirements/prompt/<ddd>a-<requirementName>.md
+project/requirements/prompt/<ddd>b-<requirementName>.md
 ```
 
 For example, separate implementation and verification prompts for
-`003-viewManagement.md` are `003a-viewManagement.prompt.md` and
-`003b-viewManagement.prompt.md`. Keep reusable tool-specific instructions in
+`003-viewManagement.md` are `003a-viewManagement.md` and
+`003b-viewManagement.md`. Keep reusable tool-specific instructions in
 `project/requirements/prompt/adapters/<agent>.md` and combine the applicable
 adapter with the relevant prompt when starting a run. Do not create an
 additional prompt merely to change the agent name.
@@ -463,9 +466,9 @@ Next available number: 006
 
 | Req ID | Requirement | Description | Status | Agent Prompt | Architecture Decisions |
 | --- | --- | --- | --- | --- | --- |
-| 003 | [Manage views](features/003-viewManagement.md) | Create and manage saved views. | Completed | [Implement](prompt/003a-viewManagement.prompt.md), [verify](prompt/003b-viewManagement.prompt.md) | [ADR-002](../adr/002-viewStorage.md) |
-| 004 | [Export parsed messages](features/004-exportParsedMessages.md) | Export parsed messages in supported formats. | ToDo | [Prompt](prompt/004-exportParsedMessages.prompt.md) | Pending |
-| 005 | [Report malformed input](features/005-reportMalformedInput.md) | Explain malformed input without losing valid results. | InProgress | [Prompt](prompt/005-reportMalformedInput.prompt.md) | Not required |
+| 003 | [Manage views](features/003-viewManagement.md) | Create and manage saved views. | Completed | [Implement](prompt/003a-viewManagement.md), [verify](prompt/003b-viewManagement.md) | [ADR-002](../adr/002-viewStorage.md) |
+| 004 | [Export parsed messages](features/004-exportParsedMessages.md) | Export parsed messages in supported formats. | ToDo | [Prompt](prompt/004-exportParsedMessages.md) | Pending |
+| 005 | [Report malformed input](features/005-reportMalformedInput.md) | Explain malformed input without losing valid results. | InProgress | [Prompt](prompt/005-reportMalformedInput.md) | Not required |
 ```
 
 The index is a navigation and status view, not a substitute for the individual

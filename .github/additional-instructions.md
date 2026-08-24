@@ -100,12 +100,12 @@ organiseMyProjects/
 │   ├── styleUtils.py                     # [TEMPLATE] GUI styling utilities
 │   └── mainMenu.py                       # [TEMPLATE] Main menu framework
 ├── tests/                                 # Test suite (not distributed)
-│   ├── test_CreateProject.py
-│   ├── test_GuiNamingLinter.py
-│   ├── test_RunLinter.py
-│   ├── test_Integration.py
-│   ├── test_LogUtils.py
-│   ├── test_SyncAgentInstructions.py
+│   ├── test_createProject.py
+│   ├── test_guiNamingLinter.py
+│   ├── test_runLinter.py
+│   ├── test_integration.py
+│   ├── test_logUtils.py
+│   ├── test_syncAgentInstructions.py
 │   └── conftest.py
 ├── documentation/                         # Project documentation
 │   ├── developer.md                       # Developer guide
@@ -287,7 +287,7 @@ pip install pytest black
 python -m pytest
 
 # Run specific test file
-python -m pytest tests/test_CreateProject.py
+python -m pytest tests/test_createProject.py
 
 # Run with verbose output
 python -m pytest -v
@@ -321,12 +321,12 @@ createProject --update
 ## Test Suite Details
 
 ### Test Organization
-- `test_CreateProject.py` - Tests for project scaffolding
-- `test_GuiNamingLinter.py` - Tests for linter logic
-- `test_RunLinter.py` - Tests for the CLI interface
-- `test_Integration.py` - Tests for end-to-end workflows
-- `test_LogUtils.py` - Tests for logging utilities
-- `test_SyncAgentInstructions.py` - Tests for agent-instruction syncing
+- `test_createProject.py` - Tests for project scaffolding
+- `test_guiNamingLinter.py` - Tests for linter logic
+- `test_runLinter.py` - Tests for the CLI interface
+- `test_integration.py` - Tests for end-to-end workflows
+- `test_logUtils.py` - Tests for logging utilities
+- `test_syncAgentInstructions.py` - Tests for agent-instruction syncing
 - **Total**: 104 comprehensive tests
 
 ### Test Patterns
@@ -503,19 +503,19 @@ The linter recognizes these Qt widget types:
 1. Add file to `organiseMyProjects/` directory
 2. Update `MANIFEST.in` if needed
 3. Update `createProject()` to copy the file
-4. Add test in `test_CreateProject.py`
+4. Add test in `test_createProject.py`
 5. Update the root `README.md` with the file description
 
 ### Adding a New Widget Type to Linter
 **For Tkinter widgets:**
 1. Add naming rule to `namingRules` dict in `guiNamingLinter.py`
 2. Add widget class to `widgetClasses` set
-3. Add parametrized test cases in `test_GuiNamingLinter.py`
+3. Add parametrized test cases in `test_guiNamingLinter.py`
 4. Update HELP.md and `.github/additional-instructions.md` (and `.github/agent-instructions.md` only if the change affects universal guidance)
 
 **For Qt widgets:**
 1. Add widget type to `qtWidgetTypes` set in `guiNamingLinter.py`
-2. Add parametrized test cases in `test_GuiNamingLinter.py`
+2. Add parametrized test cases in `test_guiNamingLinter.py`
 3. Update HELP.md and `.github/additional-instructions.md` (and `.github/agent-instructions.md` only if the change affects universal guidance)
 
 ### Modifying Project Structure

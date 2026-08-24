@@ -4,6 +4,7 @@ Tests for logUtils.py functionality.
 
 import datetime
 import logging
+import re
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -43,6 +44,22 @@ class TestDefaultLogDir:
         assert (
             expectedFile.exists()
         ), f"Expected log file {expectedFile} was not created"
+
+    def testLogLineUsesAlignedLevelAndExtensionlessSource(self, tmp_path):
+        """Use the OMP 0.5 timestamp, level, source and message format."""
+        logger = getLogger("logUtils", logDir=tmp_path)
+        logger.info("message")
+        for handler in logger.logger.handlers:
+            handler.flush()
+
+        expectedDate = datetime.date.today().isoformat()
+        logFile = tmp_path / f"logUtils-{expectedDate}.log"
+        line = logFile.read_text(encoding="utf-8").splitlines()[-1]
+        assert re.fullmatch(
+            r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] "
+            r"\[    INFO\] logUtils \.\.\.message",
+            line,
+        )
 
 
 class TestDrawBox:

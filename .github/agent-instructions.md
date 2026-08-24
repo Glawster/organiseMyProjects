@@ -22,6 +22,9 @@
 
 These are master development guidelines for all projects.
 
+Read `.github/requirementsManagement.md`.
+Read `documentation/testingProcess.md` before planning or reviewing tests.
+
 Project-specific details belong in:
 
 .github/additional-instructions.md
@@ -821,6 +824,9 @@ Rules:
 
 ## Testing Standards
 
+- Follow `documentation/testingProcess.md` as the authoritative testing process.\
+- Name Python test modules `test_camelCaseName.py`; pytest discovery must use
+  `python_files = test_[a-z]*.py`.\
 - Core logic \>90% coverage\
 - Critical functions 100% coverage\
 - Use Arrange--Act--Assert\

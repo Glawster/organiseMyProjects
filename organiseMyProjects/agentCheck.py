@@ -68,6 +68,7 @@ class AgentCheckValidator:
     def runAll(self) -> CheckReport:
         """Run all validation rule families."""
         self._checkEntryPoints()
+        self._checkManagedConventions()
         self._checkDocumentation()
         self._checkCurrentIncrement()
         self._checkRequirementsAndAdrs()
@@ -150,6 +151,50 @@ class AgentCheckValidator:
                 ".github/additional-instructions.md is missing",
                 addInstructions,
             )
+
+        # ENT-004: requirements guidance is mandatory context for agents.
+        agentInstructions = self.rootPath / ".github" / "agent-instructions.md"
+        if agentInstructions.exists():
+            try:
+                instructionsText = agentInstructions.read_text(encoding="utf-8")
+                requiredText = "Read `.github/requirementsManagement.md`."
+                if requiredText not in instructionsText:
+                    self.report.add(
+                        "ENT-004",
+                        Severity.FAILURE,
+                        f".github/agent-instructions.md must contain: {requiredText}",
+                        agentInstructions,
+                    )
+            except OSError:
+                pass
+
+    def _checkManagedConventions(self) -> None:
+        """Validate OMP-managed pytest and test-module naming conventions."""
+        pytestIni = self.rootPath / "pytest.ini"
+        if pytestIni.exists():
+            try:
+                if "python_files = test_[a-z]*.py" not in pytestIni.read_text(
+                    encoding="utf-8"
+                ):
+                    self.report.add(
+                        "TST-001",
+                        Severity.FAILURE,
+                        "pytest.ini must use python_files = test_[a-z]*.py",
+                        pytestIni,
+                    )
+            except OSError:
+                pass
+
+        testsPath = self.rootPath / "tests"
+        if testsPath.is_dir():
+            for testFile in sorted(testsPath.glob("test_*.py")):
+                if re.fullmatch(r"test_[a-z][A-Za-z0-9]*\.py", testFile.name) is None:
+                    self.report.add(
+                        "TST-002",
+                        Severity.FAILURE,
+                        "Python test filename must follow test_camelCaseName.py",
+                        testFile,
+                    )
 
     # -----------------------------------------------------------------------
     # Rule Family: DOC (Living Documentation & Index Integrity)
@@ -318,7 +363,9 @@ class AgentCheckValidator:
                 r"project/requirements/features/(\d{3}-[A-Za-z0-9_-]+\.md)", content
             )
             for reqName in reqMatches:
-                reqPath = self.rootPath / "project" / "requirements" / "features" / reqName
+                reqPath = (
+                    self.rootPath / "project" / "requirements" / "features" / reqName
+                )
                 if not reqPath.exists():
                     self.report.add(
                         "INC-002",
@@ -333,7 +380,10 @@ class AgentCheckValidator:
                         reqStatusMatch = re.search(
                             r"## Status\s*\n+([A-Za-z]+)", reqContent
                         )
-                        if reqStatusMatch and reqStatusMatch.group(1).strip().lower() == "completed":
+                        if (
+                            reqStatusMatch
+                            and reqStatusMatch.group(1).strip().lower() == "completed"
+                        ):
                             self.report.add(
                                 "INC-002",
                                 Severity.FAILURE,
@@ -379,6 +429,7 @@ class AgentCheckValidator:
             return
 
         featureFiles = {f.name: f for f in featuresDir.glob("*.md")}
+        promptsDir = reqDir / "prompt"
 
         if reqReadme.exists():
             try:
@@ -393,6 +444,33 @@ class AgentCheckValidator:
                             featPath,
                         )
 
+                # REQ-005: a single prompt has exactly the requirement filename;
+                # letter suffixes are reserved for genuinely distinct prompts.
+                promptLinks = re.findall(r"\]\(prompt/([^)]+\.md)\)", readmeContent)
+                for promptName in promptLinks:
+                    if ".prompt.md" in promptName:
+                        self.report.add(
+                            "REQ-005",
+                            Severity.FAILURE,
+                            f"Prompt '{promptName}' uses the obsolete .prompt infix",
+                            reqReadme,
+                        )
+                    baseName = re.sub(r"^(\d{3})[a-z]-", r"\1-", promptName)
+                    if baseName not in featureFiles:
+                        self.report.add(
+                            "REQ-005",
+                            Severity.FAILURE,
+                            f"Prompt '{promptName}' has no deterministic requirement filename match",
+                            reqReadme,
+                        )
+                    if promptsDir.is_dir() and not (promptsDir / promptName).exists():
+                        self.report.add(
+                            "REQ-005",
+                            Severity.FAILURE,
+                            f"Prompt '{promptName}' linked from the index does not exist",
+                            reqReadme,
+                        )
+
                 # REQ-002: Status consistency
                 for featName, featPath in featureFiles.items():
                     try:
@@ -401,9 +479,7 @@ class AgentCheckValidator:
                             r"## Status\s*\n+([A-Za-z]+)", featText
                         )
                         featStatus = (
-                            featStatusMatch.group(1).strip()
-                            if featStatusMatch
-                            else ""
+                            featStatusMatch.group(1).strip() if featStatusMatch else ""
                         )
 
                         # Look for row in README table

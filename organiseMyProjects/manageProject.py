@@ -105,7 +105,7 @@ repos:
 
 PYTEST_INI_CONTENT = """[tool:pytest]
 testpaths = tests
-python_files = test[!_]*.py
+python_files = test_[a-z]*.py
 python_functions = test*
 python_classes = Test*
 addopts = 
@@ -321,6 +321,7 @@ Next available number: 001
 | --- | --- | --- | --- |
 """
 
+
 def _build_readme_content(projectName: str) -> str:
     return f"""# {projectName}
 
@@ -336,6 +337,7 @@ Project scaffold created by manageProject.py.
 - [Release Guide](.github/howToRelease.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 """
+
 
 TEMPLATE_DIR = Path(__file__).resolve().parent
 UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
@@ -413,6 +415,10 @@ MANAGED_COPY_TEMPLATES = [
     (
         TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md",
         Path(".github") / "requirementsManagement.md",
+    ),
+    (
+        TEMPLATE_DIR.parent / "documentation" / "testingProcess.md",
+        Path("documentation") / "testingProcess.md",
     ),
     (
         TEMPLATE_DIR.parent / ".github" / "howToRelease.md",
@@ -542,16 +548,24 @@ def createProject(
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
         (basePath / "README.md").write_text(_build_readme_content(projectName))
-        (basePath / "documentation" / "architecture.md").write_text(ARCHITECTURE_CONTENT)
-        (basePath / "project" / "currentIncrement.md").write_text(CURRENT_INCREMENT_CONTENT)
+        (basePath / "documentation" / "architecture.md").write_text(
+            ARCHITECTURE_CONTENT
+        )
+        (basePath / "project" / "currentIncrement.md").write_text(
+            CURRENT_INCREMENT_CONTENT
+        )
         (basePath / "project" / "project.yaml").write_text(PROJECT_YAML_CONTENT)
         (basePath / "project" / "roadmap.md").write_text(ROADMAP_CONTENT)
-        (basePath / "project" / "requirements" / "README.md").write_text(REQUIREMENTS_README_CONTENT)
+        (basePath / "project" / "requirements" / "README.md").write_text(
+            REQUIREMENTS_README_CONTENT
+        )
         (
             basePath / "project" / "requirements" / "templates" / "requirement.md"
         ).write_text(REQUIREMENT_TEMPLATE_CONTENT)
         (basePath / "project" / "adr" / "README.md").write_text(ADR_README_CONTENT)
-        (basePath / "project" / "adr" / "templates" / "adr.md").write_text(ADR_TEMPLATE_CONTENT)
+        (basePath / "project" / "adr" / "templates" / "adr.md").write_text(
+            ADR_TEMPLATE_CONTENT
+        )
 
     # Copy the guidelines file
     srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
@@ -616,6 +630,14 @@ def createProject(
                 _build_managed_content(srcRequirementsManagement.read_text())
             )
 
+    srcTestingProcess = TEMPLATE_DIR.parent / "documentation" / "testingProcess.md"
+    if srcTestingProcess.exists():
+        logger.action("copying testing process guide")
+        if not dryRun:
+            (basePath / "documentation" / "testingProcess.md").write_text(
+                _build_managed_content(srcTestingProcess.read_text())
+            )
+
     # Copy the release process guide
     srcHowToRelease = TEMPLATE_DIR.parent / ".github" / "howToRelease.md"
     if srcHowToRelease.exists():
@@ -665,6 +687,7 @@ def createProject(
     logger.done(f"project '{projectName}' created")
     if dryRun:
         logger.info("create simulation complete: no changes were applied")
+
 
 def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
@@ -737,7 +760,7 @@ def _copy_if_missing(src: Path, dest: Path, dryRun: bool = False):
 
 
 def migrateProject(projectName, dryRun: bool = False):
-    """ Add missing OMP project-management/context structures without creating application scaffolding or overwriting project-owned files. """
+    """Add missing OMP project-management/context structures without creating application scaffolding or overwriting project-owned files."""
     basePath = Path(projectName)
     if not basePath.exists():
         logger.info(f"project '{projectName}' does not exist")
@@ -769,10 +792,49 @@ def migrateProject(projectName, dryRun: bool = False):
         logger.info("migration simulation complete: no changes were applied")
 
 
+def _migrateManagedNames(basePath: Path, dryRun: bool = False) -> None:
+    """Safely migrate only unambiguous legacy OMP-managed filenames."""
+    testsPath = basePath / "tests"
+    if testsPath.is_dir():
+        for source in sorted(testsPath.glob("test_[A-Z]*.py")):
+            concept = source.name.removeprefix("test_")
+            destination = source.with_name(f"test_{concept[0].lower()}{concept[1:]}")
+            if destination.exists():
+                logger.info(f"test rename skipped because target exists: {destination}")
+                continue
+            logger.action(f"renamed {source} to {destination}")
+            if not dryRun:
+                source.rename(destination)
+
+    featuresPath = basePath / "project" / "requirements" / "features"
+    promptsPath = basePath / "project" / "requirements" / "prompt"
+    if featuresPath.is_dir() and promptsPath.is_dir():
+        for source in sorted(promptsPath.glob("*.prompt.md")):
+            destination = source.with_name(source.name.replace(".prompt.md", ".md"))
+            matchingFeature = featuresPath / destination.name
+            if not matchingFeature.exists() or destination.exists():
+                logger.info(
+                    f"prompt rename skipped because mapping is ambiguous: {source}"
+                )
+                continue
+            logger.action(f"renamed {source} to {destination}")
+            if not dryRun:
+                source.rename(destination)
+                requirementsIndex = basePath / "project" / "requirements" / "README.md"
+                if requirementsIndex.exists():
+                    indexText = requirementsIndex.read_text(encoding="utf-8")
+                    updatedText = indexText.replace(source.name, destination.name)
+                    if updatedText != indexText:
+                        requirementsIndex.write_text(updatedText, encoding="utf-8")
+
+
 def updateProject(
     projectName,
-    dryRun: bool = False
+    dryRun: bool = False,
+    includeUi: bool = False,
+    includeQt: bool = False,
 ):
+    """Refresh managed project files while preserving project-owned scaffolds."""
 
     basePath = Path(projectName)
     if not basePath.exists():
@@ -792,6 +854,10 @@ def updateProject(
     for src, destRel in MANAGED_COPY_TEMPLATES:
         if src.exists():
             _update_managed_copy(src, basePath / destRel, dryRun)
+
+    # OMP 0.5 migrations are deliberately limited to deterministic legacy
+    # names. Existing destinations are never overwritten.
+    _migrateManagedNames(basePath, dryRun)
 
     logger.done("project updated")
     if dryRun:
@@ -962,7 +1028,9 @@ def main():
         project_path = projectPath or Path.cwd()
         updateProject(
             project_path,
-            dryRun=dryRun
+            dryRun=dryRun,
+            includeUi=args.ui,
+            includeQt=args.qt,
         )
     else:
         if args.create is False and projectPath is None:

@@ -17,6 +17,7 @@ guides are:
 - [Copilot Compatibility Instructions](.github/copilot-instructions.md)
 - [Repository Layout](.github/repositoryLayout.md)
 - [Requirements Management](.github/requirementsManagement.md)
+- [Testing Process](documentation/testingProcess.md)
 - [Repository Agent Notes](.github/additional-instructions.md)
 
 ## Features
@@ -174,7 +175,7 @@ scaffolding and linting functionality.
 pytest
 
 # Run specific test file
-pytest tests/test_CreateProject.py
+pytest tests/test_createProject.py
 
 # Run with verbose output
 pytest -v
@@ -185,12 +186,12 @@ pytest --cov=organiseMyProjects
 
 ### Test Structure
 
-- `tests/test_CreateProject.py` - Tests for project creation and updating
-- `tests/test_GuiNamingLinter.py` - Tests for GUI naming convention linting
-- `tests/test_RunLinter.py` - Tests for the linter CLI interface
-- `tests/test_Integration.py` - End-to-end integration tests
-- `tests/test_LogUtils.py` - Tests for logging utilities (including `drawBox`)
-- `tests/test_SyncAgentInstructions.py` - Tests for Agent instructions sync
+- `tests/test_createProject.py` - Tests for project creation and updating
+- `tests/test_guiNamingLinter.py` - Tests for GUI naming convention linting
+- `tests/test_runLinter.py` - Tests for the linter CLI interface
+- `tests/test_integration.py` - End-to-end integration tests
+- `tests/test_logUtils.py` - Tests for logging utilities (including `drawBox`)
+- `tests/test_syncAgentInstructions.py` - Tests for Agent instructions sync
 - `tests/conftest.py` - Shared test fixtures and configuration
 
 **Note**: The `tests/` directory is for development and testing of this project

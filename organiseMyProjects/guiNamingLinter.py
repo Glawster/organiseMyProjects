@@ -457,7 +457,9 @@ def fileCheck(filepath: str) -> list[tuple[str, str, int]]:
 
     return visitor.violations
 
+
 ## test file naming
+
 
 def testFileCheck(filepath: str) -> list[tuple[str, str, int]]:
     """Check test file naming convention."""
@@ -465,16 +467,17 @@ def testFileCheck(filepath: str) -> list[tuple[str, str, int]]:
 
     if filename.startswith("test_"):
         namePart = filename[5:].split(".")[0]
-        if not re.match(r"[A-Z]\w*$", namePart):
+        if not re.fullmatch(r"[a-z][A-Za-z0-9]*", namePart):
             return [
                 (
                     filename,
-                    "Test file naming (test_[a-z]*)",
+                    "Test file naming (test_camelCaseName.py)",
                     0,
                 )
             ]
 
     return []
+
 
 ## lint
 

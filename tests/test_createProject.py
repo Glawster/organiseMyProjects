@@ -232,6 +232,23 @@ class TestCreateProject:
             Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+        assert (
+            "Read `.github/requirementsManagement.md`."
+            in (projectPath / ".github" / "agent-instructions.md").read_text()
+        )
+
+    def testCreateProjectTestingProcess(self, temp_dir, sample_project_name):
+        """Test that new projects receive the authoritative testing process."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        guideFile = projectPath / "documentation" / "testingProcess.md"
+        sourceFile = (
+            Path(__file__).parent.parent / "documentation" / "testingProcess.md"
+        )
+        assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testCreateProjectHowToRelease(self, temp_dir, sample_project_name):
         """Test that the shared release guide is project documentation."""
@@ -352,6 +369,32 @@ class TestUpdateProject:
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
+    def testUpdateProjectMigratesUnambiguousLegacyNames(
+        self, temp_dir, sample_project_name
+    ):
+        """Migrate legacy OMP names without overwriting arbitrary targets."""
+        projectPath = temp_dir / sample_project_name
+        testsPath = projectPath / "tests"
+        featuresPath = projectPath / "project" / "requirements" / "features"
+        promptsPath = projectPath / "project" / "requirements" / "prompt"
+        testsPath.mkdir(parents=True)
+        featuresPath.mkdir(parents=True)
+        promptsPath.mkdir(parents=True)
+        (testsPath / "test_FooBar.py").write_text("def test_example(): pass\n")
+        (featuresPath / "007-roleAssessment.md").write_text("# 007: Role assessment\n")
+        (promptsPath / "007-roleAssessment.prompt.md").write_text("# Prompt\n")
+        requirementsIndex = projectPath / "project" / "requirements" / "README.md"
+        requirementsIndex.write_text(
+            "# Requirements\n\n[Prompt](prompt/007-roleAssessment.prompt.md)\n"
+        )
+
+        updateProject(str(projectPath))
+
+        assert (testsPath / "test_fooBar.py").exists()
+        assert not (testsPath / "test_FooBar.py").exists()
+        assert (promptsPath / "007-roleAssessment.md").exists()
+        assert "prompt/007-roleAssessment.md" in requirementsIndex.read_text()
+
     def testUpdateProjectAddsHowToRelease(self, temp_dir, sample_project_name):
         """Test that updateProject adds the managed release process guide."""
         projectPath = temp_dir / sample_project_name
@@ -414,6 +457,7 @@ class TestUpdateProject:
             updateProject(str(projectPath))
 
         assert (projectPath / "main.py").read_text() == customMain
+
 
 class TestUtilityFunctions:
     """Test cases for utility functions."""
@@ -497,6 +541,7 @@ class TestUtilityFunctions:
         _update_text_file(dest, newContent)
 
         assert dest.read_text() == newContent
+
 
 class TestUpdateHelpers:
     """Test helper behavior used during project updates."""

@@ -59,6 +59,13 @@ DOC-001
 resulting Git/VS Code changed files and revert any scaffold-managed updates they
 do not want before committing.
 
+OMP 0.5 performs two narrowly scoped filename migrations. A legacy
+`test_Foo.py` becomes `test_foo.py` only when the destination is absent. A
+legacy single-prompt name such as `007-feature.prompt.md` becomes
+`007-feature.md` only when `features/007-feature.md` proves the relationship and
+the destination is absent; the requirements index link is updated with it.
+Ambiguous or colliding names are reported and left unchanged.
+
 #### `logUtils.py`
 
 Centralised logging utilities shared across organiseMyProjects tooling.
@@ -202,6 +209,8 @@ The package includes template files that are distributed with the package:
     generated repositories
 - `.github/requirementsManagement.md` - Canonical requirements workflow copied
     to generated repositories
+- `documentation/testingProcess.md` - Canonical testing process copied to
+    generated repositories
 - Template Python modules (copied to new projects)
 
 ## Canonical Agent Instructions Access
@@ -236,13 +245,13 @@ Shared test fixtures and configuration:
 - `sample_project_name` - Standard test project name
 - `mockPythonFile` - Sample Python file with violations
 
-#### `tests/test_LogUtils.py`
+#### `tests/test_logUtils.py`
 
 Tests for logging utilities:
 
 - `TestDrawBox` - Box-drawing function tests
 
-#### `tests/test_CreateProject.py`
+#### `tests/test_createProject.py`
 
 Tests for project creation functionality:
 
@@ -250,7 +259,7 @@ Tests for project creation functionality:
 - `TestUpdateProject` - Project update functionality tests
 - `TestUtilityFunctions` - Utility function tests
 
-#### `tests/test_GuiNamingLinter.py`
+#### `tests/test_guiNamingLinter.py`
 
 Tests for linting functionality:
 
@@ -259,14 +268,14 @@ Tests for linting functionality:
 - `TestLintGuiNaming` - Directory linting tests
 - `TestNamingPatterns` - Naming pattern validation tests
 
-#### `tests/test_RunLinter.py`
+#### `tests/test_runLinter.py`
 
 Tests for command-line interface:
 
 - `TestRunLinter` - CLI functionality tests
 - `TestIntegration` - Complete workflow tests
 
-#### `tests/test_Integration.py`
+#### `tests/test_integration.py`
 
 End-to-end integration tests:
 
@@ -276,7 +285,7 @@ End-to-end integration tests:
 - `TestModuleImports` - Import verification tests
 - `TestResourceAccess` - Package resource tests
 
-#### `tests/test_SyncAgentInstructions.py`
+#### `tests/test_syncAgentInstructions.py`
 
 Tests for Agent instructions sync utility:
 
@@ -293,7 +302,7 @@ Tests for Agent instructions sync utility:
 pytest
 
 # Run specific test module
-pytest tests/test_CreateProject.py
+pytest tests/test_createProject.py
 
 # Run with verbose output
 pytest -v
@@ -302,10 +311,10 @@ pytest -v
 pytest --cov=organiseMyProjects
 
 # Run specific test class
-pytest tests/test_CreateProject.py::TestCreateProject
+pytest tests/test_createProject.py::TestCreateProject
 
 # Run specific test method
-pytest tests/test_CreateProject.py::TestCreateProject::\
+pytest tests/test_createProject.py::TestCreateProject::\
 testCreateProjectBasicStructure
 ```
 
@@ -429,7 +438,7 @@ To add new linting rules to `guiNamingLinter.py`:
 
 1. Add the rule to `namingRules` dictionary
 2. Update the `GuiNamingVisitor` class to check for the new rule
-3. Add tests for the new rule in `tests/test_GuiNamingLinter.py`
+3. Add tests for the new rule in `tests/test_guiNamingLinter.py`
 
 Example:
 

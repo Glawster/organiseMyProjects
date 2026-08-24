@@ -194,8 +194,10 @@ class TestCreateProject:
         assert len(agentGuidelines.read_text()) > 0
         assert copilotGuidelines.exists()
         assert "agent-instructions.md" in copilotGuidelines.read_text()
+        assert "repositoryLayout.md" not in copilotGuidelines.read_text()
         assert claudeGuidelines.exists()
         assert "agent-instructions.md" in claudeGuidelines.read_text()
+        assert "repositoryLayout.md" not in claudeGuidelines.read_text()
         assert agentGuidelines.read_text().startswith(DEPLOYMENT_COMMENT)
 
     def testCreateProjectAgentInstructions(self, temp_dir, sample_project_name):
@@ -208,6 +210,7 @@ class TestCreateProject:
         agentFile = projectPath / "AGENTS.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
         assert agentFile.read_text() == _build_managed_content(sourceFile.read_text())
+        assert "repositoryLayout.md" not in agentFile.read_text()
 
     def testCreateProjectRepositoryLayout(self, temp_dir, sample_project_name):
         """Test that the shared repository layout is project documentation."""
@@ -216,8 +219,10 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        layoutFile = projectPath / ".github" / "repositoryLayout.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
+        layoutFile = projectPath / "documentation" / "repositoryLayout.md"
+        sourceFile = (
+            Path(__file__).parent.parent / "documentation" / "repositoryLayout.md"
+        )
         assert layoutFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testCreateProjectRequirementsManagement(self, temp_dir, sample_project_name):
@@ -227,13 +232,13 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "requirementsManagement.md"
+        guideFile = projectPath / "documentation" / "requirementsManagement.md"
         sourceFile = (
-            Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
+            Path(__file__).parent.parent / "documentation" / "requirementsManagement.md"
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
         assert (
-            "Read `.github/requirementsManagement.md`."
+            "Read `documentation/requirementsManagement.md`."
             in (projectPath / ".github" / "agent-instructions.md").read_text()
         )
 
@@ -249,6 +254,10 @@ class TestCreateProject:
             Path(__file__).parent.parent / "documentation" / "testingProcess.md"
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+        readmeText = (projectPath / "README.md").read_text()
+        assert "documentation/repositoryLayout.md" in readmeText
+        assert "documentation/requirementsManagement.md" in readmeText
+        assert "documentation/testingProcess.md" in readmeText
 
     def testCreateProjectHowToRelease(self, temp_dir, sample_project_name):
         """Test that the shared release guide is project documentation."""
@@ -257,8 +266,8 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "howToRelease.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "howToRelease.md"
+        guideFile = projectPath / "documentation" / "howToRelease.md"
+        sourceFile = Path(__file__).parent.parent / "documentation" / "howToRelease.md"
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testCreateProjectAgentPortabilityStructure(self, temp_dir, sample_project_name):
@@ -350,8 +359,10 @@ class TestUpdateProject:
 
         updateProject(str(projectPath))
 
-        layoutFile = projectPath / ".github" / "repositoryLayout.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
+        layoutFile = projectPath / "documentation" / "repositoryLayout.md"
+        sourceFile = (
+            Path(__file__).parent.parent / "documentation" / "repositoryLayout.md"
+        )
         assert layoutFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testUpdateProjectAddsRequirementsManagement(
@@ -363,9 +374,9 @@ class TestUpdateProject:
 
         updateProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "requirementsManagement.md"
+        guideFile = projectPath / "documentation" / "requirementsManagement.md"
         sourceFile = (
-            Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
+            Path(__file__).parent.parent / "documentation" / "requirementsManagement.md"
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
@@ -402,8 +413,8 @@ class TestUpdateProject:
 
         updateProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "howToRelease.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "howToRelease.md"
+        guideFile = projectPath / "documentation" / "howToRelease.md"
+        sourceFile = Path(__file__).parent.parent / "documentation" / "howToRelease.md"
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):

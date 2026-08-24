@@ -205,9 +205,9 @@ The package includes template files that are distributed with the package:
     guidelines
 - `.github/copilot-instructions.md` - Identical GitHub Copilot compatibility
     copy
-- `.github/repositoryLayout.md` - Canonical project layout definition copied to
+- `documentation/repositoryLayout.md` - Canonical project layout definition copied to
     generated repositories
-- `.github/requirementsManagement.md` - Canonical requirements workflow copied
+- `documentation/requirementsManagement.md` - Canonical requirements workflow copied
     to generated repositories
 - `documentation/testingProcess.md` - Canonical testing process copied to
     generated repositories

@@ -140,7 +140,7 @@ rules should live in `project/requirements/README.md` and
 
 ## Applying this shared layout
 
-This is a managed baseline stored at `.github/repositoryLayout.md` in every
+This is a managed baseline stored at `documentation/repositoryLayout.md` in every
 repository. Do not edit a downstream copy directly because a later sync will
 replace it.
 

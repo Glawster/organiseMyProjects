@@ -334,7 +334,10 @@ Project scaffold created by manageProject.py.
 - [Current Increment](project/currentIncrement.md)
 - [Requirements](project/requirements/README.md)
 - [Architecture Decisions](project/adr/README.md)
-- [Release Guide](.github/howToRelease.md)
+- [Release Guide](documentation/howToRelease.md)
+- [Repository Layout](documentation/repositoryLayout.md)
+- [Requirements Management](documentation/requirementsManagement.md)
+- [Testing Process](documentation/testingProcess.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 """
 
@@ -409,20 +412,20 @@ MANAGED_COPY_TEMPLATES = [
         Path("CLAUDE.md"),
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md",
-        Path(".github") / "repositoryLayout.md",
+        TEMPLATE_DIR.parent / "documentation" / "repositoryLayout.md",
+        Path("documentation") / "repositoryLayout.md",
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md",
-        Path(".github") / "requirementsManagement.md",
+        TEMPLATE_DIR.parent / "documentation" / "requirementsManagement.md",
+        Path("documentation") / "requirementsManagement.md",
     ),
     (
         TEMPLATE_DIR.parent / "documentation" / "testingProcess.md",
         Path("documentation") / "testingProcess.md",
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "howToRelease.md",
-        Path(".github") / "howToRelease.md",
+        TEMPLATE_DIR.parent / "documentation" / "howToRelease.md",
+        Path("documentation") / "howToRelease.md",
     ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
@@ -611,22 +614,22 @@ def createProject(
             )
 
     # Copy the repository layout definition
-    srcRepositoryLayout = TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md"
+    srcRepositoryLayout = TEMPLATE_DIR.parent / "documentation" / "repositoryLayout.md"
     if srcRepositoryLayout.exists():
         logger.action("copying repository layout")
         if not dryRun:
-            (basePath / ".github" / "repositoryLayout.md").write_text(
+            (basePath / "documentation" / "repositoryLayout.md").write_text(
                 _build_managed_content(srcRepositoryLayout.read_text())
             )
 
     # Copy the requirements management guide
     srcRequirementsManagement = (
-        TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md"
+        TEMPLATE_DIR.parent / "documentation" / "requirementsManagement.md"
     )
     if srcRequirementsManagement.exists():
         logger.action("copying requirements management guide")
         if not dryRun:
-            (basePath / ".github" / "requirementsManagement.md").write_text(
+            (basePath / "documentation" / "requirementsManagement.md").write_text(
                 _build_managed_content(srcRequirementsManagement.read_text())
             )
 
@@ -639,11 +642,11 @@ def createProject(
             )
 
     # Copy the release process guide
-    srcHowToRelease = TEMPLATE_DIR.parent / ".github" / "howToRelease.md"
+    srcHowToRelease = TEMPLATE_DIR.parent / "documentation" / "howToRelease.md"
     if srcHowToRelease.exists():
         logger.action("copying release process guide")
         if not dryRun:
-            (basePath / ".github" / "howToRelease.md").write_text(
+            (basePath / "documentation" / "howToRelease.md").write_text(
                 _build_managed_content(srcHowToRelease.read_text())
             )
 

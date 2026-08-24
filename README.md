@@ -10,13 +10,13 @@ guides are:
 
 - [Developer Guide](documentation/developer.md)
 - [Git Guide](documentation/git.md)
-- [Release Guide](.github/howToRelease.md)
+- [Release Guide](documentation/howToRelease.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Copilot Compatibility Instructions](.github/copilot-instructions.md)
-- [Repository Layout](.github/repositoryLayout.md)
-- [Requirements Management](.github/requirementsManagement.md)
+- [Repository Layout](documentation/repositoryLayout.md)
+- [Requirements Management](documentation/requirementsManagement.md)
 - [Testing Process](documentation/testingProcess.md)
 - [Repository Agent Notes](.github/additional-instructions.md)
 
@@ -65,9 +65,12 @@ myNewProject/
 ├── AGENTS.md                   # Agent discovery and instruction entry point
 ├── .github/
 │   ├── agent-instructions.md    # Canonical AI coding agent guidelines
-│   ├── copilot-instructions.md  # Generated GitHub Copilot compatibility copy
+│   └── copilot-instructions.md  # Generated GitHub Copilot compatibility copy
+├── documentation/
+│   ├── howToRelease.md          # Release process
 │   ├── repositoryLayout.md      # Project file and directory placement rules
-│   └── requirementsManagement.md # Shared requirements workflow
+│   ├── requirementsManagement.md # Shared requirements workflow
+│   └── testingProcess.md        # Shared testing process
 ├── src/
 │   ├── __init__.py
 │   └── globalVars.py              # Project constants template
@@ -300,8 +303,8 @@ The `organiseMyProjects` package includes:
 `.github/copilot-instructions.md` is an identical compatibility copy for GitHub
 Copilot. Use `syncAgentInstructions.py` to push both instruction paths to all
 downstream Glawster repos. The same routine distributes the canonical
-repository layout to `.github/repositoryLayout.md` and the requirements guide
-to `.github/requirementsManagement.md`.
+repository layout to `documentation/repositoryLayout.md` and the requirements
+guide to `documentation/requirementsManagement.md`.
 
 Synced and scaffolded managed files include the originating release number.
 Release tags should match `organiseMyProjects.version.VERSION` (for example,

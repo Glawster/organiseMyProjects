@@ -57,21 +57,23 @@ SYNC_SPECS = [
     },
     {
         "sourceFile": Path(__file__).resolve().parent
-        / ".github"
+        / "documentation"
         / "repositoryLayout.md",
-        "targetPath": ".github/repositoryLayout.md",
+        "targetPath": "documentation/repositoryLayout.md",
         "commitMessage": "sync: update repository layout definition",
     },
     {
         "sourceFile": Path(__file__).resolve().parent
-        / ".github"
+        / "documentation"
         / "requirementsManagement.md",
-        "targetPath": ".github/requirementsManagement.md",
+        "targetPath": "documentation/requirementsManagement.md",
         "commitMessage": "sync: update requirements management guide",
     },
     {
-        "sourceFile": Path(__file__).resolve().parent / ".github" / "howToRelease.md",
-        "targetPath": ".github/howToRelease.md",
+        "sourceFile": Path(__file__).resolve().parent
+        / "documentation"
+        / "howToRelease.md",
+        "targetPath": "documentation/howToRelease.md",
         "commitMessage": "sync: update release process guide",
     },
 ]
@@ -171,8 +173,7 @@ def getTargetRepos(headers: dict) -> list[str]:
     targets = [
         repo["full_name"]
         for repo in repos
-        if repo.get("owner", {}).get("login", "").casefold()
-        == REPO_OWNER.casefold()
+        if repo.get("owner", {}).get("login", "").casefold() == REPO_OWNER.casefold()
         and repo.get("full_name") != SOURCE_REPO
         and not repo.get("archived", False)
         and not repo.get("fork", False)
@@ -201,7 +202,9 @@ def repoSelect(targetRepos: list[str], requestedRepo: Optional[str]) -> list[str
             raise ValueError(
                 f"Repository name is ambiguous; use owner/name: {requestedRepo}"
             )
-        raise ValueError(f"Repository is not eligible or was not found: {requestedRepo}")
+        raise ValueError(
+            f"Repository is not eligible or was not found: {requestedRepo}"
+        )
 
     print("Eligible repositories:")
     for index, repo in enumerate(targetRepos, start=1):
@@ -469,9 +472,7 @@ def main() -> None:
         const="",
         default=None,
         metavar="OWNER/REPO",
-        help=(
-            "sync one repository; omit the value to choose from a numbered list"
-        ),
+        help=("sync one repository; omit the value to choose from a numbered list"),
     )
     parser.add_argument(
         "--token",

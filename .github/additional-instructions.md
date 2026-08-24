@@ -83,8 +83,6 @@ organiseMyProjects/
 ├── .github/
 │   ├── agent-instructions.md           # Canonical master guidelines template
 │   ├── copilot-instructions.md         # GitHub Copilot compatibility copy
-│   ├── repositoryLayout.md             # Canonical project layout definition
-│   ├── requirementsManagement.md       # Canonical requirements workflow
 │   └── additional-instructions.md # Project-specific (this file, NOT template)
 ├── organiseMyProjects/                    # Main package
 │   ├── __init__.py                       # [PACKAGE] Package initialization with public API
@@ -128,8 +126,8 @@ organiseMyProjects/
 - `globalVars.py` - Global constants (copied to src/)
 - `.github/agent-instructions.md` - Canonical development guidelines copied into generated projects
 - `.github/copilot-instructions.md` - Identical compatibility copy for GitHub Copilot
-- `.github/repositoryLayout.md` - Managed project layout definition synced at the same path
-- `.github/requirementsManagement.md` - Managed requirements workflow synced at the same path
+- `documentation/repositoryLayout.md` - Managed project layout definition synced at the same path
+- `documentation/requirementsManagement.md` - Managed requirements workflow synced at the same path
 - `baseFrame.py`, `frameTemplate.py`, `statusFrame.py` - GUI framework
 - `styleUtils.py` - GUI styling utilities
 - `mainMenu.py` - Main menu framework

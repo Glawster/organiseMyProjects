@@ -37,9 +37,9 @@ To enable an AI coding agent with **zero prior conversation history** to open an
 │   (Synchronised by OMP v0.4)   │         │     (Scaffolded, Never Synced)  │
 ├────────────────────────────────┤         ├─────────────────────────────────┤
 │ .github/agent-instructions.md  │         │ README.md (Overview & Doc Index)│
-│ .github/repositoryLayout.md    │         │ documentation/architecture.md   │
-│ .github/requirementsManagement │         │ project/roadmap.md              │
-│ .github/howToRelease.md        │         │ project/requirements/           │
+│ documentation/repositoryLayout │         │ documentation/architecture.md   │
+│ documentation/requirements... │         │ project/roadmap.md              │
+│ documentation/howToRelease.md │         │ project/requirements/           │
 │ Vendor Shims (Copilot, Claude) │         │ project/adr/                    │
 │ tests/agentCheck.py (Linter)   │         │ project/currentIncrement.md     │
 └────────────────────────────────┘         └─────────────────────────────────┘
@@ -76,9 +76,9 @@ OMP already has proven scaffolding, synchronization, and code quality tools. We 
 | **Local Project Scaffolding** | `organiseMyProjects/manageProject.py` | **Extend `PROJECT_TEXT_TEMPLATES`** | Add missing project-owned templates (`currentIncrement.md`, `architecture.md`, `roadmap.md`, `project.yaml`, ADR/requirement templates). These are written *only if missing* and never overwritten during `--update`. |
 | **Logging & Output** | `organiseMyProjects/logUtils.py` / `.sh` | **Reuse directly** | Use standard semantic methods (`doing`, `done`, `info`, `value`, `action`) for the `agentCheck` utility. |
 | **Code / Layout Linting** | `guiNamingLinter.py` / `runLinter.py` | **Reuse pattern** | Follow the established linter pattern (dual-purpose utility in package + test entry point) for the new `agentCheck.py` tool. |
-| **Repository Layout Definition** | `.github/repositoryLayout.md` | **Extend tables in place** | Formalize `project/currentIncrement.md` and `documentation/architecture.md` inside the existing layout tables. |
-| **Requirements Management** | `.github/requirementsManagement.md` | **Reuse directly** | The existing 3-digit requirement workflow (`features/`, `prompt/`, `README.md` matrix) is already robust and remains unchanged. |
-| **Release Workflow** | `.github/howToRelease.md` | **Reuse directly** | Standard `vX.Y` tagging and `release/X.Y` branch workflow remains authoritative. |
+| **Repository Layout Definition** | `documentation/repositoryLayout.md` | **Extend tables in place** | Formalize `project/currentIncrement.md` and `documentation/architecture.md` inside the existing layout tables. |
+| **Requirements Management** | `documentation/requirementsManagement.md` | **Reuse directly** | The existing 3-digit requirement workflow (`features/`, `prompt/`, `README.md` matrix) is already robust and remains unchanged. |
+| **Release Workflow** | `documentation/howToRelease.md` | **Reuse directly** | Standard `vX.Y` tagging and `release/X.Y` branch workflow remains authoritative. |
 
 ---
 
@@ -95,9 +95,9 @@ Every artifact touched or introduced by OMP is strictly classified under one own
 | `.github/agent-instructions.md` | Universal master guidelines (v2) | Synced from OMP template; single source of truth for coding/testing/logging rules. |
 | `.github/copilot-instructions.md` | GitHub Copilot discovery shim | Synced pointer shim directing Copilot to `AGENTS.md`. |
 | `CLAUDE.md` | Claude Code discovery shim | Synced pointer shim directing Claude Code to `AGENTS.md`. |
-| `.github/repositoryLayout.md` | Authoritative directory placement rules | Synced from OMP template. |
-| `.github/requirementsManagement.md` | Canonical requirements workflow | Synced from OMP template. |
-| `.github/howToRelease.md` | Release and tag governance | Synced from OMP template. |
+| `documentation/repositoryLayout.md` | Authoritative directory placement rules | Synced from OMP template. |
+| `documentation/requirementsManagement.md` | Canonical requirements workflow | Synced from OMP template. |
+| `documentation/howToRelease.md` | Release and tag governance | Synced from OMP template. |
 | `organiseMyProjects/agentCheck.py` | Package module for validation | Maintained in OMP package. |
 | `tests/agentCheck.py` | Local test entry point for validation | Scaffolded/synced into `tests/` across managed projects. |
 
@@ -122,7 +122,7 @@ Every artifact touched or introduced by OMP is strictly classified under one own
 ## 4. Strengthened Current Development Record (`project/currentIncrement.md`)
 
 ### 4.1 Placement Decision
-Following `.github/repositoryLayout.md`, top-level operational files in `project/` live directly under `project/` alongside `project/project.yaml` and `project/roadmap.md`, while historical/domain subtrees use dedicated directories (`requirements/`, `adr/`, `reviews/`). 
+Following `documentation/repositoryLayout.md`, top-level operational files in `project/` live directly under `project/` alongside `project/project.yaml` and `project/roadmap.md`, while historical/domain subtrees use dedicated directories (`requirements/`, `adr/`, `reviews/`).
 
 Therefore, the active state file is **`project/currentIncrement.md`**.
 
@@ -204,7 +204,7 @@ To maintain vendor neutrality while accommodating tool-specific discovery conven
 
 | File | Target Tool | Discovery Mechanism Justification | Content |
 | :--- | :--- | :--- | :--- |
-| `AGENTS.md` | Universal Standard / Linux Foundation / Codex / Antigravity | Root-level discovery standard for multi-agent repositories. | Direct pointer referencing `.github/agent-instructions.md`, `.github/additional-instructions.md`, and `.github/repositoryLayout.md`. |
+| `AGENTS.md` | Universal Standard / Linux Foundation / Codex / Antigravity | Root-level discovery standard for multi-agent repositories. | Direct pointer referencing `.github/agent-instructions.md` and optional `.github/additional-instructions.md`; the canonical instructions load the other mandatory guides. |
 | `.github/copilot-instructions.md` | GitHub Copilot | GitHub Copilot specifically looks for `.github/copilot-instructions.md` in repository settings and web context. | **Direct Shim**: Replaces the old 22KB duplicate with a direct pointer to `.github/agent-instructions.md` and `.github/additional-instructions.md`. |
 | `CLAUDE.md` | Claude Code | Claude Code automatically reads `CLAUDE.md` from the project root at session initialization. | **Direct Shim**: Direct pointer to `.github/agent-instructions.md` and `.github/additional-instructions.md`. |
 | *Others (Cursor, Gemini CLI, Roo, etc.)* | Native / Workspace | These tools natively parse `AGENTS.md` or workspace root files; no additional shims required. | *None required.* |
@@ -217,8 +217,6 @@ To maintain vendor neutrality while accommodating tool-specific discovery conven
 Read and follow `.github/agent-instructions.md`.
 
 Also read and follow `.github/additional-instructions.md` when it exists.
-
-Read `.github/repositoryLayout.md` before adding or moving repository content.
 ```
 
 ---
@@ -286,7 +284,7 @@ For existing repositories (e.g., `fmsat`, `sportVision`, `eolas`):
 Step 1: Release OMP v0.4
    │
 Step 2: Remote Standards Sync (python syncAgentInstructions.py --confirm --merge)
-   ├── Updates AGENTS.md, .github/agent-instructions.md, .github/repositoryLayout.md
+   ├── Updates AGENTS.md, .github/agent-instructions.md, documentation/repositoryLayout.md
    └── Deploys lightweight shims (CLAUDE.md, copilot-instructions.md)
    │
 Step 3: Local Scaffolding Update (createProject --update)
@@ -335,7 +333,7 @@ The agent is prompted:
 
 #### Step 2: Observable Agent Actions
 1. The agent reads `AGENTS.md` (or discovers it via `CLAUDE.md` / `.github/copilot-instructions.md`).
-2. The agent follows the links to `.github/agent-instructions.md`, `.github/additional-instructions.md`, and `.github/repositoryLayout.md`.
+2. The agent follows the shim to `.github/agent-instructions.md`, which requires `documentation/requirementsManagement.md`, `documentation/repositoryLayout.md`, and `documentation/testingProcess.md`, and reads optional `.github/additional-instructions.md`.
 3. The agent navigates to `project/currentIncrement.md` and reads the linked requirement in `project/requirements/features/` and architecture in `documentation/architecture.md`.
 
 #### Step 3: Acceptance Assertions

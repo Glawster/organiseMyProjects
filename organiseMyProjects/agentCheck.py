@@ -157,12 +157,23 @@ class AgentCheckValidator:
         if agentInstructions.exists():
             try:
                 instructionsText = agentInstructions.read_text(encoding="utf-8")
-                requiredText = "Read `.github/requirementsManagement.md`."
+                requiredText = "Read `documentation/requirementsManagement.md`."
                 if requiredText not in instructionsText:
                     self.report.add(
                         "ENT-004",
                         Severity.FAILURE,
                         f".github/agent-instructions.md must contain: {requiredText}",
+                        agentInstructions,
+                    )
+                layoutText = (
+                    "Read `documentation/repositoryLayout.md` before adding or moving "
+                    "repository content."
+                )
+                if layoutText not in instructionsText:
+                    self.report.add(
+                        "ENT-004",
+                        Severity.FAILURE,
+                        f".github/agent-instructions.md must contain: {layoutText}",
                         agentInstructions,
                     )
             except OSError:

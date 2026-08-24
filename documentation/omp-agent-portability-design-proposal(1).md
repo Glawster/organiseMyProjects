@@ -2,7 +2,7 @@
 
 **Scope:** Design only — no implementation. Prepared by reviewing the current
 state of `Glawster/organiseMyProjects` (README, `.github/agent-instructions.md`,
-`.github/repositoryLayout.md`, `.github/requirementsManagement.md`, and
+`documentation/repositoryLayout.md`, `documentation/requirementsManagement.md`, and
 `syncAgentInstructions.py`) before proposing anything, per the brief's
 instruction to reuse existing mechanisms rather than create parallel ones.
 
@@ -120,7 +120,7 @@ Checks presence (not content quality) of:
 - `project/adr/` (presence, not that it's non-empty — not every project needs
   a decision record yet)
 - `.github/agent-instructions.md`, `.github/copilot-instructions.md`,
-  `.github/repositoryLayout.md`, `.github/requirementsManagement.md` (i.e.
+  `documentation/repositoryLayout.md`, `documentation/requirementsManagement.md` (i.e.
   synced files are actually present and carry the sync comment)
 - Test and coding-standard entry points referenced from
   `agent-instructions.md` are resolvable (e.g. a `tests/` directory exists)
@@ -148,7 +148,7 @@ Add to `SYNC_SPECS` in `syncAgentInstructions.py`:
 ## 3. Files added or modified
 
 **Modified (OMP-owned, edited once in `organiseMyProjects`, then synced):**
-- `.github/repositoryLayout.md` — add `project/currentIncrement.md` row;
+- `documentation/repositoryLayout.md` — add `project/currentIncrement.md` row;
   add a documentation-conventions row naming `documentation/architecture.md`.
 - `.github/agent-instructions.md` — reference `project/currentIncrement.md`
   and `documentation/architecture.md` in whichever section currently tells an

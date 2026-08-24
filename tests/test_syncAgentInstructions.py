@@ -108,19 +108,19 @@ class TestSyncSpecs:
     def testIncludesRepositoryLayout(self):
         """The shared repository layout should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
-        layoutSpec = specsByTarget[".github/repositoryLayout.md"]
+        layoutSpec = specsByTarget["documentation/repositoryLayout.md"]
         assert layoutSpec["sourceFile"].name == "repositoryLayout.md"
 
     def testIncludesRequirementsManagement(self):
         """The shared requirements guide should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
-        guideSpec = specsByTarget[".github/requirementsManagement.md"]
+        guideSpec = specsByTarget["documentation/requirementsManagement.md"]
         assert guideSpec["sourceFile"].name == "requirementsManagement.md"
 
     def testIncludesHowToRelease(self):
         """The shared release guide should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
-        releaseSpec = specsByTarget[".github/howToRelease.md"]
+        releaseSpec = specsByTarget["documentation/howToRelease.md"]
         assert releaseSpec["sourceFile"].name == "howToRelease.md"
 
 
@@ -195,7 +195,9 @@ class TestGetTargetRepos:
     def testFetchesAllPages(self):
         """A full API page should cause the next page to be requested."""
         firstPage = MagicMock()
-        firstPage.json.return_value = [self._repo(f"repo{index}") for index in range(100)]
+        firstPage.json.return_value = [
+            self._repo(f"repo{index}") for index in range(100)
+        ]
         secondPage = MagicMock()
         secondPage.json.return_value = [self._repo("finalRepo")]
 
@@ -499,9 +501,7 @@ class TestSyncRepo:
 
         with patch(
             "syncAgentInstructions.getRemoteFile", return_value=remoteData
-        ), patch(
-            "syncAgentInstructions.getDefaultBranch", return_value="main"
-        ), patch(
+        ), patch("syncAgentInstructions.getDefaultBranch", return_value="main"), patch(
             "syncAgentInstructions.getBranchHeadSha", return_value="head-sha"
         ), patch(
             "syncAgentInstructions.createBranch"
@@ -527,6 +527,4 @@ class TestSyncRepo:
             "owner/repo", "sync/instructions-20260722", "head-sha", {}
         )
         assert preparedBranches == {"owner/repo"}
-        assert logger.action.call_args_list.count(
-            (("prepare sync branch",), {})
-        ) == 1
+        assert logger.action.call_args_list.count((("prepare sync branch",), {})) == 1

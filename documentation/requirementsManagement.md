@@ -212,7 +212,7 @@ Set the index entry to `InProgress` and update the record's status in the same
 change. Before coding, map each acceptance criterion to planned test coverage or
 another verification method. For substantial requirements, use the test-plan
 table and production-path guidance in
-[`documentation/testingProcess.md`](../documentation/testingProcess.md). Link
+[`testingProcess.md`](testingProcess.md). Link
 any implementation plan, issue or ADR; do not turn the requirement itself into
 a task-by-task coding diary.
 

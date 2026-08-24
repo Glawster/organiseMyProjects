@@ -22,8 +22,10 @@
 
 These are master development guidelines for all projects.
 
-Read `.github/requirementsManagement.md`.
+Read `documentation/requirementsManagement.md`.
+Read `documentation/repositoryLayout.md` before adding or moving repository content.
 Read `documentation/testingProcess.md` before planning or reviewing tests.
+Read `documentation/howToRelease.md` before planning or reviewing releases.
 
 Project-specific details belong in:
 
@@ -290,7 +292,7 @@ class Example:
 ## Project Structure Standard
 
 Before adding or moving repository content, read the repository layout
-definition at `.github/repositoryLayout.md`. That document is authoritative
+definition at `documentation/repositoryLayout.md`. That document is authoritative
 for project-specific directory and file placement. This file remains
 authoritative for universal development and safety rules.
 Repository-specific layout exceptions belong in

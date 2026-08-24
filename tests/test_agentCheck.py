@@ -174,7 +174,23 @@ class TestAgentCheckValidator:
         instructions = validRepo / ".github" / "agent-instructions.md"
         content = instructions.read_text(encoding="utf-8")
         instructions.write_text(
-            content.replace("Read `.github/requirementsManagement.md`.\n", ""),
+            content.replace("Read `documentation/requirementsManagement.md`.\n", ""),
+            encoding="utf-8",
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        assert any(f.ruleId == "ENT-004" for f in report.failures)
+
+    def testAgentInstructionsMustRequireRepositoryLayout(self, validRepo: Path):
+        instructions = validRepo / ".github" / "agent-instructions.md"
+        content = instructions.read_text(encoding="utf-8")
+        instructions.write_text(
+            content.replace(
+                "Read `documentation/repositoryLayout.md` before adding or moving "
+                "repository content.\n",
+                "",
+            ),
             encoding="utf-8",
         )
 

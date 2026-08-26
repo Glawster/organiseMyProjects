@@ -22,6 +22,10 @@ without becoming a second implementation plan.
 - Treat a changed requirement as a controlled change, not an informal edit.
 - Complete a requirement only when objective evidence demonstrates every
   acceptance criterion.
+- Keep requirement lifecycle state here, but keep transient implementation
+  status solely in `project/currentIncrement.md`.
+- Change a requirement when its obligation changes, not merely because
+  implementation progresses. Use Git history for what was delivered and when.
 
 ## Authoritative locations
 
@@ -140,14 +144,6 @@ Why this is needed, including the current problem and relevant constraints.
 
 - Planned and completed tests, review steps or other evidence.
 
-## Traceability
-
-- Implementation: pending
-- Tests: pending
-- Documentation: pending
-- Pull request: pending
-- Agent runs: pending or `None`
-
 ## Change history
 
 - YYYY-MM-DD: created — reason or source.
@@ -208,10 +204,12 @@ may be sufficient if the decision remains traceable.
 
 ### 3. Start delivery
 
-Set the index entry to `InProgress` and update the record's status in the same
-change. Before coding, map each acceptance criterion to planned test coverage or
-another verification method. For substantial requirements, use the test-plan
-table and production-path guidance in
+Set the index entry to `InProgress` and update the record's lifecycle status in
+the same change. Record the active objective, scope, acceptance checklist and
+verification still required in `project/currentIncrement.md`. Before coding,
+map each acceptance criterion to planned test coverage or another verification
+method. For substantial requirements, use the test-plan table and
+production-path guidance in
 [`testingProcess.md`](testingProcess.md). Link
 any implementation plan, issue or ADR; do not turn the requirement itself into
 a task-by-task coding diary.
@@ -220,8 +218,9 @@ a task-by-task coding diary.
 
 Keep the change focused on the agreed scope. Reference the requirement from the
 implementation and tests through meaningful names, comments only where useful,
-commit or pull-request metadata, and links in the Traceability section. Update
-the owned living documentation as behaviour becomes stable.
+and commit or pull-request metadata. Update `project/currentIncrement.md` as
+work progresses. Update owned living documentation only when the implemented
+behaviour it describes changes; do not add increment-completion narratives.
 
 If delivery exposes a material ambiguity or changes an agreed outcome, stop and
 apply the change-control process below before continuing. Implementation detail
@@ -234,9 +233,10 @@ includes automated test paths and results, plus manual or stakeholder validation
 where automated tests cannot prove the outcome. Confirm that relevant living
 documentation and ADRs are current and that no temporary assumption remains.
 
-Set the index entry to `Completed` and update the record only after all criteria
-pass. The completion change should include the final implementation, test,
-documentation and pull-request links. Keep the requirement file in
+Set the index entry and record lifecycle state to `Completed` only after all
+criteria pass. Record completion and any remaining verification or immediate
+next action in `project/currentIncrement.md`, and rely on commits, pull requests,
+tags and releases for delivery history. Keep the requirement file in
 `features/`; its stable path remains valid for future references.
 
 ## Requirements and architecture decisions
@@ -313,7 +313,8 @@ unsuffixed prompt to the required multi-prompt naming, do not move them when the
 requirement is completed or another prompt is added. Update a prompt in place
 before it is issued. After it has been used, preserve its issued meaning in
 version control; a material revision must be recorded in the requirement's
-change history and Agent runs traceability.
+change history. Git, pull-request or issue history records the associated agent
+run.
 
 The canonical brief contains:
 
@@ -387,13 +388,10 @@ provide a controlled snapshot and identify its commit or date. Regenerate the
 prompt after a material requirement change and tell active agents that their
 previous brief is superseded.
 
-Record material agent use under `Agent runs` in the requirement's Traceability
-section. For each run, capture the date, agent or tool, role, assigned criteria,
-and a durable result reference such as a pull request, issue, commit or saved
-handoff. Record the prompt itself when it contains important constraints not
-already visible in the requirement. Do not commit secrets, credentials,
-sensitive user data, transient chat transcripts or vendor-specific internal
-reasoning.
+Use the issued prompt plus commits, pull requests or issues as the durable record
+of material agent work. Do not add a running agent-use history to the
+requirement. Do not commit secrets, credentials, sensitive user data, transient
+chat transcripts or vendor-specific internal reasoning.
 
 Agent output is proposed work and evidence, not automatic approval. A human or
 designated coordinating process reviews the diff, runs the relevant checks and
@@ -406,8 +404,8 @@ clear.
 
 - Before implementation, refine the existing record and add a dated reason to
   its Change history.
-- During implementation, reassess scope, acceptance criteria, tests, estimates,
-  dependencies and documentation before accepting a material change.
+- During implementation, update the requirement only for a material change to
+  scope, acceptance criteria, dependencies or another durable obligation.
 - After completion, do not rewrite history to make new behaviour appear part of
   the original delivery. Create a new linked requirement for a new outcome.
 - Correcting a typo or clarifying wording that does not alter meaning may be
@@ -433,7 +431,7 @@ Before moving it to `Completed`, confirm:
 
 - every acceptance criterion has recorded evidence;
 - tests cover normal, boundary and relevant failure behaviour;
-- implementation, test, documentation, ADR and pull-request links are current;
+- acceptance evidence is sufficient and relevant ADR links are current;
 - maintained documentation describes the delivered behaviour;
 - no unresolved item is being hidden by completion; and
 - the record and index are updated together.
@@ -455,7 +453,9 @@ Keep descriptions short enough for the matrix to remain scannable; detailed
 scope belongs in the linked requirement. Every requirement links to at least
 one prompt; when there are several, list them in suffix order. A requirement
 may link to zero or more ADRs. ADRs link back to the requirements they support.
-The requirement record remains authoritative for scope and status.
+The requirement record remains authoritative for scope and lifecycle status.
+`project/currentIncrement.md` remains authoritative for transient delivery
+status.
 
 Example:
 

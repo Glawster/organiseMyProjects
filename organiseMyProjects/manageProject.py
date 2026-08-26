@@ -150,59 +150,39 @@ See `project/adr/` for significant architectural decisions.
 
 CURRENT_INCREMENT_CONTENT = """# Current Development Increment
 
+## Increment
+
+<!-- Identifier and concise name of the active increment, or None when idle. -->
+
 ## Status
 
 Idle
 <!-- Options: Active, Idle, Blocked, InReview -->
 
+## Requirement
+
+<!-- Governing requirement path, or None. -->
+
 ## Objective
 
-<!-- When work is active, describe the capability currently being delivered. -->
-
-## Governing References
-
-- Primary Requirement: None
-- Supporting ADRs: None
-- Milestone / Roadmap: None
+<!-- Short description of the capability currently being delivered. -->
 
 ## Scope
 
 <!-- Work included in the current increment. -->
 
-## Explicit Exclusions
+## Verification
 
-<!-- Related work deliberately excluded from the current increment. -->
-
-## In-Progress Tasks
-
-<!-- Immediate work units, for example:
-- [ ] Implement capability
+<!-- Keep only acceptance and verification still required, for example:
+- [ ] Focused tests
+- [ ] Full suite
+- [ ] Manual acceptance
 -->
 
-## Relevant Files & Components
+## Next
 
-<!-- Source, test and documentation paths relevant to the current increment. -->
-
-## Verification Procedures
-
-<!-- Reference the authoritative build/test instructions and add
-increment-specific verification only where necessary. -->
-
-## Definition of Done
-
-<!-- Observable conditions required to conclude this increment. -->
-
-## Handoff & Unresolved Context
-
-<!-- Context, assumptions, blockers or decisions needed by the next agent. -->
-
-## Agent Readiness
-
-Run:
-
-```bash
-manageProject --check
-```
+<!-- Immediate next action or known next increment. Replace completed-increment
+history when a new increment starts; Git retains delivery history. -->
 """
 
 PROJECT_YAML_CONTENT = """name: "project"
@@ -256,14 +236,6 @@ Describe the current problem and relevant constraints.
 ## Verification
 
 - Planned tests or review evidence.
-
-## Traceability
-
-- Implementation: pending
-- Tests: pending
-- Documentation: pending
-- Pull request: pending
-- Agent runs: None
 
 ## Change history
 

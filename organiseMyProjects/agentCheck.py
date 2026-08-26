@@ -512,18 +512,6 @@ class AgentCheckValidator:
                                     featPath,
                                 )
 
-                        # REQ-004: Completed requirements should have test evidence
-                        if featStatus.casefold() == "completed":
-                            if (
-                                "Tests: pending" in featText
-                                or "Implementation: pending" in featText
-                            ):
-                                self.report.add(
-                                    "REQ-004",
-                                    Severity.WARNING,
-                                    f"Requirement {featName} is marked Completed but still lists pending in Traceability",
-                                    featPath,
-                                )
                     except OSError:
                         pass
             except OSError:

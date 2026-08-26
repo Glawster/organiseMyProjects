@@ -279,12 +279,29 @@ class TestCreateProject:
 
         assert (projectPath / "documentation" / "architecture.md").exists()
         assert (projectPath / "project" / "currentIncrement.md").exists()
+        incrementText = (
+            projectPath / "project" / "currentIncrement.md"
+        ).read_text()
+        assert "## Increment" in incrementText
+        assert "## Requirement" in incrementText
+        assert "## Verification" in incrementText
+        assert "## Next" in incrementText
+        assert "## In-Progress Tasks" not in incrementText
+        assert "## Handoff & Unresolved Context" not in incrementText
         assert (projectPath / "project" / "project.yaml").exists()
         assert (projectPath / "project" / "roadmap.md").exists()
         assert (projectPath / "project" / "requirements" / "README.md").exists()
         assert (
             projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).exists()
+        requirementText = (
+            projectPath
+            / "project"
+            / "requirements"
+            / "templates"
+            / "requirement.md"
+        ).read_text()
+        assert "## Traceability" not in requirementText
         assert (projectPath / "project" / "adr" / "README.md").exists()
         assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
 

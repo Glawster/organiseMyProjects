@@ -127,74 +127,50 @@ Following `documentation/repositoryLayout.md`, top-level operational files in `p
 Therefore, the active state file is **`project/currentIncrement.md`**.
 
 ### 4.2 Template Specification
-The template answers all 9 key operational questions by reference, preventing stale duplication of requirements or ADRs:
+
+The template is the sole transient implementation-status record. It stays small
+enough to replace when the active increment changes instead of accumulating a
+delivery history:
 
 ```markdown
 # Current Development Increment
+
+## Increment
+
+001A — Feature name
 
 ## Status
 
 Active
 <!-- Options: Active, Idle, Blocked, InReview -->
 
+## Requirement
+
+`project/requirements/features/001-featureName.md`
+
 ## Objective
 
-<!-- Concise 1-2 sentence statement of what capability is being delivered right now -->
-
-## Governing References
-
-- Primary Requirement: `project/requirements/features/001-featureName.md`
-- Supporting ADRs: `project/adr/001-architectureDecision.md` (or `None`)
-- Milestone / Roadmap: `project/roadmap.md#milestone-id`
+<!-- Short statement of what capability is being delivered right now. -->
 
 ## Scope
 
-<!-- Key user/system behaviors included in this active increment -->
-- [ ] Deliverable behavior 1
-- [ ] Deliverable behavior 2
+- Behaviour included in this increment.
 
-## Explicit Exclusions
+## Verification
 
-<!-- Adjacent work deliberately excluded from this increment to avoid scope creep -->
-- Excluded item 1
+- [ ] Focused tests
+- [ ] Full suite
+- [ ] Manual acceptance
 
-## In-Progress Tasks
+## Next
 
-<!-- Checkbox list of immediate work units -->
-- [x] Task 1 completed
-- [ ] Task 2 in progress
-- [ ] Task 3 planned
-
-## Relevant Files & Components
-
-<!-- Authoritative list of source, test, and documentation paths for this increment -->
-- Implementation: `src/path/to/module.py`
-- Tests: `tests/test_module.py`
-- Documentation: `documentation/topic.md`
-
-## Verification Procedures
-
-<!-- Concrete commands an agent must run to verify changes -->
-```bash
-pytest tests/test_module.py
-ruff check .
-black --check .
+<!-- Immediate next action or known next increment. -->
 ```
 
-## Definition of Done
-
-<!-- Observable conditions required to conclude this increment -->
-1. All acceptance criteria in `project/requirements/features/001-featureName.md` demonstrated.
-2. Automated tests pass with zero regressions.
-3. Relevant living documentation updated.
-4. `agentCheck` passes with zero errors.
-
-## Handoff & Unresolved Context
-
-<!-- Context, assumptions, or decisions needed by the next agent -->
-- Current state: Task 2 implementation started in `src/...`.
-- Blockers / Open questions: None.
-```
+Requirements retain lifecycle states such as `ToDo`, `InProgress` and
+`Completed`, while this file owns the changing task and verification detail.
+ADRs own decisions, living documentation owns durable behaviour, tests own
+executable evidence and Git owns delivery history.
 
 ---
 
@@ -265,12 +241,11 @@ python tests/agentCheck.py --strict
 | **`DOC-003`** | **FAILURE** | Build/Test Procedures | `.github/additional-instructions.md` does not specify verification commands. |
 | **`INC-001`** | **FAILURE** | Current Increment Exists | `project/currentIncrement.md` is missing. |
 | **`INC-002`** | **FAILURE** | Increment Consistency | `currentIncrement.md` is `Active` but references a requirement marked `Completed` or not found in `project/requirements/features/`. |
-| **`INC-003`** | **FAILURE** | Increment File Resolution | A path listed under `Relevant Files & Components` does not exist on disk. |
+| **`INC-003`** | **WARNING** | Increment File Resolution | A path listed under the legacy `Relevant Files & Components` heading does not exist on disk. Retained for compatibility with existing project-owned increment files. |
 | **`INC-004`** | **WARNING** | Placeholder Detection | `currentIncrement.md` contains unedited scaffold placeholders (e.g. `<!-- Concise 1-2 sentence... -->` or `Deliverable behavior 1`). |
 | **`REQ-001`** | **FAILURE** | Requirements Index Alignment | A file exists in `project/requirements/features/` but is missing from `project/requirements/README.md` (or vice versa). |
 | **`REQ-002`** | **FAILURE** | Status Agreement | The `Status` column in `project/requirements/README.md` contradicts the `## Status` in the feature file. |
 | **`REQ-003`** | **FAILURE** | ADR Reference Integrity | An ADR linked in a requirement or current increment does not exist in `project/adr/`. |
-| **`REQ-004`** | **WARNING** | Verification Evidence | A requirement marked `Completed` has `pending` in its `Traceability -> Tests` or `Implementation` section. |
 
 *Note: No rule checks document age or timestamps. Staleness is evaluated strictly through concrete structural contradictions.*
 

@@ -18,7 +18,9 @@
 ## 1. Minimum Viable First Increment
 
 ### 1.1 Objective
+
 To enable an AI coding agent with **zero prior conversation history** to open an OMP-managed repository and independently determine:
+
 1. The project's purpose and system context.
 2. Architecture boundaries and build/run/test procedures.
 3. The exact objective, scope, and exclusions of the **current development increment**.
@@ -52,6 +54,7 @@ To enable an AI coding agent with **zero prior conversation history** to open an
 ```
 
 ### 1.2 Scope Boundaries for Increment 1
+
 - **In Scope**:
   - `AGENTS.md` as universal discovery root with lightweight, justified vendor shims.
   - Standardized project-owned documentation templates: `documentation/architecture.md`, `project/currentIncrement.md`, `project/roadmap.md`, `project/project.yaml`, `project/requirements/templates/requirement.md`, `project/adr/templates/adr.md`.
@@ -87,6 +90,7 @@ OMP already has proven scaffolding, synchronization, and code quality tools. We 
 Every artifact touched or introduced by OMP is strictly classified under one ownership category:
 
 ### 3.1 OMP-Owned Standards & Tools (Synchronised & Managed)
+
 *Managed by OMP; overwritten or synchronized via PR during updates/releases.*
 
 | Path | Purpose | Lifecycle & Sync Behavior |
@@ -102,6 +106,7 @@ Every artifact touched or introduced by OMP is strictly classified under one own
 | `tests/agentCheck.py` | Local test entry point for validation | Scaffolded/synced into `tests/` across managed projects. |
 
 ### 3.2 Project-Owned Knowledge & Governance (Scaffolded Once, NEVER Overwritten)
+
 *Scaffolded as initial templates on creation/update if missing; owned exclusively by the project thereafter.*
 
 | Path | Purpose | Lifecycle & Guard Policy |
@@ -122,6 +127,7 @@ Every artifact touched or introduced by OMP is strictly classified under one own
 ## 4. Strengthened Current Development Record (`project/currentIncrement.md`)
 
 ### 4.1 Placement Decision
+
 Following `documentation/repositoryLayout.md`, top-level operational files in `project/` live directly under `project/` alongside `project/project.yaml` and `project/roadmap.md`, while historical/domain subtrees use dedicated directories (`requirements/`, `adr/`, `reviews/`).
 
 Therefore, the active state file is **`project/currentIncrement.md`**.
@@ -186,6 +192,7 @@ To maintain vendor neutrality while accommodating tool-specific discovery conven
 | *Others (Cursor, Gemini CLI, Roo, etc.)* | Native / Workspace | These tools natively parse `AGENTS.md` or workspace root files; no additional shims required. | *None required.* |
 
 ### Standard Shim Content (`.github/copilot-instructions.md` and `CLAUDE.md`)
+
 ```markdown
 <!-- deployed from Glawster/organiseMyProjects release 0.4 -- do not edit directly -->
 # Agent Instructions
@@ -202,6 +209,7 @@ Also read and follow `.github/additional-instructions.md` when it exists.
 `agentCheck` is a deterministic static analyzer. It evaluates repository consistency, relational integrity, and placeholder elimination.
 
 ### 6.1 Invocation & Interface
+
 ```bash
 # Direct test entry point in project
 python tests/agentCheck.py
@@ -290,6 +298,7 @@ The following capabilities are deliberately excluded from Increment 1:
 ## 9. Pre-Implementation Assumptions & Verifications
 
 Before implementing Increment 1, verify the following in the repository:
+
 1. **GitHub Copilot Token Permissions**: Confirm that GitHub PATs used by `syncAgentInstructions.py` have sufficient `repo` permissions to create branches and pull requests for new shim paths (`CLAUDE.md`).
 2. **Pre-commit Compatibility**: Ensure adding `tests/agentCheck.py` as a pre-commit check does not cause circular dependencies or performance regressions in local git hooks.
 3. **Conda / Virtualenv Packaging**: Confirm `organiseMyProjects` editable installs (`pip install -e .`) correctly expose `organiseMyProjects.agentCheck` across consuming environments.
@@ -303,16 +312,20 @@ Before implementing Increment 1, verify the following in the repository:
 **Context**: A fresh AI coding agent is initialized in an OMP-managed repository with **no previous conversation history or chat context**.
 
 #### Step 1: Bootstrap Execution
+
 The agent is prompted:
 > *"Inspect this repository and summarize the active work state and standards."*
 
 #### Step 2: Observable Agent Actions
+
 1. The agent reads `AGENTS.md` (or discovers it via `CLAUDE.md` / `.github/copilot-instructions.md`).
 2. The agent follows the shim to `.github/agent-instructions.md`, which requires `documentation/requirementsManagement.md`, `documentation/repositoryLayout.md`, and `documentation/testingProcess.md`, and reads optional `.github/additional-instructions.md`.
 3. The agent navigates to `project/currentIncrement.md` and reads the linked requirement in `project/requirements/features/` and architecture in `documentation/architecture.md`.
 
 #### Step 3: Acceptance Assertions
+
 The test passes if and only if the agent's response accurately states:
+
 - [x] **Project Purpose**: Correct summary of what the project does from `README.md` and `project/project.yaml`.
 - [x] **Architecture Boundaries**: Explicit mention that core domain logic has no UI dependencies and UI modules only orchestrate.
 - [x] **Active Objective**: Exact statement of what is currently being delivered in `project/currentIncrement.md`.

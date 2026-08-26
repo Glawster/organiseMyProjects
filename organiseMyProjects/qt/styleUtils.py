@@ -1,6 +1,5 @@
 def applyApplicationStyle(app):
-    app.setStyleSheet(
-        """
+    app.setStyleSheet("""
         QWidget {
             font-family: "Segoe UI";
             font-size: 10pt;
@@ -8,5 +7,4 @@ def applyApplicationStyle(app):
         QPushButton {
             padding: 6px 12px;
         }
-        """
-    )
+        """)

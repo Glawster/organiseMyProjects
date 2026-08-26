@@ -17,7 +17,6 @@ from organiseMyProjects.logUtils import (
     _defaultLogDir,
     drawBox,
     getLogger,
-    thisApplication,
 )
 
 
@@ -38,7 +37,7 @@ class TestDefaultLogDir:
         appLogDir.mkdir(parents=True, exist_ok=True)
         monkeypatch.setattr(logUtils, "thisApplication", appName)
         monkeypatch.setattr(logUtils, "_applicationLogDir", appLogDir)
-        logger = getLogger(appName)
+        getLogger(appName)
         expectedDate = datetime.date.today().isoformat()
         expectedFile = appLogDir / f"{appName}-{expectedDate}.log"
         assert (
@@ -70,9 +69,11 @@ class TestDefaultLogDir:
             handler.flush()
 
         expectedDate = datetime.date.today().isoformat()
-        lines = (tmp_path / f"levelWidth-{expectedDate}.log").read_text(
-            encoding="utf-8"
-        ).splitlines()
+        lines = (
+            (tmp_path / f"levelWidth-{expectedDate}.log")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
         assert "[WARN] levelWidth warning message" in lines[-2]
         assert "[ERRO] levelWidth Error message" in lines[-1]
 

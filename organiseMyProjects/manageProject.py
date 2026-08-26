@@ -1,8 +1,8 @@
-import os
-import shutil
-import subprocess
 import argparse
 import importlib.util
+import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -103,7 +103,7 @@ repos:
         types: [python]
 """
 
-PYTEST_INI_CONTENT = """[tool:pytest]
+PYTEST_INI_CONTENT = """[pytest]
 testpaths = tests
 python_files = test_[a-z]*.py
 python_functions = test*
@@ -117,6 +117,55 @@ filterwarnings =
     ignore::DeprecationWarning
     ignore::PendingDeprecationWarning
 """
+
+ENVIRONMENT_CONTENT = """name: application
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - pip
+  - pip:
+      - -e .[dev]
+"""
+
+
+def _pyprojectContentBuild(projectName: str) -> str:
+    """Return project-neutral Python package and tool metadata."""
+    return f"""[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{Path(projectName).name}"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["black", "pre-commit", "pytest", "ruff"]
+
+[tool.setuptools]
+package-dir = {{"" = "src"}}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+target-version = ["py310"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_[a-z]*.py"]
+python_functions = ["test*"]
+python_classes = ["Test*"]
+"""
+
 
 VSCODE_SETTINGS_CONTENT = """{
    "python.testing.pytestEnabled": true,
@@ -472,6 +521,28 @@ def _projectRoleDetect(basePath: Path) -> str:
     return "unknown"
 
 
+def _projectIsCanonicalOmp(basePath: Path) -> bool:
+    """Return whether the target is the organiseMyProjects source repository."""
+    pyproject = basePath / "pyproject.toml"
+    packageManager = basePath / "organiseMyProjects" / "manageProject.py"
+    syncUtility = basePath / "syncAgentInstructions.py"
+    if not (pyproject.is_file() and packageManager.is_file() and syncUtility.is_file()):
+        return False
+
+    try:
+        content = pyproject.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+    return bool(
+        re.search(
+            r'^\s*name\s*=\s*["\']organiseMyProjects["\']\s*$',
+            content,
+            re.IGNORECASE | re.MULTILINE,
+        )
+    )
+
+
 def _loadSyncModule():
     """Load syncAgentInstructions.py from the repository root path."""
     modulePath = Path(__file__).resolve().parent.parent / "syncAgentInstructions.py"
@@ -510,7 +581,6 @@ def createProject(
         folders = [
             "src",
             "tests",
-            "logs",
             ".github",
             "documentation",
             "project",
@@ -542,6 +612,10 @@ def createProject(
         (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
+        (basePath / "environment.yml").write_text(ENVIRONMENT_CONTENT)
+        (basePath / "pyproject.toml").write_text(
+            _pyprojectContentBuild(str(projectName))
+        )
         (basePath / "README.md").write_text(_readmeContentBuild(projectName))
         (basePath / "documentation" / "architecture.md").write_text(
             ARCHITECTURE_CONTENT
@@ -747,6 +821,11 @@ def _managedContentBody(content: str) -> tuple[str, int]:
 
 def _managedCopyUpdate(src: Path, dest: Path, dryRun: bool = False):
     """Deploy a managed file only when its substantive content changed."""
+    # The canonical repository is the source of managed files. Never wrap or
+    # rewrite a source file when updateProject targets the source checkout.
+    if src.resolve() == dest.resolve():
+        return
+
     managedContent = _managedContentBuild(
         src.read_text(encoding="utf-8"), suffix=dest.suffix
     )
@@ -876,12 +955,19 @@ def updateProject(
     logger.doing(f"updating project at {basePath}")
     detectedRole = _projectRoleDetect(basePath)
     logger.value("detected role", detectedRole)
+    if _projectIsCanonicalOmp(basePath):
+        logger.info(
+            "canonical OMP repository detected: scaffold deployment is not applicable"
+        )
+        logger.done("project unchanged")
+        return
+
     logger.action("ensuring managed directories")
     if not dryRun:
         (basePath / ".github").mkdir(parents=True, exist_ok=True)
 
     for destRel, content in MANAGED_TEXT_TEMPLATES:
-        _textFileUpdate(basePath / destRel, content, dryRun)
+        _createTextFileIfMissing(basePath / destRel, content, dryRun)
 
     for src, destRel in MANAGED_COPY_TEMPLATES:
         if src.exists():

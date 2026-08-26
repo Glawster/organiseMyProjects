@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import subprocess
 import re
+import subprocess
 from pathlib import Path
 
 LOG_UTILS = Path(__file__).parents[1] / "organiseMyProjects" / "logUtils.sh"

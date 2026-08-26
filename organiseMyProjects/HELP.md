@@ -301,7 +301,7 @@ If the linter doesn't work with your development setup:
 
 ### Requirements
 
-- Python 3.7+
+- Python 3.10+
 - AST parsing capabilities (built into Python)
 - No external dependencies for core functionality
 

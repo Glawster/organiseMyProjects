@@ -2,25 +2,25 @@
 Tests for guiNamingLinter.py functionality.
 """
 
-import pytest
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from organiseMyProjects.guiNamingLinter import (
+    CLASS_NAME_EXCEPTIONS,
+    NAMING_RULES,
+    QT_WIDGET_TYPES,
+    WIDGET_CLASSES,
     GuiNamingVisitor,
+    fileCheck,
+    frameworkDetect,
     lintFile,
     lintGuiNaming,
-    NAMING_RULES,
-    CLASS_NAME_EXCEPTIONS,
-    WIDGET_CLASSES,
-    QT_WIDGET_TYPES,
-    frameworkDetect,
     nameIsSnakeCase,
-    fileCheck,
 )
 
 
@@ -39,18 +39,6 @@ class TestGuiNamingVisitor:
 
     def testNamingRulesStructure(self):
         """Test that naming rules are properly defined."""
-        expected_widget_types = {
-            "Button",
-            "Entry",
-            "Label",
-            "Frame",
-            "Text",
-            "Listbox",
-            "Checkbutton",
-            "Radiobutton",
-            "Combobox",
-        }
-
         assert "Button" in NAMING_RULES
         assert "Handler" in NAMING_RULES
         assert "Constant" in NAMING_RULES
@@ -60,7 +48,7 @@ class TestGuiNamingVisitor:
         assert NAMING_RULES["Button"] == r"^btn[A-Z]\w+"
         assert NAMING_RULES["Handler"] == r"^on[A-Z]\w+"
         assert NAMING_RULES["Constant"] == r"^[A-Z_]+$"
-        assert NAMING_RULES["Class"] == r"^[A-Z][a-zA-Z0-9]*$"
+        assert NAMING_RULES["Class"] == r"^_?[A-Z][a-zA-Z0-9]*$"
 
     def testWidgetClassesDefinition(self):
         """Test that widget classes are correctly defined."""
@@ -171,6 +159,16 @@ class TestClass:
         captured = capsys.readouterr()
         # Should handle empty directory gracefully
         assert "Checking GUI naming" in captured.out
+
+    def testLintDirectoryIgnoresGeneratedBuildTrees(self, temp_dir, capsys):
+        """Generated copies must not duplicate source-tree lint findings."""
+        buildPath = temp_dir / "build"
+        buildPath.mkdir()
+        (buildPath / "invalid.py").write_text("def invalid_name():\n    pass\n")
+
+        lintGuiNaming(str(temp_dir))
+
+        assert "invalid_name" not in capsys.readouterr().out
 
     def testLintDirectoryWithSubdirs(self, temp_dir, capsys):
         """Test linting a directory with subdirectories."""

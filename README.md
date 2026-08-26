@@ -11,6 +11,7 @@ guides are:
 - [Developer Guide](documentation/developer.md)
 - [Git Guide](documentation/git.md)
 - [Release Guide](documentation/howToRelease.md)
+- [Release Notes](documentation/releaseNotes.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
@@ -22,7 +23,7 @@ guides are:
 
 ## Features
 
-- 📁 Create a full Python project scaffold using `createProject`
+- 📁 Preview or create a full Python project scaffold using `createProject`
 - 🔄 Update an existing scaffold with `createProject <name> --update` or run
   `createProject --update` inside the project directory
 - 🧪 Automatically include logging setup, dev tools, and layout
@@ -42,20 +43,24 @@ pip install .
 ### Create a new project
 
 ```bash
+# preview (safe default)
 createProject myNewProject
+
+# create the project
+createProject myNewProject --confirm
 ```
 
 Optional UI scaffolds can be installed at creation time:
 
 ```bash
 # add the tkinter starter package
-createProject myNewProject --ui
+createProject myNewProject --ui --confirm
 
 # add the Qt/PySide6 starter package
-createProject myNewProject -qt
+createProject myNewProject -qt --confirm
 
 # install both UI scaffolds
-createProject myNewProject --ui -qt
+createProject myNewProject --ui -qt --confirm
 ```
 
 Creates:
@@ -67,10 +72,17 @@ myNewProject/
 │   ├── agent-instructions.md    # Canonical AI coding agent guidelines
 │   └── copilot-instructions.md  # Generated GitHub Copilot compatibility copy
 ├── documentation/
+│   ├── architecture.md         # Project architecture
 │   ├── howToRelease.md          # Release process
 │   ├── repositoryLayout.md      # Project file and directory placement rules
 │   ├── requirementsManagement.md # Shared requirements workflow
 │   └── testingProcess.md        # Shared testing process
+├── project/
+│   ├── currentIncrement.md      # Authoritative transient implementation status
+│   ├── project.yaml             # Project purpose and scope
+│   ├── roadmap.md               # Durable sequencing and priorities
+│   ├── adr/                     # Architecture decision records
+│   └── requirements/            # Requirements, prompts and templates
 ├── src/
 │   ├── __init__.py
 │   └── globalVars.py              # Project constants template
@@ -83,35 +95,34 @@ myNewProject/
 │   └── styleUtils.py             # GUI styling utilities
 ├── tests/
 │   └── runLinter.py              # Linter entry point
-├── logs/                         # Application log directory
 ├── main.py                       # Application main entry point
 ├── requirements.txt              # Production dependencies
 ├── dev-requirements.txt          # Development dependencies
 ├── .gitignore                    # Git ignore patterns
-├── .env                          # Environment configuration
 ├── .pre-commit-config.yaml       # Pre-commit hooks configuration
 └── README.md                     # Project documentation
 ```
 
 ### Update an existing project
 
-Refresh a project scaffold and replace missing scaffold files. Managed
+Previewing is the default. Add `--confirm` to apply a creation, update or
+migration. Refreshing a project scaffold replaces managed files only when their
+substantive content changes. A release-marker-only difference does not rewrite
+the file. Managed
 instructional/config files such as `pytest.ini`, `.pre-commit-config.yaml`,
 `.vscode/settings.json`, `tests/runLinter.py`, and Agent instructions are
-refreshed in place, while project-owned code such as `main.py`, `.env`,
-`requirements.txt`, and UI/Qt modules is only created when missing. Provide the
-project name or run inside the target directory:
+refreshed in place. Existing project-owned application code, dependencies,
+source layout and UI/Qt modules are preserved, and update does not infer or add
+a new application or UI role. Provide the project name or run inside the target
+directory:
 
 ```bash
 # from anywhere
-createProject myExistingProject --update
+createProject myExistingProject --update --confirm
 
 # or from within the project directory
-createProject --update
+createProject --update --confirm
 
-# add tkinter or Qt scaffolds during update
-createProject myExistingProject --update --ui
-createProject myExistingProject --update -qt
 ```
 
 `createProject --update` no longer creates dated backup copies. If you want to
@@ -119,7 +130,12 @@ undo scaffold refresh changes, inspect the changed files in VS Code's Source
 Control/Changed Files view and revert the files you do not want before
 committing.
 
-### Run the GUI naming linter
+When the target is the canonical `organiseMyProjects` source repository,
+`manageProject --update` is deliberately a no-op. OMP owns the templates and
+tool configuration, so applying its downstream scaffold back onto itself could
+overwrite canonical files or copy package tools into `tests/`.
+
+### Run the Python and GUI naming linter
 
 ```bash
 # lint the whole project from its root
@@ -129,9 +145,12 @@ runLinter
 runLinter <file_or_dir>
 ```
 
-Checks for violations of variable/class naming and logging message style.
+Checks Python naming, module-level function spacing, logging message style and
+framework-specific widget conventions. Test code is checked contextually:
+pytest fixtures, dunder methods, required framework overrides and private test
+helpers retain the names required by their contracts.
 
-Without markup flags, `runLinter` performs Python GUI naming checks only.
+Without markup flags, `runLinter` performs Python naming and GUI checks only.
 
 ### Run markup lint checks and fixes
 
@@ -264,6 +283,8 @@ After creating a project, pre-commit hooks are automatically installed to:
 
 - Use centralized logger from `logUtils.py`
 - All log messages in lowercase except ERROR messages
+- Log prefixes use four-character levels (`INFO`, `WARN`, `ERRO`, `CRIT`,
+  `DEBU`), and `manageProject` records the running OMP version at startup.
 - Format patterns:
   - `"message..."` when starting a major step (`doing`)
   - `"...message"` for an action or completed step (`action` / `done`)
@@ -276,10 +297,8 @@ After creating a project, pre-commit hooks are automatically installed to:
 
 ## Requirements
 
-- Python 3.7+
-- Windows with Outlook (for `pywin32`-dependent projects)
+- Python 3.10+
 - Development tools:
-  - `pywin32`
   - `black`
   - `pytest`
   - `ruff`
@@ -306,10 +325,10 @@ downstream Glawster repos. The same routine distributes the canonical
 repository layout to `documentation/repositoryLayout.md` and the requirements
 guide to `documentation/requirementsManagement.md`.
 
-Synced and scaffolded managed files include the originating release number.
-Release tags should match `organiseMyProjects.version.VERSION` (for example,
-version `0.3` is tagged `0.3`) so downstream projects can identify the exact
-template release that produced their content.
+Synced and scaffolded managed files include the release that last changed their
+substantive content. Marker-only version changes do not rewrite files, and
+duplicate legacy markers are collapsed to one. Release tags use `v` followed by
+`organiseMyProjects.version.VERSION`; release `0.5` is therefore tagged `v0.5`.
 
 Without `--repo`, every eligible repository is processed. `--repo` with no
 value opens a numbered selector; supplying a repository name avoids the prompt

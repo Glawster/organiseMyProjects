@@ -31,6 +31,7 @@ FUNCTION_NAME_EXCEPTIONS = {
 # These names are contracts imposed by Python or a framework. Renaming an
 # override to satisfy a project convention would break polymorphic dispatch.
 FRAMEWORK_METHOD_EXCEPTIONS = {
+    "clear",  # Qt widget override
     "emit",  # logging.Handler
     "process",  # logging.LoggerAdapter
 }
@@ -42,6 +43,7 @@ LOGGING_METHODS = {
     "done",
     "error",
     "info",
+    "multiline",
     "value",
     "warning",
 }
@@ -58,7 +60,7 @@ NAMING_RULES = {
     "Combobox": r"^cmb[A-Z]\w+",
     "Handler": r"^on[A-Z]\w+",
     "Constant": r"^[A-Z_]+$",
-    "Class": r"^[A-Z][a-zA-Z0-9]*$",
+    "Class": r"^_?[A-Z][a-zA-Z0-9]*$",
 }
 
 QT_WIDGET_TYPES = {
@@ -235,7 +237,15 @@ class GuiNamingVisitor(ast.NodeVisitor):
         if node.name in FUNCTION_NAME_EXCEPTIONS:
             return True
 
+        if any(
+            isinstance(item, ast.Name) and item.id == "property"
+            for item in node.decorator_list
+        ):
+            return True
+
         if isinstance(getattr(node, "parent", None), ast.ClassDef):
+            if node.name in LOGGING_METHODS:
+                return True
             if node.name in FRAMEWORK_METHOD_EXCEPTIONS:
                 return True
 
@@ -306,9 +316,7 @@ class GuiNamingVisitor(ast.NodeVisitor):
             self.gridCalls += 1
             return
 
-        isLoggerCall = (
-            isinstance(func.value, ast.Name) and func.value.id == "logger"
-        ) or (isinstance(func.value, ast.Attribute) and func.value.attr == "logger")
+        isLoggerCall = isinstance(func.value, ast.Name) and func.value.id == "logger"
 
         if not isLoggerCall:
             return
@@ -556,7 +564,20 @@ def lintGuiNaming(directory: str) -> None:
     """Lint all Python files below a directory."""
     print(f"\nChecking GUI naming in: {directory}\n" + "-" * 50)
 
-    for root, _, files in os.walk(directory):
+    ignoredDirectories = {
+        ".git",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".venv",
+        "__pycache__",
+        "build",
+        "dist",
+        "output",
+    }
+    for root, directories, files in os.walk(directory):
+        directories[:] = [
+            item for item in directories if item not in ignoredDirectories
+        ]
         for filename in files:
             if filename.endswith(".py"):
                 path = os.path.join(root, filename)

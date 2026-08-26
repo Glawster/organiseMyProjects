@@ -35,7 +35,7 @@ class Finding:
 class CheckReport:
     findings: list[Finding] = field(default_factory=list)
 
-    def add(
+    def findingAdd(
         self,
         ruleId: str,
         severity: Severity,
@@ -44,6 +44,10 @@ class CheckReport:
         line: Optional[int] = None,
     ) -> None:
         self.findings.append(Finding(ruleId, severity, message, filePath, line))
+
+    # Compatibility alias for existing callers; the implementation follows the
+    # project domainAction naming convention.
+    add = findingAdd
 
     @property
     def failures(self) -> list[Finding]:
@@ -224,7 +228,7 @@ class AgentCheckValidator:
             return
 
         try:
-            readmeText = readme.read_text(encoding="utf-8")
+            readme.read_text(encoding="utf-8")
         except OSError as exc:
             self.report.add(
                 "DOC-001",

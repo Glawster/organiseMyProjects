@@ -1,12 +1,16 @@
 """Tests for organiseMyProjects.agentCheck."""
 
-import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from organiseMyProjects.agentCheck import AgentCheckValidator, Severity, checkProject, main
+
+from organiseMyProjects.agentCheck import (
+    AgentCheckValidator,
+    checkProject,
+    main,
+)
 from organiseMyProjects.manageProject import createProject
 from organiseMyProjects.version import VERSION
 

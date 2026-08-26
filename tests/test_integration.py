@@ -2,8 +2,6 @@
 Integration tests for the entire organiseMyProjects package.
 """
 
-import pytest
-import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -145,13 +143,15 @@ class TestFrame:
             createProject(str(projectPath))
 
         # Define expected structure
-        expectedDirs = ["src", "tests", "logs", ".github"]
+        expectedDirs = ["src", "tests", ".github"]
 
         expectedFiles = [
             "main.py",
             ".gitignore",
             "requirements.txt",
             "dev-requirements.txt",
+            "environment.yml",
+            "pyproject.toml",
             "README.md",
             ".pre-commit-config.yaml",
             "src/__init__.py",

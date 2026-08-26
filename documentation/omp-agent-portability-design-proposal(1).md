@@ -103,7 +103,7 @@ A new subcommand, consistent with the CLI standards already defined in
 `agent-instructions.md` (`application object action`, `--confirm`/`--verbose`
 universal options, non-interactive by default, exit code 0/non-zero):
 
-```
+```bash
 omp validate
 omp validate --repo <path>      # defaults to CWD
 omp validate --verbose
@@ -148,6 +148,7 @@ Add to `SYNC_SPECS` in `syncAgentInstructions.py`:
 ## 3. Files added or modified
 
 **Modified (OMP-owned, edited once in `organiseMyProjects`, then synced):**
+
 - `documentation/repositoryLayout.md` — add `project/currentIncrement.md` row;
   add a documentation-conventions row naming `documentation/architecture.md`.
 - `.github/agent-instructions.md` — reference `project/currentIncrement.md`
@@ -157,6 +158,7 @@ Add to `SYNC_SPECS` in `syncAgentInstructions.py`:
 - `.github/AGENTS.md` — same, once its current content is confirmed.
 
 **New (OMP-owned):**
+
 - `omp validate` command implementation, wherever `createProject`'s CLI is
   defined (needs `createProject.py`/CLI entry-point layout confirmed before
   scoping the exact module).
@@ -164,6 +166,7 @@ Add to `SYNC_SPECS` in `syncAgentInstructions.py`:
   `project/requirements/templates/requirement.md` already is.
 
 **New (project-owned, created once by `createProject`, never resynced):**
+
 - `project/currentIncrement.md` (starter content) in every newly scaffolded
   project.
 - `documentation/architecture.md` (starter stub) in every newly scaffolded

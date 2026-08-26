@@ -31,6 +31,11 @@ Migrate
 Check
   Read-only validation of repository and agent readiness.
 
+Role detection
+  Classifies standalone applications, packaged CLIs and libraries from
+  `main.py`, `pyproject.toml`, `setup.cfg`, `setup.py` and `src/` without
+  executing project-owned packaging metadata.
+
 **Changes from previous behaviour:**
 
 .env
@@ -59,6 +64,18 @@ DOC-001
 resulting Git/VS Code changed files and revert any scaffold-managed updates they
 do not want before committing.
 
+Managed-copy comparison ignores the OMP release header when the body is
+unchanged. The existing header therefore identifies the release that last made
+a substantive change. Missing or duplicate markers are repaired, and actual
+managed-content changes receive one current release marker.
+
+`updateProject()` detects the canonical OMP repository from its package,
+`pyproject.toml` identity and sync utility. It performs no scaffold deployment
+for that target: generic configuration is not installed, package linter modules
+are not copied into `tests/`, and canonical managed sources are never wrapped or
+overwritten. Managed-copy logic also rejects any source/destination pair that
+resolves to the same file.
+
 OMP 0.5 performs two narrowly scoped filename migrations. A legacy
 `test_Foo.py` becomes `test_foo.py` only when the destination is absent. A
 legacy single-prompt name such as `007-feature.prompt.md` becomes
@@ -69,6 +86,10 @@ Ambiguous or colliding names are reported and left unchanged.
 #### `logUtils.py`
 
 Centralised logging utilities shared across organiseMyProjects tooling.
+
+Log records use a fixed four-character severity (`INFO`, `WARN`, `ERRO`,
+`CRIT`, or `DEBU`). `manageProject` also writes the running OMP version at
+startup so saved logs identify the implementation that produced them.
 
 **Key Functions:**
 
@@ -124,13 +145,18 @@ Parameter details:
 **Usage Examples:**
 
 ```python
-from organiseMyProjects.logUtils import drawBox, getLogger, thisApplication
+from pathlib import Path
+
+from organiseMyProjects.logUtils import drawBox, getLogger, setApplication
+
+thisApplication = Path(__file__).parent.name
+setApplication(thisApplication)
 
 # Print to stdout
 drawBox("Deployment complete")
 
 # Log via a logger instance
-log = getLogger(thisApplication)
+log = getLogger()
 drawBox("[ERROR] Database connection failed\nAttempted 3 retries.", logger=log)
 
 # Custom box characters
@@ -139,7 +165,8 @@ drawBox("Warning", border_char="-", corner_char="*", side_char="|")
 
 #### `guiNamingLinter.py`
 
-Implements custom linting rules for GUI naming conventions and code formatting.
+Implements custom linting rules for Python naming, module-level spacing, logging
+and GUI widget conventions.
 
 **Key Classes:**
 
@@ -168,6 +195,13 @@ namingRules = {
     'Class': r'^[A-Z][a-zA-Z0-9]*$',
 }
 ```
+
+Naming enforcement is context-aware. Dunder methods and required framework
+overrides retain their contract names. In test modules, pytest fixtures,
+private helpers, non-test module helpers and `_PascalCase` test doubles may use
+normal Python/pytest conventions. Test functions still follow the OMP test
+function convention. Spacing checks require two blank lines before module-level
+functions and do not require a blank line inside function or method bodies.
 
 #### `runLinter.py`
 
@@ -421,14 +455,14 @@ repos:
 ### Release Process
 
 1. Update `VERSION` in `organiseMyProjects/version.py`
-2. Update `CHANGELOG.md` (if exists)
+2. Update `documentation/releaseNotes.md` and other affected living guides
 3. Run full test suite: `pytest`
 4. Run linter: `runLinter .`
 5. Format code: `black .`
 6. Run static checks: `ruff check .`
-7. Build package: `python setup.py sdist`
-8. Test installation: `pip install dist/organiseMyProjects-*.tar.gz`
-9. Tag the commit with the same release value as `VERSION`
+7. Build package: `python -m build`
+8. Test installation from the generated wheel
+9. Tag the commit as `v<VERSION>` (for example, `v0.5`)
 
 ## Extending the Package
 
@@ -470,14 +504,11 @@ Only executable applications and command-line tools need an entry point. A
 reusable library module or package does not require `main.py`.
 
 1. Create the module with a `main()` function
-2. Add entry point to `setup.py`:
+2. Add the entry point under `[project.scripts]` in `pyproject.toml`:
 
-   ```python
-   entry_points={
-       "console_scripts": [
-           "newTool=organiseMyProjects.newTool:main",
-       ]
-   }
+   ```toml
+   [project.scripts]
+   newTool = "organiseMyProjects.newTool:main"
    ```
 
 3. Add tests for the new tool
@@ -495,7 +526,7 @@ reusable library module or package does not require `main.py`.
 #### Resource Access Issues
 
 - Ensure files are included in `MANIFEST.in`
-- Check that `include_package_data=True` in `setup.py`
+- Check that `include-package-data = true` in `pyproject.toml`
 - Verify resource access uses `importlib.resources`
 
 #### Test Failures

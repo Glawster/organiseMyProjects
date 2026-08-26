@@ -23,7 +23,7 @@ from typing import Optional
 
 import requests
 
-from organiseMyProjects.logUtils import getLogger, thisApplication
+from organiseMyProjects.logUtils import getLogger, setApplication
 from organiseMyProjects.version import VERSION
 
 # ---------------------------------------------------------------------------
@@ -488,8 +488,9 @@ def main() -> None:
 
     dryRun = not args.confirm
 
-    thisApplication = Path(__file__).stem
-    logger = getLogger(thisApplication, includeConsole=True, dryRun=dryRun)
+    thisApplication = "syncAgentInstructions"
+    setApplication(thisApplication)
+    logger = getLogger(includeConsole=True, dryRun=dryRun)
     logger.doing("starting")
     logger.value("dryRun", dryRun)
 
@@ -501,28 +502,27 @@ def main() -> None:
     token = suppliedToken or configLoadToken()
     if not token:
         logger.error(
-            "No GitHub token found. Set GITHUB_TOKEN, use --token, or add it to %s.",
-            CONFIG_PATH,
+            f"No GitHub token found. Set GITHUB_TOKEN, use --token, or add it to {CONFIG_PATH}."
         )
         sys.exit(1)
     if suppliedToken:
         try:
             configSaveToken(suppliedToken)
-            logger.info("GitHub token saved to user config")
+            logger.info("github token saved to user config")
         except OSError as exc:
-            logger.warning("Could not save GitHub token to %s: %s", CONFIG_PATH, exc)
+            logger.warning(f"could not save github token to {CONFIG_PATH}: {exc}")
 
     # Validate source files
     for spec in SYNC_SPECS:
         if not spec["sourceFile"].exists():
-            logger.error("Source file not found: %s", spec["sourceFile"])
+            logger.error(f"Source file not found: {spec['sourceFile']}")
             sys.exit(1)
 
     headers = buildHeaders(token)
     try:
         targetRepos = getTargetRepos(headers)
     except requests.RequestException as exc:
-        logger.error("Could not list GitHub repositories: %s", exc)
+        logger.error(f"Could not list GitHub repositories: {exc}")
         sys.exit(1)
 
     try:
@@ -605,36 +605,26 @@ def main() -> None:
             elif mergeResult == "conflict":
                 manualReviewRepos.append(repo)
                 logger.warning(
-                    "manual review required for %s pull request #%s: %s cannot "
-                    "currently be merged into %s",
-                    repo,
-                    pullNumber,
-                    syncBranch,
-                    defaultBranch,
+                    f"manual review required for {repo} pull request #{pullNumber}: "
+                    f"{syncBranch} cannot currently be merged into {defaultBranch}"
                 )
             else:
                 logger.error(f"Failed to create or merge a pull request in {repo}")
 
     logger.action(
-        "summary updated=%s ready=%s skipped=%s failed=%s",
-        counts["updated"],
-        counts["ready"],
-        counts["skipped"],
-        counts["failed"],
+        f"summary updated={counts['updated']} ready={counts['ready']} "
+        f"skipped={counts['skipped']} failed={counts['failed']}"
     )
     if args.merge:
         logger.action(
-            "merge summary merged=%s already_merged=%s conflicts=%s failed=%s",
-            mergeCounts["merged"],
-            mergeCounts["already_merged"],
-            mergeCounts["conflict"],
-            mergeCounts["failed"],
+            f"merge summary merged={mergeCounts['merged']} "
+            f"already_merged={mergeCounts['already_merged']} "
+            f"conflicts={mergeCounts['conflict']} failed={mergeCounts['failed']}"
         )
         if manualReviewRepos:
             logger.warning(
-                "manual review required for %s repositories: %s",
-                len(manualReviewRepos),
-                ", ".join(manualReviewRepos),
+                f"manual review required for {len(manualReviewRepos)} repositories: "
+                f"{', '.join(manualReviewRepos)}"
             )
     logger.done("finished")
 

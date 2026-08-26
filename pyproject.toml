@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "organiseMyProjects"
+dynamic = ["version"]
+description = "Project scaffolding, managed guidance, logging, and repository validation."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "pywin32; sys_platform == 'win32'",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "build",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+
+[project.scripts]
+manageProject = "organiseMyProjects.manageProjectCli:main"
+createProject = "organiseMyProjects.manageProject:main"
+updateProject = "organiseMyProjects.manageProject:main"
+runLinter = "organiseMyProjects.runLinter:main"
+fixMarkup = "organiseMyProjects.fixMarkup:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "tests.*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "organiseMyProjects.version.VERSION"}
+
+[tool.black]
+target-version = ["py310"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["N999"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_[a-z]*.py"]
+python_functions = ["test*"]
+python_classes = ["Test*"]
+addopts = ["-v", "--tb=short", "--strict-markers", "--disable-warnings"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

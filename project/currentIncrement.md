@@ -2,37 +2,37 @@
 
 ## Increment
 
-0.5 — Single-owner implementation status
+0.5 — Release compliance
 
 ## Status
 
-InReview
+Active
 
 ## Requirement
 
-User-provided OMP 0.5 documentation and agent-guidance update.
+OMP 0.5 release preparation.
 
 ## Objective
 
-Make `project/currentIncrement.md` the sole owner of transient implementation
-status across OMP-managed projects while preserving requirement lifecycle state.
+Bring OMP itself into compliance with its managed Python, packaging,
+environment, testing, documentation and release standards.
 
 ## Scope
 
-- Define artifact ownership in managed agent instructions and repository guidance.
-- Remove implementation-progress traceability from the requirement convention.
-- Simplify the scaffolded current-increment template.
-- Keep existing project-owned historical documents compatible and untouched
-  unless they otherwise need editing.
-- Add regression coverage for newly scaffolded projects.
+- Align Python 3.10 package metadata, Conda environment and CI.
+- Make Black, Ruff, OMP Python lint and markup checks pass repository-wide.
+- Remove stale product-specific and duplicate template implementations.
+- Ensure `manageProject --update` is a no-op for the canonical OMP repository.
+- Validate tests, agent readiness and package artifacts.
 
 ## Verification
 
-- [x] Focused project-creation and validator tests
-- [x] Full test suite
-- [x] `python3 -m organiseMyProjects.manageProjectCli --check`
-- [x] Markup validation run; pre-existing findings remain in legacy documents
+- [ ] Full test suite
+- [ ] Black and Ruff
+- [ ] OMP Python and markup lint
+- [ ] `python3 -m organiseMyProjects.manageProjectCli --check`
+- [ ] Wheel build and metadata inspection
 
 ## Next
 
-Review the uncommitted changes; do not commit or push before review.
+Complete final release validation and review the uncommitted compliance diff.

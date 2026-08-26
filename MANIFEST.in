@@ -5,6 +5,9 @@ include documentation/repositoryLayout.md
 include documentation/requirementsManagement.md
 include documentation/howToRelease.md
 include documentation/testingProcess.md
+include documentation/releaseNotes.md
+include pyproject.toml
+include environment.yml
 include organiseMyProjects/logUtils.sh
 recursive-include organiseMyProjects/ui *.py
 recursive-include organiseMyProjects/qt *.py

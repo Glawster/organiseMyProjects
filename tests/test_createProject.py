@@ -3,8 +3,6 @@ Tests for manageProject.py functionality.
 """
 
 import logging
-import pytest
-import os
 import sys
 import types
 from pathlib import Path
@@ -14,23 +12,36 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from organiseMyProjects.manageProject import (
-    createProject,
-    updateProject,
-    main as createProjectMain,
-    _projectRoleDetect,
-    _fileCopyIfNewer as _copy_if_newer,
-    _textFileUpdate as _update_text_file,
-    _managedContentBuild as _build_managed_content,
-    _managedCopyUpdate as _update_managed_copy,
     DEPLOYMENT_COMMENT,
-    PYTHON_DEPLOYMENT_COMMENT,
-    GITIGNORE_CONTENT,
-    REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
+    ENVIRONMENT_CONTENT,
+    GITIGNORE_CONTENT,
     MAIN_PY_CONTENT,
     PRECOMMIT_CONTENT,
     PYTEST_INI_CONTENT,
+    PYTHON_DEPLOYMENT_COMMENT,
+    REQUIREMENTS_CONTENT,
     VSCODE_SETTINGS_CONTENT,
+    _projectIsCanonicalOmp,
+    _projectRoleDetect,
+    _pyprojectContentBuild,
+    createProject,
+    updateProject,
+)
+from organiseMyProjects.manageProject import (
+    _fileCopyIfNewer as _copy_if_newer,
+)
+from organiseMyProjects.manageProject import (
+    _managedContentBuild as _build_managed_content,
+)
+from organiseMyProjects.manageProject import (
+    _managedCopyUpdate as _update_managed_copy,
+)
+from organiseMyProjects.manageProject import (
+    _textFileUpdate as _update_text_file,
+)
+from organiseMyProjects.manageProject import (
+    main as createProjectMain,
 )
 from organiseMyProjects.version import VERSION
 
@@ -55,7 +66,7 @@ class TestCreateProject:
         assert projectPath.exists()
         assert (projectPath / "src").exists()
         assert (projectPath / "tests").exists()
-        assert (projectPath / "logs").exists()
+        assert not (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
 
         # Verify package init files
@@ -73,6 +84,8 @@ class TestCreateProject:
         assert (projectPath / ".gitignore").exists()
         assert (projectPath / "requirements.txt").exists()
         assert (projectPath / "dev-requirements.txt").exists()
+        assert (projectPath / "environment.yml").exists()
+        assert (projectPath / "pyproject.toml").exists()
         assert (projectPath / "README.md").exists()
         assert (projectPath / "main.py").exists()
         assert (projectPath / ".pre-commit-config.yaml").exists()
@@ -90,6 +103,10 @@ class TestCreateProject:
         assert (
             projectPath / "dev-requirements.txt"
         ).read_text() == DEV_REQUIREMENTS_CONTENT
+        assert (projectPath / "environment.yml").read_text() == ENVIRONMENT_CONTENT
+        assert (projectPath / "pyproject.toml").read_text() == _pyprojectContentBuild(
+            sample_project_name
+        )
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (
             projectPath / ".pre-commit-config.yaml"
@@ -336,6 +353,11 @@ class TestProjectRoleDetection:
 
         assert _projectRoleDetect(repositoryRoot) == "packaged-cli"
 
+    def testCanonicalOmpRepositoryDetection(self):
+        repositoryRoot = Path(__file__).parent.parent
+
+        assert _projectIsCanonicalOmp(repositoryRoot)
+
 
 class TestUpdateProject:
     """Test cases for updateProject function."""
@@ -355,6 +377,24 @@ class TestUpdateProject:
         assert (projectPath / "tests").exists()
         assert not (projectPath / "logs").exists()
         assert_no_gui_scaffolds(projectPath)
+
+    def testUpdateCanonicalOmpRepositoryIsNoOp(self, tmp_path):
+        """OMP owns templates and must never deploy its scaffolds over itself."""
+        projectPath = tmp_path / "organiseMyProjects"
+        packagePath = projectPath / "organiseMyProjects"
+        packagePath.mkdir(parents=True)
+        (packagePath / "manageProject.py").write_text("# canonical source\n")
+        (projectPath / "syncAgentInstructions.py").write_text("# sync utility\n")
+        (projectPath / "pyproject.toml").write_text(
+            '[project]\nname = "organiseMyProjects"\n'
+        )
+
+        updateProject(projectPath)
+
+        assert (packagePath / "manageProject.py").read_text() == "# canonical source\n"
+        assert not (projectPath / "pytest.ini").exists()
+        assert not (projectPath / ".vscode").exists()
+        assert not (projectPath / "tests").exists()
 
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
@@ -465,8 +505,10 @@ class TestUpdateProject:
         sourceFile = Path(__file__).parent.parent / "documentation" / "howToRelease.md"
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
-    def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
-        """Test that updateProject updates pytest.ini if it is outdated."""
+    def testUpdateProjectPreservesExistingPytestIni(
+        self, temp_dir, sample_project_name
+    ):
+        """Project-owned pytest configuration is never overwritten."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
         (projectPath / "pytest.ini").write_text("old content")
@@ -474,10 +516,12 @@ class TestUpdateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        assert (projectPath / "pytest.ini").read_text() == PYTEST_INI_CONTENT
+        assert (projectPath / "pytest.ini").read_text() == "old content"
 
-    def testUpdateProjectVscodeSettingsOutdated(self, temp_dir, sample_project_name):
-        """Test that updateProject updates .vscode/settings.json if it is outdated."""
+    def testUpdateProjectPreservesExistingVscodeSettings(
+        self, temp_dir, sample_project_name
+    ):
+        """Project-owned editor configuration is never overwritten."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
         (projectPath / ".vscode").mkdir()
@@ -488,7 +532,7 @@ class TestUpdateProject:
 
         assert (
             projectPath / ".vscode" / "settings.json"
-        ).read_text() == VSCODE_SETTINGS_CONTENT
+        ).read_text() == '{"old": true}'
 
     def testUpdateProjectPreservesExistingUiTemplates(
         self, temp_dir, sample_project_name

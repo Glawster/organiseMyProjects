@@ -109,9 +109,11 @@ organiseMyProjects/
 │   ├── developer.md                       # Developer guide
 │   └── git.md                             # Git workflow guide
 ├── syncAgentInstructions.py               # Shared-instruction sync utility
-├── setup.py                               # Package configuration
+├── pyproject.toml                         # Authoritative package/tool configuration
+├── setup.py                               # Legacy packaging compatibility shim
+├── environment.yml                       # Preferred Conda environment
 ├── MANIFEST.in                            # Distribution files
-└── pytest.ini                             # Test configuration
+└── .github/workflows/validate.yml         # Release-branch validation
 ```
 
 ### File Categories
@@ -221,7 +223,7 @@ The package contains two types of files:
    - GUI framework files: `baseFrame.py`, `frameTemplate.py`, `statusFrame.py`, `mainMenu.py`, `styleUtils.py`
 
 ### Technical Details
-- Tests excluded from package via `setup.py` (not installed)
+- Tests excluded from package via `pyproject.toml` (not installed)
 - Template files included via `MANIFEST.in`
 - Uses `importlib.resources` for accessing packaged files
 - Fallback to filesystem for development mode
@@ -345,12 +347,12 @@ createProject --update
 ## Code Review Checklist (Project-Specific)
 
 Before submitting changes:
-- [ ] All 104 tests pass: `python -m pytest`
+- [ ] Full test suite passes: `python -m pytest`
 - [ ] Code formatted: `black organiseMyProjects/ tests/`
 - [ ] Linter passes: `runLinter organiseMyProjects/`
-- [ ] Test project creation: `createProject testProject`
-- [ ] Test project update: `createProject testProject --update`
-- [ ] Package distribution works: `python setup.py sdist`
+- [ ] Preview project creation: `createProject testProject`
+- [ ] Preview project update: `createProject testProject --update`
+- [ ] Package distribution works: `python -m build`
 - [ ] Entry points work after install: `createProject --help`, `runLinter --help`
 - [ ] Documentation updated for new features
 - [ ] Backward compatibility maintained
@@ -531,11 +533,11 @@ The linter recognizes these Qt widget types:
 
 ### Package Distribution Issues
 - Verify `MANIFEST.in` includes all necessary files
-- Check `setup.py` excludes tests properly
-- Test with `python setup.py sdist` and inspect generated tarball
+- Check `pyproject.toml` excludes tests properly
+- Test with `python -m build` and inspect generated artifacts
 
 ### Import Errors After Install
-- Ensure entry points are correctly defined in `setup.py`
+- Ensure entry points are correctly defined in `pyproject.toml`
 - Verify package name matches import statements
 - Check that `__init__.py` files are present where needed
 

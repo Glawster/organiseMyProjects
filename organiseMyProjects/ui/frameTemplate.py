@@ -13,7 +13,7 @@ class FrameTemplate(BaseFrame):
         ttk.Label(self.frmMain, text="Main Area Content").pack(padx=10, pady=10)
 
     def onAction(self):
-        self.statusField.show("Add your action handler here.")
+        self.statusField.messageShow("Add your action handler here.")
 
 
 def main():

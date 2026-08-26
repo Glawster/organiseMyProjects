@@ -17,6 +17,7 @@ from organiseMyProjects.manageProject import (
     createProject,
     updateProject,
     main as createProjectMain,
+    _projectRoleDetect,
     _copy_if_newer,
     _update_text_file,
     _build_managed_content,
@@ -280,9 +281,7 @@ class TestCreateProject:
 
         assert (projectPath / "documentation" / "architecture.md").exists()
         assert (projectPath / "project" / "currentIncrement.md").exists()
-        incrementText = (
-            projectPath / "project" / "currentIncrement.md"
-        ).read_text()
+        incrementText = (projectPath / "project" / "currentIncrement.md").read_text()
         assert "## Increment" in incrementText
         assert "## Requirement" in incrementText
         assert "## Verification" in incrementText
@@ -296,15 +295,45 @@ class TestCreateProject:
             projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).exists()
         requirementText = (
-            projectPath
-            / "project"
-            / "requirements"
-            / "templates"
-            / "requirement.md"
+            projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).read_text()
         assert "## Traceability" not in requirementText
         assert (projectPath / "project" / "adr" / "README.md").exists()
         assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
+
+
+class TestProjectRoleDetection:
+    """Classify established Python layouts without executing their metadata."""
+
+    def testSetupPyConsoleScriptsDetectPackagedCli(self, tmp_path):
+        (tmp_path / "setup.py").write_text(
+            'setup(entry_points={"console_scripts": ["tool=package.cli:main"]})\n'
+        )
+        (tmp_path / "package").mkdir()
+        (tmp_path / "package" / "__init__.py").write_text("")
+
+        assert _projectRoleDetect(tmp_path) == "packaged-cli"
+
+    def testSetupPyFlatPackageDetectsLibrary(self, tmp_path):
+        (tmp_path / "setup.py").write_text("setup(packages=find_packages())\n")
+        (tmp_path / "package").mkdir()
+        (tmp_path / "package" / "__init__.py").write_text("")
+
+        assert _projectRoleDetect(tmp_path) == "library"
+
+    def testPep621FlatPackageDetectsLibrary(self, tmp_path):
+        (tmp_path / "pyproject.toml").write_text(
+            '[project]\nname = "example-package"\n'
+        )
+        (tmp_path / "package").mkdir()
+        (tmp_path / "package" / "__init__.py").write_text("")
+
+        assert _projectRoleDetect(tmp_path) == "library"
+
+    def testOmpRepositoryDetectsPackagedCli(self):
+        repositoryRoot = Path(__file__).parent.parent
+
+        assert _projectRoleDetect(repositoryRoot) == "packaged-cli"
 
 
 class TestUpdateProject:

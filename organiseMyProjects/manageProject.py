@@ -428,6 +428,8 @@ def _projectRoleDetect(basePath: Path) -> str:
     if (basePath / "main.py").exists():
         return "standalone-application"
 
+    # Inspect packaging metadata without importing or executing project-owned
+    # configuration. Console entry points make the package a packaged CLI.
     pyproject = basePath / "pyproject.toml"
     if pyproject.exists():
         try:
@@ -446,7 +448,25 @@ def _projectRoleDetect(basePath: Path) -> str:
         if "console_scripts" in content:
             return "packaged-cli"
 
+    setupPy = basePath / "setup.py"
+    if setupPy.exists():
+        try:
+            content = setupPy.read_text(encoding="utf-8")
+        except OSError:
+            content = ""
+        if "console_scripts" in content:
+            return "packaged-cli"
+
+        # A setup.py file is itself an unambiguous legacy Python-package
+        # marker, including repositories whose package lives at the root.
+        return "library"
+
     if (basePath / "src").exists():
+        return "library"
+
+    # A PEP 621 project without an entry point is an importable package even
+    # when it uses a flat package layout rather than src/.
+    if pyproject.exists() and "[project]" in content:
         return "library"
 
     return "unknown"

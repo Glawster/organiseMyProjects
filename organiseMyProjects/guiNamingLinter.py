@@ -2,7 +2,7 @@
 guiNamingLinter.py - GUI Code Quality Linter
 
 This linter enforces project-specific guidelines for Python GUI development:
-- Function formatting (blank line after def if >4 statements)
+- Module-level function spacing
 - Widget naming conventions (Tkinter and Qt/PySide6)
 - Constant and variable naming rules
 - Logging message formatting
@@ -19,15 +19,20 @@ import re
 DOMAIN_ACTION_PATTERN = r"^_?[a-z]+[A-Z][a-zA-Z0-9]*$"
 
 FUNCTION_NAME_EXCEPTIONS = {
-    "__init__",
-    "__repr__",
-    "__str__",
     "main",
     # AST visitor callback names must match ast.NodeVisitor conventions.
     "visit_Assign",
     "visit_ClassDef",
     "visit_Expr",
     "visit_FunctionDef",
+    "visit_AsyncFunctionDef",
+}
+
+# These names are contracts imposed by Python or a framework. Renaming an
+# override to satisfy a project convention would break polymorphic dispatch.
+FRAMEWORK_METHOD_EXCEPTIONS = {
+    "emit",  # logging.Handler
+    "process",  # logging.LoggerAdapter
 }
 
 LOGGING_METHODS = {
@@ -146,9 +151,15 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
     ## lifecycle
 
-    def __init__(self, lines: list[str], framework: str | None = None):
+    def __init__(
+        self,
+        lines: list[str],
+        framework: str | None = None,
+        isTestFile: bool = False,
+    ):
         self.lines = lines
         self.framework = framework
+        self.isTestFile = isTestFile
         self.violations = []
         self.packCalls = 0
         self.gridCalls = 0
@@ -174,6 +185,10 @@ class GuiNamingVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_ClassDef(self, node):
+        if self.isTestFile and re.match(r"^_[A-Z][a-zA-Z0-9]*$", node.name):
+            self.generic_visit(node)
+            return
+
         isExplicitlyAllowed = node.name in CLASS_NAME_EXCEPTIONS
         isPatternAllowed = any(
             re.match(pattern, node.name) for pattern in CLASS_NAME_PATTERNS
@@ -196,11 +211,15 @@ class GuiNamingVisitor(ast.NodeVisitor):
         self.functionCheckSpacing(node)
         self.generic_visit(node)
 
+    def visit_AsyncFunctionDef(self, node):
+        """Apply function rules consistently to asynchronous functions."""
+        self.visit_FunctionDef(node)
+
     ## function
 
     def functionCheckName(self, node) -> None:
         """Check function names use the domainAction pattern."""
-        if node.name in FUNCTION_NAME_EXCEPTIONS:
+        if self.functionIsNamingExempt(node):
             return
 
         if not re.match(DOMAIN_ACTION_PATTERN, node.name):
@@ -208,28 +227,62 @@ class GuiNamingVisitor(ast.NodeVisitor):
                 (node.name, "Function name (domainAction)", node.lineno)
             )
 
+    def functionIsNamingExempt(self, node) -> bool:
+        """Return whether Python, a framework, or pytest owns the function name."""
+        if node.name.startswith("__") and node.name.endswith("__"):
+            return True
+
+        if node.name in FUNCTION_NAME_EXCEPTIONS:
+            return True
+
+        if isinstance(getattr(node, "parent", None), ast.ClassDef):
+            if node.name in FRAMEWORK_METHOD_EXCEPTIONS:
+                return True
+
+        if not self.isTestFile:
+            return False
+
+        # Pytest fixture names are dependency-injection keys and commonly use
+        # snake_case. Decorators may be @fixture, @pytest.fixture, or calls of
+        # either form.
+        if any(self.functionDecoratorIsFixture(item) for item in node.decorator_list):
+            return True
+
+        # Private helpers and non-test module helpers in test modules follow
+        # normal Python helper conventions rather than production domainAction.
+        if node.name.startswith("_"):
+            return True
+        if isinstance(getattr(node, "parent", None), ast.Module):
+            return not node.name.startswith("test")
+
+        return False
+
+    def functionDecoratorIsFixture(self, decorator) -> bool:
+        """Recognize common pytest fixture decorator forms."""
+        if isinstance(decorator, ast.Call):
+            decorator = decorator.func
+        if isinstance(decorator, ast.Name):
+            return decorator.id == "fixture"
+        if isinstance(decorator, ast.Attribute):
+            return decorator.attr == "fixture"
+        return False
+
     def functionCheckSpacing(self, node) -> None:
-        """Check for a blank line immediately after the def line."""
-        if len(node.body) <= 4 or node.lineno >= len(self.lines):
+        """Check that module-level functions have two preceding blank lines."""
+        if not isinstance(getattr(node, "parent", None), ast.Module):
             return
 
-        firstStatement = node.body[0]
-        isDocstring = (
-            isinstance(firstStatement, ast.Expr)
-            and isinstance(firstStatement.value, ast.Constant)
-            and isinstance(firstStatement.value.value, str)
-        )
-
-        # PEP 257 requires docstrings immediately after def, so skip those.
-        if isDocstring:
+        startLine = min([node.lineno, *(item.lineno for item in node.decorator_list)])
+        if startLine <= 1:
             return
 
-        lineAfterDef = self.lines[node.lineno].strip()
-        if lineAfterDef:
+        precedingLines = self.lines[max(0, startLine - 3) : startLine - 1]
+        blankLineCount = sum(not line.strip() for line in precedingLines)
+        if blankLineCount < 2:
             self.violations.append(
                 (
                     node.name,
-                    "Function spacing (missing blank line after def)",
+                    "Function spacing (two blank lines before top-level def)",
                     node.lineno,
                 )
             )
@@ -447,7 +500,11 @@ def fileCheck(filepath: str) -> list[tuple[str, str, int]]:
     tree = ast.parse(text, filename=filepath)
     astAnnotateParents(tree)
 
-    visitor = GuiNamingVisitor(lines, framework=framework)
+    filename = os.path.basename(filepath)
+    isTestFile = filename.startswith("test_") or "tests" in os.path.normpath(
+        filepath
+    ).split(os.sep)
+    visitor = GuiNamingVisitor(lines, framework=framework, isTestFile=isTestFile)
     visitor.violations.extend(testFileCheck(filepath))
 
     visitor.visit(tree)

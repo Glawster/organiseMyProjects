@@ -263,6 +263,87 @@ class TestSpecialCases:
         assert "Button" in WIDGET_CLASSES
         assert "Label" in WIDGET_CLASSES
 
+    def testDunderAndFrameworkMethodsAreExempt(self, temp_dir):
+        sourceFile = temp_dir / "handler.py"
+        sourceFile.write_text(
+            "class Handler:\n"
+            "    def __init__(self):\n"
+            "        pass\n\n"
+            "    def emit(self, record):\n"
+            "        pass\n"
+        )
+
+        violations = fileCheck(str(sourceFile))
+
+        assert not any(item[0] in {"__init__", "emit"} for item in violations)
+
+    def testPytestFixturesAndHelpersAreExempt(self, temp_dir):
+        testsPath = temp_dir / "tests"
+        testsPath.mkdir()
+        sourceFile = testsPath / "test_example.py"
+        sourceFile.write_text(
+            "import pytest\n\n\n"
+            "@pytest.fixture\n"
+            "def sample_project_name():\n"
+            "    return 'example'\n\n\n"
+            "def assert_no_gui_scaffolds():\n"
+            "    pass\n\n\n"
+            "def _repo():\n"
+            "    pass\n"
+        )
+
+        violations = fileCheck(str(sourceFile))
+
+        names = {item[0] for item in violations}
+        assert names.isdisjoint(
+            {"sample_project_name", "assert_no_gui_scaffolds", "_repo"}
+        )
+
+    def testTestFunctionsStillUseOmpConvention(self, temp_dir):
+        testsPath = temp_dir / "tests"
+        testsPath.mkdir()
+        sourceFile = testsPath / "test_example.py"
+        sourceFile.write_text("def test_invalid_name():\n    pass\n")
+
+        violations = fileCheck(str(sourceFile))
+
+        assert any(
+            item[0] == "test_invalid_name" and "domainAction" in item[1]
+            for item in violations
+        )
+
+    def testPrivateTestClassIsExempt(self, temp_dir):
+        testsPath = temp_dir / "tests"
+        testsPath.mkdir()
+        sourceFile = testsPath / "test_example.py"
+        sourceFile.write_text("class _Capture:\n    pass\n")
+
+        assert fileCheck(str(sourceFile)) == []
+
+    def testTopLevelFunctionSpacingIsEnforced(self, temp_dir):
+        sourceFile = temp_dir / "module.py"
+        sourceFile.write_text("value = 1\n\ndef exampleFunction():\n    pass\n")
+
+        violations = fileCheck(str(sourceFile))
+
+        assert any(
+            "two blank lines before top-level def" in item[1] for item in violations
+        )
+
+    def testMethodBodyDoesNotRequireLeadingBlankLine(self, temp_dir):
+        sourceFile = temp_dir / "module.py"
+        sourceFile.write_text(
+            "class Example:\n"
+            "    def exampleMethod(self):\n"
+            "        first = 1\n"
+            "        second = 2\n"
+            "        third = 3\n"
+            "        fourth = 4\n"
+            "        return first + second + third + fourth\n"
+        )
+
+        assert fileCheck(str(sourceFile)) == []
+
 
 class TestFrameworkDetection:
     """Test cases for framework detection."""

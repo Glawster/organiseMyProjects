@@ -67,34 +67,37 @@ readable:
 
 ### Function Formatting
 
-- **Blank line requirement**: Functions with more than 4 logical lines must
-  have a blank line after the `def` line
-- This improves readability for longer functions
+- Top-level functions require two blank lines before their definition.
+- Methods and nested helpers are not subjected to a false blank-line-inside-the-
+  body requirement.
+- Decorators are treated as part of the function definition when spacing is
+  measured.
 
 Example:
 
 ```python
-# Correct - short function
-def shortMethod(self):
-    pass
+CONSTANT = "value"
 
-# Correct - long function with blank line
-def longerMethod(self):
 
-    line1 = "statement"
-    line2 = "statement"
-    line3 = "statement"
-    line4 = "statement"
-    line5 = "statement"
+def correctlySpacedFunction():
+    return CONSTANT
 
-# Incorrect - long function without blank line
-def badMethod(self):
-    line1 = "statement"  # Violation: missing blank line after def
-    line2 = "statement"
-    line3 = "statement"
-    line4 = "statement"
-    line5 = "statement"
+
+def anotherCorrectlySpacedFunction():
+    return None
 ```
+
+### Context-aware Python naming
+
+- Production functions use the OMP `domainAction` convention.
+- Test functions continue to use the OMP test-function convention.
+- Dunder methods are exempt because Python owns their names.
+- Required framework overrides such as `emit` and `process` are exempt.
+- Pytest fixtures may use conventional snake_case names because their names are
+  dependency-injection keys.
+- Private helpers and non-test module helpers in test files may use normal
+  Python helper naming.
+- Private test helper classes may use `_PascalCase`.
 
 ### UI Layout Checks
 
@@ -210,7 +213,7 @@ file2.py:
   Line 15: 'save_button' should follow naming rule for Button.
   Line 23: 'status_label' should follow naming rule for Label.
 file3.py:
-  Line 8: Function with >4 statements should have blank line after def.
+  Line 8: Top-level function should have two blank lines before its definition.
 ```
 
 ### Output Sections

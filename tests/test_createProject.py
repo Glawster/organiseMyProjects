@@ -30,6 +30,7 @@ from organiseMyProjects.manageProject import (
     PYTEST_INI_CONTENT,
     VSCODE_SETTINGS_CONTENT,
 )
+from organiseMyProjects.version import VERSION
 
 
 def assert_no_gui_scaffolds(projectPath: Path):
@@ -679,6 +680,15 @@ class TestDryRun:
 
 class TestCliFlags:
     """Test CLI flag handling for createProject."""
+
+    def testMainLogsOmpVersion(self):
+        """Test that manageProject records the running OMP release."""
+        with patch("organiseMyProjects.manageProject.getLogger") as getLogger:
+            with patch("organiseMyProjects.manageProject.createProject"):
+                with patch("sys.argv", ["manageProject.py", "demo"]):
+                    createProjectMain()
+
+        getLogger.return_value.value.assert_called_once_with("OMP version", VERSION)
 
     def testMainPassesUiAndQtFlagsToCreateProject(self):
         with patch("organiseMyProjects.manageProject.createProject") as mockCreate:

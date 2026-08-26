@@ -60,13 +60,13 @@ _current_date() {
 # Write a timestamped line to logFile only (no console output)
 _log_to_file() {
   [[ "$logFile" == "/dev/null" ]] && return 0
-  echo "[$(date +"%Y-%m-%d %H:%M:%S")] [    INFO] $thisApplication $*" >> "$logFile"
+  echo "[$(date +"%Y-%m-%d %H:%M:%S")] [INFO] $thisApplication $*" >> "$logFile"
 }
 
 # Write a timestamped line to both console and logFile
 _log() {
   _require_application || return 1
-  local msg="[$(date +"%Y-%m-%d %H:%M:%S")] [    INFO] $thisApplication $*"
+  local msg="[$(date +"%Y-%m-%d %H:%M:%S")] [INFO] $thisApplication $*"
   echo "$msg"
   [[ "$logFile" != "/dev/null" ]] && echo "$msg" >> "$logFile"
 }
@@ -167,7 +167,7 @@ log_action() {
 
 # log_warn <message>  →  WARNING: message
 log_warn() {
-  local msg="[$(date +"%Y-%m-%d %H:%M:%S")] [ WARNING] $thisApplication $1"
+  local msg="[$(date +"%Y-%m-%d %H:%M:%S")] [WARN] $thisApplication $1"
   echo "$msg"
   [[ "$logFile" != "/dev/null" ]] && echo "$msg" >> "$logFile"
 }
@@ -175,7 +175,7 @@ log_warn() {
 # log_error <message>  →  ERROR: message  (also to stderr)
 log_error() {
   _require_application || return 1
-  local msg="[$(date +"%Y-%m-%d %H:%M:%S")] [   ERROR] $thisApplication $1"
+  local msg="[$(date +"%Y-%m-%d %H:%M:%S")] [ERRO] $thisApplication $1"
   echo "$msg" | tee -a "$logFile" >&2
 }
 

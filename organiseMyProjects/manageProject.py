@@ -968,6 +968,7 @@ def main():
         includeConsole=True,
         dryRun=dryRun,
     )
+    logger.value("OMP version", VERSION)
     logger.doing(thisApplication)
 
     if args.sync:

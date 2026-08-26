@@ -26,7 +26,7 @@ dryRun="{dryRunValue}"
     )
     outputLines = result.stdout.splitlines()[1:]
     pattern = re.compile(
-        r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] " r"\[    INFO\] testLogUtils (.*)$"
+        r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] " r"\[INFO\] testLogUtils (.*)$"
     )
     matches = [pattern.fullmatch(line) for line in outputLines]
     assert all(matches), outputLines

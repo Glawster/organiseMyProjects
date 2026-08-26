@@ -3,10 +3,12 @@
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-from organiseMyProjects.agentCheck import AgentCheckValidator, Severity, main
+from organiseMyProjects.agentCheck import AgentCheckValidator, Severity, checkProject, main
 from organiseMyProjects.manageProject import createProject
+from organiseMyProjects.version import VERSION
 
 
 @pytest.fixture
@@ -66,7 +68,6 @@ Testing context.
 """,
         encoding="utf-8",
     )
-
     reqReadme = repo / "project" / "requirements" / "README.md"
     reqReadme.write_text(
         """# Requirements
@@ -152,6 +153,14 @@ pytest
     )
 
     return repo
+
+
+def testCheckProjectLogsOmpVersion(validRepo: Path):
+    """The manageProject check path records the running OMP release."""
+    with patch("organiseMyProjects.agentCheck.getLogger") as getLogger:
+        assert checkProject(validRepo) == 0
+
+    getLogger.return_value.value.assert_any_call("OMP version", VERSION)
 
 
 class TestAgentCheckValidator:

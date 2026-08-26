@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.version import VERSION
 
 
 class Severity(Enum):
@@ -581,6 +582,7 @@ def checkProject(
     setApplication(thisApplication)
     logger = getLogger(includeConsole=True)
 
+    logger.value("OMP version", VERSION)
     logger.doing(f"checking project at {resolvedPath}")
     validator = AgentCheckValidator(resolvedPath, verbose=verbose)
     report = validator.runAll()

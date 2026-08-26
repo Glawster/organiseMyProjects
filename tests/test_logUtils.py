@@ -45,7 +45,7 @@ class TestDefaultLogDir:
             expectedFile.exists()
         ), f"Expected log file {expectedFile} was not created"
 
-    def testLogLineUsesAlignedLevelAndExtensionlessSource(self, tmp_path):
+    def testLogLineUsesFourCharacterLevelAndExtensionlessSource(self, tmp_path):
         """Use the OMP 0.5 timestamp, level, source and message format."""
         logger = getLogger("logUtils", logDir=tmp_path)
         logger.info("message")
@@ -57,9 +57,24 @@ class TestDefaultLogDir:
         line = logFile.read_text(encoding="utf-8").splitlines()[-1]
         assert re.fullmatch(
             r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] "
-            r"\[    INFO\] logUtils \.\.\.message",
+            r"\[INFO\] logUtils \.\.\.message",
             line,
         )
+
+    def testLongLevelNamesAreLimitedToFourCharacters(self, tmp_path):
+        """Keep every log prefix the same width regardless of severity."""
+        logger = getLogger("levelWidth", logDir=tmp_path)
+        logger.warning("warning message")
+        logger.error("Error message")
+        for handler in logger.logger.handlers:
+            handler.flush()
+
+        expectedDate = datetime.date.today().isoformat()
+        lines = (tmp_path / f"levelWidth-{expectedDate}.log").read_text(
+            encoding="utf-8"
+        ).splitlines()
+        assert "[WARN] levelWidth warning message" in lines[-2]
+        assert "[ERRO] levelWidth Error message" in lines[-1]
 
 
 class TestDrawBox:

@@ -18,9 +18,10 @@ from organiseMyProjects.manageProject import (
     updateProject,
     main as createProjectMain,
     _projectRoleDetect,
-    _copy_if_newer,
-    _update_text_file,
-    _build_managed_content,
+    _fileCopyIfNewer as _copy_if_newer,
+    _textFileUpdate as _update_text_file,
+    _managedContentBuild as _build_managed_content,
+    _managedCopyUpdate as _update_managed_copy,
     DEPLOYMENT_COMMENT,
     PYTHON_DEPLOYMENT_COMMENT,
     GITIGNORE_CONTENT,
@@ -533,6 +534,21 @@ class TestUtilityFunctions:
         )
         compile(content, "runLinter.py", "exec")
 
+    def testBuildManagedContentCollapsesExistingReleaseMarkers(self):
+        """Generated output contains one marker even when its source has several."""
+        source = (
+            "<!-- deployed from Glawster/organiseMyProjects release 0.5 "
+            "-- do not edit directly -->\n"
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n"
+            "# Agent Instructions\n"
+        )
+
+        content = _build_managed_content(source)
+
+        assert content == DEPLOYMENT_COMMENT + "# Agent Instructions\n"
+        assert content.count("organiseMyProjects release") == 1
+
     def testCopyIfNewerNewFile(self, temp_dir):
         """Test copying when destination doesn't exist."""
         src = temp_dir / "source.txt"
@@ -603,6 +619,70 @@ class TestUtilityFunctions:
 
 class TestUpdateHelpers:
     """Test helper behavior used during project updates."""
+
+    def testManagedCopyIgnoresReleaseMarkerOnlyChange(self, temp_dir):
+        """Do not rewrite a managed document when only its OMP release differs."""
+        src = temp_dir / "source.md"
+        dest = temp_dir / "destination.md"
+        src.write_text("# Managed guide\n\nStable content.\n")
+        oldContent = (
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n# Managed guide\n\nStable content.\n"
+        )
+        dest.write_text(oldContent)
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == oldContent
+
+    def testManagedPythonCopyIgnoresReleaseMarkerOnlyChange(self, temp_dir):
+        """Compare Python content beneath both its shebang and release marker."""
+        src = temp_dir / "source.py"
+        dest = temp_dir / "destination.py"
+        body = '#!/usr/bin/env python3\nprint("stable")\n'
+        src.write_text(body)
+        oldContent = (
+            "#!/usr/bin/env python3\n"
+            "# deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly\n"
+            'print("stable")\n'
+        )
+        dest.write_text(oldContent)
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == oldContent
+
+    def testManagedCopyUpdatesSubstantiveContent(self, temp_dir):
+        """A release marker must not hide an actual managed-content change."""
+        src = temp_dir / "source.md"
+        dest = temp_dir / "destination.md"
+        src.write_text("# Managed guide\n\nNew content.\n")
+        dest.write_text(
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n# Managed guide\n\nOld content.\n"
+        )
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == _build_managed_content(src.read_text())
+
+    def testManagedCopyCollapsesDuplicateReleaseMarkers(self, temp_dir):
+        """Repair duplicate headers even when the managed body is unchanged."""
+        src = temp_dir / "source.md"
+        dest = temp_dir / "destination.md"
+        src.write_text("# Managed guide\n")
+        dest.write_text(
+            "<!-- deployed from Glawster/organiseMyProjects release 0.5 "
+            "-- do not edit directly -->\n"
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n"
+            "# Managed guide\n"
+        )
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == DEPLOYMENT_COMMENT + "# Managed guide\n"
 
     def testCopyIfNewerOverwritesWithoutBackup(self, temp_dir):
         """Test that _copy_if_newer updates in place without creating backup files."""

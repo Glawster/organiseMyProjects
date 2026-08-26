@@ -5,12 +5,5 @@
    "python.testing.pytestArgs": [
       "tests",
       "--override-ini=python_files=test_[a-z]*.py"
-   ],
-   "python-envs.pythonProjects": [
-      {
-         "path": ".",
-         "envManager": "ms-python.python:conda",
-         "packageManager": "ms-python.python:conda"
-      }
    ]
 }

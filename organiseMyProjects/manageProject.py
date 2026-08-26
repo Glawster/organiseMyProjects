@@ -294,7 +294,7 @@ Next available number: 001
 """
 
 
-def _build_readme_content(projectName: str) -> str:
+def _readmeContentBuild(projectName: str) -> str:
     return f"""# {projectName}
 
 Project scaffold created by manageProject.py.
@@ -404,7 +404,7 @@ MANAGED_COPY_TEMPLATES = [
 ]
 
 
-def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
+def _templateModulesIterate(includeUi: bool = False, includeQt: bool = False):
     modules = [
         (TEMPLATE_DIR / "globalVars.py", Path("src") / "globalVars.py"),
         (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
@@ -542,7 +542,7 @@ def createProject(
         (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
-        (basePath / "README.md").write_text(_build_readme_content(projectName))
+        (basePath / "README.md").write_text(_readmeContentBuild(projectName))
         (basePath / "documentation" / "architecture.md").write_text(
             ARCHITECTURE_CONTENT
         )
@@ -568,7 +568,7 @@ def createProject(
         logger.action("copying project guidelines")
         if not dryRun:
             (basePath / "projectGuidelines.md").write_text(
-                _build_managed_content(srcGuidelines.read_text())
+                _managedContentBuild(srcGuidelines.read_text())
             )
 
     # Copy the agent instructions file
@@ -577,7 +577,7 @@ def createProject(
         logger.action("copying agent guidelines")
         if not dryRun:
             (basePath / ".github" / "agent-instructions.md").write_text(
-                _build_managed_content(srcAgentGuidelines.read_text())
+                _managedContentBuild(srcAgentGuidelines.read_text())
             )
 
     srcCopilot = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
@@ -585,7 +585,7 @@ def createProject(
         logger.action("copying copilot shim")
         if not dryRun:
             (basePath / ".github" / "copilot-instructions.md").write_text(
-                _build_managed_content(srcCopilot.read_text())
+                _managedContentBuild(srcCopilot.read_text())
             )
 
     srcClaude = TEMPLATE_DIR.parent / ".github" / "CLAUDE.md"
@@ -593,7 +593,7 @@ def createProject(
         logger.action("copying claude shim")
         if not dryRun:
             (basePath / "CLAUDE.md").write_text(
-                _build_managed_content(srcClaude.read_text())
+                _managedContentBuild(srcClaude.read_text())
             )
 
     # Copy the Codex agent instructions file
@@ -602,7 +602,7 @@ def createProject(
         logger.action("copying agent instructions")
         if not dryRun:
             (basePath / "AGENTS.md").write_text(
-                _build_managed_content(srcAgentInstructions.read_text())
+                _managedContentBuild(srcAgentInstructions.read_text())
             )
 
     # Copy the repository layout definition
@@ -611,7 +611,7 @@ def createProject(
         logger.action("copying repository layout")
         if not dryRun:
             (basePath / "documentation" / "repositoryLayout.md").write_text(
-                _build_managed_content(srcRepositoryLayout.read_text())
+                _managedContentBuild(srcRepositoryLayout.read_text())
             )
 
     # Copy the requirements management guide
@@ -622,7 +622,7 @@ def createProject(
         logger.action("copying requirements management guide")
         if not dryRun:
             (basePath / "documentation" / "requirementsManagement.md").write_text(
-                _build_managed_content(srcRequirementsManagement.read_text())
+                _managedContentBuild(srcRequirementsManagement.read_text())
             )
 
     srcTestingProcess = TEMPLATE_DIR.parent / "documentation" / "testingProcess.md"
@@ -630,7 +630,7 @@ def createProject(
         logger.action("copying testing process guide")
         if not dryRun:
             (basePath / "documentation" / "testingProcess.md").write_text(
-                _build_managed_content(srcTestingProcess.read_text())
+                _managedContentBuild(srcTestingProcess.read_text())
             )
 
     # Copy the release process guide
@@ -639,13 +639,13 @@ def createProject(
         logger.action("copying release process guide")
         if not dryRun:
             (basePath / "documentation" / "howToRelease.md").write_text(
-                _build_managed_content(srcHowToRelease.read_text())
+                _managedContentBuild(srcHowToRelease.read_text())
             )
 
     # Copy template modules into the new project
     logger.action("copying template modules")
     if not dryRun:
-        for src, destRel in _iter_template_modules(includeUi, includeQt):
+        for src, destRel in _templateModulesIterate(includeUi, includeQt):
             shutil.copy(src, basePath / destRel)
 
     # Create main.py starter
@@ -684,7 +684,7 @@ def createProject(
         logger.info("create simulation complete: no changes were applied")
 
 
-def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
+def _fileCopyIfNewer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
@@ -693,7 +693,7 @@ def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
             shutil.copy(src, dest)
 
 
-def _update_text_file(dest: Path, content: str, dryRun: bool = False):
+def _textFileUpdate(dest: Path, content: str, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     new_bytes = content.encode("utf-8")
@@ -712,10 +712,9 @@ def _update_text_file(dest: Path, content: str, dryRun: bool = False):
             dest.write_bytes(new_bytes)
 
 
-def _build_managed_content(sourceContent: str, suffix: str = ".md") -> str:
+def _managedContentBuild(sourceContent: str, suffix: str = ".md") -> str:
     """Add the scaffold release marker to canonical managed content."""
-    if sourceContent.startswith("<!-- synced from Glawster/organiseMyProjects"):
-        sourceContent = sourceContent.partition("\n")[2]
+    sourceContent, _ = _managedContentBody(sourceContent)
     if suffix != ".py":
         return DEPLOYMENT_COMMENT + sourceContent
 
@@ -725,11 +724,49 @@ def _build_managed_content(sourceContent: str, suffix: str = ".md") -> str:
     return PYTHON_DEPLOYMENT_COMMENT + sourceContent
 
 
-def _update_managed_copy(src: Path, dest: Path, dryRun: bool = False):
-    """Deploy a managed text file with its originating scaffold release."""
-    _update_text_file(
+def _managedContentBody(content: str) -> tuple[str, int]:
+    """Return content without leading OMP release markers and their count."""
+    lines = content.splitlines(keepends=True)
+    if not lines:
+        return content, 0
+
+    markerPrefixes = (
+        "<!-- deployed from Glawster/organiseMyProjects release ",
+        "<!-- synced from Glawster/organiseMyProjects release ",
+        "# deployed from Glawster/organiseMyProjects release ",
+        "# synced from Glawster/organiseMyProjects release ",
+    )
+    markerIndex = 1 if lines[0].startswith("#!") else 0
+    markerCount = 0
+    while markerIndex < len(lines) and lines[markerIndex].startswith(markerPrefixes):
+        del lines[markerIndex]
+        markerCount += 1
+
+    return "".join(lines), markerCount
+
+
+def _managedCopyUpdate(src: Path, dest: Path, dryRun: bool = False):
+    """Deploy a managed file only when its substantive content changed."""
+    managedContent = _managedContentBuild(
+        src.read_text(encoding="utf-8"), suffix=dest.suffix
+    )
+
+    # A release-marker-only change would create noise without changing the
+    # managed guidance or code. Preserve the marker from the release that last
+    # changed the file's substantive content.
+    if dest.exists():
+        try:
+            currentContent = dest.read_text(encoding="utf-8")
+        except OSError:
+            currentContent = ""
+        currentBody, currentMarkerCount = _managedContentBody(currentContent)
+        managedBody, _ = _managedContentBody(managedContent)
+        if currentMarkerCount == 1 and currentBody == managedBody:
+            return
+
+    _textFileUpdate(
         dest,
-        _build_managed_content(src.read_text(), suffix=dest.suffix),
+        managedContent,
         dryRun,
     )
 
@@ -744,7 +781,7 @@ def _createTextFileIfMissing(dest: Path, content: str, dryRun: bool = False):
         dest.write_text(content)
 
 
-def _copy_if_missing(src: Path, dest: Path, dryRun: bool = False):
+def _fileCopyIfMissing(src: Path, dest: Path, dryRun: bool = False):
     if dest.exists():
         return
     if not dryRun:
@@ -844,11 +881,11 @@ def updateProject(
         (basePath / ".github").mkdir(parents=True, exist_ok=True)
 
     for destRel, content in MANAGED_TEXT_TEMPLATES:
-        _update_text_file(basePath / destRel, content, dryRun)
+        _textFileUpdate(basePath / destRel, content, dryRun)
 
     for src, destRel in MANAGED_COPY_TEMPLATES:
         if src.exists():
-            _update_managed_copy(src, basePath / destRel, dryRun)
+            _managedCopyUpdate(src, basePath / destRel, dryRun)
 
     # OMP 0.5 migrations are deliberately limited to deterministic legacy
     # names. Existing destinations are never overwritten.

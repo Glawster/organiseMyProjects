@@ -1,3 +1,4 @@
+<!-- deployed from Glawster/organiseMyProjects release 0.5 -- do not edit directly -->
 # Testing Process
 
 This is the authoritative testing process for OMP-managed projects. Tests must

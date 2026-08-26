@@ -1,3 +1,4 @@
+<!-- deployed from Glawster/organiseMyProjects release 0.5 -- do not edit directly -->
 # Agent Instructions -- Master Development Guidelines (v2)
 
 ## Table of Contents

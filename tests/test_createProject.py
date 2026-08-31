@@ -3,8 +3,6 @@ Tests for manageProject.py functionality.
 """
 
 import logging
-import pytest
-import os
 import sys
 import types
 from pathlib import Path
@@ -14,22 +12,38 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from organiseMyProjects.manageProject import (
-    createProject,
-    updateProject,
-    main as createProjectMain,
-    _copy_if_newer,
-    _update_text_file,
-    _build_managed_content,
     DEPLOYMENT_COMMENT,
-    PYTHON_DEPLOYMENT_COMMENT,
-    GITIGNORE_CONTENT,
-    REQUIREMENTS_CONTENT,
     DEV_REQUIREMENTS_CONTENT,
+    ENVIRONMENT_CONTENT,
+    GITIGNORE_CONTENT,
     MAIN_PY_CONTENT,
     PRECOMMIT_CONTENT,
     PYTEST_INI_CONTENT,
+    PYTHON_DEPLOYMENT_COMMENT,
+    REQUIREMENTS_CONTENT,
     VSCODE_SETTINGS_CONTENT,
+    _projectIsCanonicalOmp,
+    _projectRoleDetect,
+    _pyprojectContentBuild,
+    createProject,
+    updateProject,
 )
+from organiseMyProjects.manageProject import (
+    _fileCopyIfNewer as _copy_if_newer,
+)
+from organiseMyProjects.manageProject import (
+    _managedContentBuild as _build_managed_content,
+)
+from organiseMyProjects.manageProject import (
+    _managedCopyUpdate as _update_managed_copy,
+)
+from organiseMyProjects.manageProject import (
+    _textFileUpdate as _update_text_file,
+)
+from organiseMyProjects.manageProject import (
+    main as createProjectMain,
+)
+from organiseMyProjects.version import VERSION
 
 
 def assert_no_gui_scaffolds(projectPath: Path):
@@ -52,7 +66,7 @@ class TestCreateProject:
         assert projectPath.exists()
         assert (projectPath / "src").exists()
         assert (projectPath / "tests").exists()
-        assert (projectPath / "logs").exists()
+        assert not (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
 
         # Verify package init files
@@ -70,6 +84,8 @@ class TestCreateProject:
         assert (projectPath / ".gitignore").exists()
         assert (projectPath / "requirements.txt").exists()
         assert (projectPath / "dev-requirements.txt").exists()
+        assert (projectPath / "environment.yml").exists()
+        assert (projectPath / "pyproject.toml").exists()
         assert (projectPath / "README.md").exists()
         assert (projectPath / "main.py").exists()
         assert (projectPath / ".pre-commit-config.yaml").exists()
@@ -87,6 +103,10 @@ class TestCreateProject:
         assert (
             projectPath / "dev-requirements.txt"
         ).read_text() == DEV_REQUIREMENTS_CONTENT
+        assert (projectPath / "environment.yml").read_text() == ENVIRONMENT_CONTENT
+        assert (projectPath / "pyproject.toml").read_text() == _pyprojectContentBuild(
+            sample_project_name
+        )
         assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
         assert (
             projectPath / ".pre-commit-config.yaml"
@@ -194,8 +214,10 @@ class TestCreateProject:
         assert len(agentGuidelines.read_text()) > 0
         assert copilotGuidelines.exists()
         assert "agent-instructions.md" in copilotGuidelines.read_text()
+        assert "repositoryLayout.md" not in copilotGuidelines.read_text()
         assert claudeGuidelines.exists()
         assert "agent-instructions.md" in claudeGuidelines.read_text()
+        assert "repositoryLayout.md" not in claudeGuidelines.read_text()
         assert agentGuidelines.read_text().startswith(DEPLOYMENT_COMMENT)
 
     def testCreateProjectAgentInstructions(self, temp_dir, sample_project_name):
@@ -208,6 +230,7 @@ class TestCreateProject:
         agentFile = projectPath / "AGENTS.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
         assert agentFile.read_text() == _build_managed_content(sourceFile.read_text())
+        assert "repositoryLayout.md" not in agentFile.read_text()
 
     def testCreateProjectRepositoryLayout(self, temp_dir, sample_project_name):
         """Test that the shared repository layout is project documentation."""
@@ -216,8 +239,10 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        layoutFile = projectPath / ".github" / "repositoryLayout.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
+        layoutFile = projectPath / "documentation" / "repositoryLayout.md"
+        sourceFile = (
+            Path(__file__).parent.parent / "documentation" / "repositoryLayout.md"
+        )
         assert layoutFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testCreateProjectRequirementsManagement(self, temp_dir, sample_project_name):
@@ -227,11 +252,32 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "requirementsManagement.md"
+        guideFile = projectPath / "documentation" / "requirementsManagement.md"
         sourceFile = (
-            Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
+            Path(__file__).parent.parent / "documentation" / "requirementsManagement.md"
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+        assert (
+            "Read `documentation/requirementsManagement.md`."
+            in (projectPath / ".github" / "agent-instructions.md").read_text()
+        )
+
+    def testCreateProjectTestingProcess(self, temp_dir, sample_project_name):
+        """Test that new projects receive the authoritative testing process."""
+        projectPath = temp_dir / sample_project_name
+
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        guideFile = projectPath / "documentation" / "testingProcess.md"
+        sourceFile = (
+            Path(__file__).parent.parent / "documentation" / "testingProcess.md"
+        )
+        assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+        readmeText = (projectPath / "README.md").read_text()
+        assert "documentation/repositoryLayout.md" in readmeText
+        assert "documentation/requirementsManagement.md" in readmeText
+        assert "documentation/testingProcess.md" in readmeText
 
     def testCreateProjectHowToRelease(self, temp_dir, sample_project_name):
         """Test that the shared release guide is project documentation."""
@@ -240,8 +286,8 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "howToRelease.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "howToRelease.md"
+        guideFile = projectPath / "documentation" / "howToRelease.md"
+        sourceFile = Path(__file__).parent.parent / "documentation" / "howToRelease.md"
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testCreateProjectAgentPortabilityStructure(self, temp_dir, sample_project_name):
@@ -253,14 +299,64 @@ class TestCreateProject:
 
         assert (projectPath / "documentation" / "architecture.md").exists()
         assert (projectPath / "project" / "currentIncrement.md").exists()
+        incrementText = (projectPath / "project" / "currentIncrement.md").read_text()
+        assert "## Increment" in incrementText
+        assert "## Requirement" in incrementText
+        assert "## Verification" in incrementText
+        assert "## Next" in incrementText
+        assert "## In-Progress Tasks" not in incrementText
+        assert "## Handoff & Unresolved Context" not in incrementText
         assert (projectPath / "project" / "project.yaml").exists()
         assert (projectPath / "project" / "roadmap.md").exists()
         assert (projectPath / "project" / "requirements" / "README.md").exists()
         assert (
             projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).exists()
+        requirementText = (
+            projectPath / "project" / "requirements" / "templates" / "requirement.md"
+        ).read_text()
+        assert "## Traceability" not in requirementText
         assert (projectPath / "project" / "adr" / "README.md").exists()
         assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
+
+
+class TestProjectRoleDetection:
+    """Classify established Python layouts without executing their metadata."""
+
+    def testSetupPyConsoleScriptsDetectPackagedCli(self, tmp_path):
+        (tmp_path / "setup.py").write_text(
+            'setup(entry_points={"console_scripts": ["tool=package.cli:main"]})\n'
+        )
+        (tmp_path / "package").mkdir()
+        (tmp_path / "package" / "__init__.py").write_text("")
+
+        assert _projectRoleDetect(tmp_path) == "packaged-cli"
+
+    def testSetupPyFlatPackageDetectsLibrary(self, tmp_path):
+        (tmp_path / "setup.py").write_text("setup(packages=find_packages())\n")
+        (tmp_path / "package").mkdir()
+        (tmp_path / "package" / "__init__.py").write_text("")
+
+        assert _projectRoleDetect(tmp_path) == "library"
+
+    def testPep621FlatPackageDetectsLibrary(self, tmp_path):
+        (tmp_path / "pyproject.toml").write_text(
+            '[project]\nname = "example-package"\n'
+        )
+        (tmp_path / "package").mkdir()
+        (tmp_path / "package" / "__init__.py").write_text("")
+
+        assert _projectRoleDetect(tmp_path) == "library"
+
+    def testOmpRepositoryDetectsPackagedCli(self):
+        repositoryRoot = Path(__file__).parent.parent
+
+        assert _projectRoleDetect(repositoryRoot) == "packaged-cli"
+
+    def testCanonicalOmpRepositoryDetection(self):
+        repositoryRoot = Path(__file__).parent.parent
+
+        assert _projectIsCanonicalOmp(repositoryRoot)
 
 
 class TestUpdateProject:
@@ -281,6 +377,24 @@ class TestUpdateProject:
         assert (projectPath / "tests").exists()
         assert not (projectPath / "logs").exists()
         assert_no_gui_scaffolds(projectPath)
+
+    def testUpdateCanonicalOmpRepositoryIsNoOp(self, tmp_path):
+        """OMP owns templates and must never deploy its scaffolds over itself."""
+        projectPath = tmp_path / "organiseMyProjects"
+        packagePath = projectPath / "organiseMyProjects"
+        packagePath.mkdir(parents=True)
+        (packagePath / "manageProject.py").write_text("# canonical source\n")
+        (projectPath / "syncAgentInstructions.py").write_text("# sync utility\n")
+        (projectPath / "pyproject.toml").write_text(
+            '[project]\nname = "organiseMyProjects"\n'
+        )
+
+        updateProject(projectPath)
+
+        assert (packagePath / "manageProject.py").read_text() == "# canonical source\n"
+        assert not (projectPath / "pytest.ini").exists()
+        assert not (projectPath / ".vscode").exists()
+        assert not (projectPath / "tests").exists()
 
     def testUpdateProjectNonexistent(self, temp_dir, sample_project_name, caplog):
         """Test behavior when trying to update non-existent project."""
@@ -333,8 +447,10 @@ class TestUpdateProject:
 
         updateProject(str(projectPath))
 
-        layoutFile = projectPath / ".github" / "repositoryLayout.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "repositoryLayout.md"
+        layoutFile = projectPath / "documentation" / "repositoryLayout.md"
+        sourceFile = (
+            Path(__file__).parent.parent / "documentation" / "repositoryLayout.md"
+        )
         assert layoutFile.read_text() == _build_managed_content(sourceFile.read_text())
 
     def testUpdateProjectAddsRequirementsManagement(
@@ -346,11 +462,37 @@ class TestUpdateProject:
 
         updateProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "requirementsManagement.md"
+        guideFile = projectPath / "documentation" / "requirementsManagement.md"
         sourceFile = (
-            Path(__file__).parent.parent / ".github" / "requirementsManagement.md"
+            Path(__file__).parent.parent / "documentation" / "requirementsManagement.md"
         )
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
+
+    def testUpdateProjectMigratesUnambiguousLegacyNames(
+        self, temp_dir, sample_project_name
+    ):
+        """Migrate legacy OMP names without overwriting arbitrary targets."""
+        projectPath = temp_dir / sample_project_name
+        testsPath = projectPath / "tests"
+        featuresPath = projectPath / "project" / "requirements" / "features"
+        promptsPath = projectPath / "project" / "requirements" / "prompt"
+        testsPath.mkdir(parents=True)
+        featuresPath.mkdir(parents=True)
+        promptsPath.mkdir(parents=True)
+        (testsPath / "test_FooBar.py").write_text("def test_example(): pass\n")
+        (featuresPath / "007-roleAssessment.md").write_text("# 007: Role assessment\n")
+        (promptsPath / "007-roleAssessment.prompt.md").write_text("# Prompt\n")
+        requirementsIndex = projectPath / "project" / "requirements" / "README.md"
+        requirementsIndex.write_text(
+            "# Requirements\n\n[Prompt](prompt/007-roleAssessment.prompt.md)\n"
+        )
+
+        updateProject(str(projectPath))
+
+        assert (testsPath / "test_fooBar.py").exists()
+        assert not (testsPath / "test_FooBar.py").exists()
+        assert (promptsPath / "007-roleAssessment.md").exists()
+        assert "prompt/007-roleAssessment.md" in requirementsIndex.read_text()
 
     def testUpdateProjectAddsHowToRelease(self, temp_dir, sample_project_name):
         """Test that updateProject adds the managed release process guide."""
@@ -359,12 +501,14 @@ class TestUpdateProject:
 
         updateProject(str(projectPath))
 
-        guideFile = projectPath / ".github" / "howToRelease.md"
-        sourceFile = Path(__file__).parent.parent / ".github" / "howToRelease.md"
+        guideFile = projectPath / "documentation" / "howToRelease.md"
+        sourceFile = Path(__file__).parent.parent / "documentation" / "howToRelease.md"
         assert guideFile.read_text() == _build_managed_content(sourceFile.read_text())
 
-    def testUpdateProjectPytestIniOutdated(self, temp_dir, sample_project_name):
-        """Test that updateProject updates pytest.ini if it is outdated."""
+    def testUpdateProjectPreservesExistingPytestIni(
+        self, temp_dir, sample_project_name
+    ):
+        """Project-owned pytest configuration is never overwritten."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
         (projectPath / "pytest.ini").write_text("old content")
@@ -372,10 +516,12 @@ class TestUpdateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        assert (projectPath / "pytest.ini").read_text() == PYTEST_INI_CONTENT
+        assert (projectPath / "pytest.ini").read_text() == "old content"
 
-    def testUpdateProjectVscodeSettingsOutdated(self, temp_dir, sample_project_name):
-        """Test that updateProject updates .vscode/settings.json if it is outdated."""
+    def testUpdateProjectPreservesExistingVscodeSettings(
+        self, temp_dir, sample_project_name
+    ):
+        """Project-owned editor configuration is never overwritten."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
         (projectPath / ".vscode").mkdir()
@@ -386,7 +532,7 @@ class TestUpdateProject:
 
         assert (
             projectPath / ".vscode" / "settings.json"
-        ).read_text() == VSCODE_SETTINGS_CONTENT
+        ).read_text() == '{"old": true}'
 
     def testUpdateProjectPreservesExistingUiTemplates(
         self, temp_dir, sample_project_name
@@ -415,6 +561,7 @@ class TestUpdateProject:
 
         assert (projectPath / "main.py").read_text() == customMain
 
+
 class TestUtilityFunctions:
     """Test cases for utility functions."""
 
@@ -430,6 +577,21 @@ class TestUtilityFunctions:
             + '"""CLI entry point."""\n'
         )
         compile(content, "runLinter.py", "exec")
+
+    def testBuildManagedContentCollapsesExistingReleaseMarkers(self):
+        """Generated output contains one marker even when its source has several."""
+        source = (
+            "<!-- deployed from Glawster/organiseMyProjects release 0.5 "
+            "-- do not edit directly -->\n"
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n"
+            "# Agent Instructions\n"
+        )
+
+        content = _build_managed_content(source)
+
+        assert content == DEPLOYMENT_COMMENT + "# Agent Instructions\n"
+        assert content.count("organiseMyProjects release") == 1
 
     def testCopyIfNewerNewFile(self, temp_dir):
         """Test copying when destination doesn't exist."""
@@ -498,8 +660,73 @@ class TestUtilityFunctions:
 
         assert dest.read_text() == newContent
 
+
 class TestUpdateHelpers:
     """Test helper behavior used during project updates."""
+
+    def testManagedCopyIgnoresReleaseMarkerOnlyChange(self, temp_dir):
+        """Do not rewrite a managed document when only its OMP release differs."""
+        src = temp_dir / "source.md"
+        dest = temp_dir / "destination.md"
+        src.write_text("# Managed guide\n\nStable content.\n")
+        oldContent = (
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n# Managed guide\n\nStable content.\n"
+        )
+        dest.write_text(oldContent)
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == oldContent
+
+    def testManagedPythonCopyIgnoresReleaseMarkerOnlyChange(self, temp_dir):
+        """Compare Python content beneath both its shebang and release marker."""
+        src = temp_dir / "source.py"
+        dest = temp_dir / "destination.py"
+        body = '#!/usr/bin/env python3\nprint("stable")\n'
+        src.write_text(body)
+        oldContent = (
+            "#!/usr/bin/env python3\n"
+            "# deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly\n"
+            'print("stable")\n'
+        )
+        dest.write_text(oldContent)
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == oldContent
+
+    def testManagedCopyUpdatesSubstantiveContent(self, temp_dir):
+        """A release marker must not hide an actual managed-content change."""
+        src = temp_dir / "source.md"
+        dest = temp_dir / "destination.md"
+        src.write_text("# Managed guide\n\nNew content.\n")
+        dest.write_text(
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n# Managed guide\n\nOld content.\n"
+        )
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == _build_managed_content(src.read_text())
+
+    def testManagedCopyCollapsesDuplicateReleaseMarkers(self, temp_dir):
+        """Repair duplicate headers even when the managed body is unchanged."""
+        src = temp_dir / "source.md"
+        dest = temp_dir / "destination.md"
+        src.write_text("# Managed guide\n")
+        dest.write_text(
+            "<!-- deployed from Glawster/organiseMyProjects release 0.5 "
+            "-- do not edit directly -->\n"
+            "<!-- deployed from Glawster/organiseMyProjects release 0.4 "
+            "-- do not edit directly -->\n"
+            "# Managed guide\n"
+        )
+
+        _update_managed_copy(src, dest)
+
+        assert dest.read_text() == DEPLOYMENT_COMMENT + "# Managed guide\n"
 
     def testCopyIfNewerOverwritesWithoutBackup(self, temp_dir):
         """Test that _copy_if_newer updates in place without creating backup files."""
@@ -606,6 +833,15 @@ class TestDryRun:
 
 class TestCliFlags:
     """Test CLI flag handling for createProject."""
+
+    def testMainLogsOmpVersion(self):
+        """Test that manageProject records the running OMP release."""
+        with patch("organiseMyProjects.manageProject.getLogger") as getLogger:
+            with patch("organiseMyProjects.manageProject.createProject"):
+                with patch("sys.argv", ["manageProject.py", "demo"]):
+                    createProjectMain()
+
+        getLogger.return_value.value.assert_called_once_with("OMP version", VERSION)
 
     def testMainPassesUiAndQtFlagsToCreateProject(self):
         with patch("organiseMyProjects.manageProject.createProject") as mockCreate:

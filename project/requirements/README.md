@@ -12,7 +12,7 @@ Next available number: 003
   project-specific files.
 - Status: `ToDo`
 - Agent prompt:
-  [Prompt](prompt/001-projectRoleAwareUpdates.prompt.md)
+  [Prompt](prompt/001-projectRoleAwareUpdates.md)
 - Architecture decisions: `Pending`
 
 - Req ID: `002`

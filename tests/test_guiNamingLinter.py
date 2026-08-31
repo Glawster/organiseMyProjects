@@ -2,25 +2,25 @@
 Tests for guiNamingLinter.py functionality.
 """
 
-import pytest
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
 
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from organiseMyProjects.guiNamingLinter import (
+    CLASS_NAME_EXCEPTIONS,
+    NAMING_RULES,
+    QT_WIDGET_TYPES,
+    WIDGET_CLASSES,
     GuiNamingVisitor,
+    fileCheck,
+    frameworkDetect,
     lintFile,
     lintGuiNaming,
-    NAMING_RULES,
-    CLASS_NAME_EXCEPTIONS,
-    WIDGET_CLASSES,
-    QT_WIDGET_TYPES,
-    frameworkDetect,
     nameIsSnakeCase,
-    fileCheck,
 )
 
 
@@ -39,18 +39,6 @@ class TestGuiNamingVisitor:
 
     def testNamingRulesStructure(self):
         """Test that naming rules are properly defined."""
-        expected_widget_types = {
-            "Button",
-            "Entry",
-            "Label",
-            "Frame",
-            "Text",
-            "Listbox",
-            "Checkbutton",
-            "Radiobutton",
-            "Combobox",
-        }
-
         assert "Button" in NAMING_RULES
         assert "Handler" in NAMING_RULES
         assert "Constant" in NAMING_RULES
@@ -60,7 +48,7 @@ class TestGuiNamingVisitor:
         assert NAMING_RULES["Button"] == r"^btn[A-Z]\w+"
         assert NAMING_RULES["Handler"] == r"^on[A-Z]\w+"
         assert NAMING_RULES["Constant"] == r"^[A-Z_]+$"
-        assert NAMING_RULES["Class"] == r"^[A-Z][a-zA-Z0-9]*$"
+        assert NAMING_RULES["Class"] == r"^_?[A-Z][a-zA-Z0-9]*$"
 
     def testWidgetClassesDefinition(self):
         """Test that widget classes are correctly defined."""
@@ -172,6 +160,16 @@ class TestClass:
         # Should handle empty directory gracefully
         assert "Checking GUI naming" in captured.out
 
+    def testLintDirectoryIgnoresGeneratedBuildTrees(self, temp_dir, capsys):
+        """Generated copies must not duplicate source-tree lint findings."""
+        buildPath = temp_dir / "build"
+        buildPath.mkdir()
+        (buildPath / "invalid.py").write_text("def invalid_name():\n    pass\n")
+
+        lintGuiNaming(str(temp_dir))
+
+        assert "invalid_name" not in capsys.readouterr().out
+
     def testLintDirectoryWithSubdirs(self, temp_dir, capsys):
         """Test linting a directory with subdirectories."""
         # Create subdirectory with Python file
@@ -262,6 +260,87 @@ class TestSpecialCases:
         assert "Class" not in WIDGET_CLASSES
         assert "Button" in WIDGET_CLASSES
         assert "Label" in WIDGET_CLASSES
+
+    def testDunderAndFrameworkMethodsAreExempt(self, temp_dir):
+        sourceFile = temp_dir / "handler.py"
+        sourceFile.write_text(
+            "class Handler:\n"
+            "    def __init__(self):\n"
+            "        pass\n\n"
+            "    def emit(self, record):\n"
+            "        pass\n"
+        )
+
+        violations = fileCheck(str(sourceFile))
+
+        assert not any(item[0] in {"__init__", "emit"} for item in violations)
+
+    def testPytestFixturesAndHelpersAreExempt(self, temp_dir):
+        testsPath = temp_dir / "tests"
+        testsPath.mkdir()
+        sourceFile = testsPath / "test_example.py"
+        sourceFile.write_text(
+            "import pytest\n\n\n"
+            "@pytest.fixture\n"
+            "def sample_project_name():\n"
+            "    return 'example'\n\n\n"
+            "def assert_no_gui_scaffolds():\n"
+            "    pass\n\n\n"
+            "def _repo():\n"
+            "    pass\n"
+        )
+
+        violations = fileCheck(str(sourceFile))
+
+        names = {item[0] for item in violations}
+        assert names.isdisjoint(
+            {"sample_project_name", "assert_no_gui_scaffolds", "_repo"}
+        )
+
+    def testTestFunctionsStillUseOmpConvention(self, temp_dir):
+        testsPath = temp_dir / "tests"
+        testsPath.mkdir()
+        sourceFile = testsPath / "test_example.py"
+        sourceFile.write_text("def test_invalid_name():\n    pass\n")
+
+        violations = fileCheck(str(sourceFile))
+
+        assert any(
+            item[0] == "test_invalid_name" and "domainAction" in item[1]
+            for item in violations
+        )
+
+    def testPrivateTestClassIsExempt(self, temp_dir):
+        testsPath = temp_dir / "tests"
+        testsPath.mkdir()
+        sourceFile = testsPath / "test_example.py"
+        sourceFile.write_text("class _Capture:\n    pass\n")
+
+        assert fileCheck(str(sourceFile)) == []
+
+    def testTopLevelFunctionSpacingIsEnforced(self, temp_dir):
+        sourceFile = temp_dir / "module.py"
+        sourceFile.write_text("value = 1\n\ndef exampleFunction():\n    pass\n")
+
+        violations = fileCheck(str(sourceFile))
+
+        assert any(
+            "two blank lines before top-level def" in item[1] for item in violations
+        )
+
+    def testMethodBodyDoesNotRequireLeadingBlankLine(self, temp_dir):
+        sourceFile = temp_dir / "module.py"
+        sourceFile.write_text(
+            "class Example:\n"
+            "    def exampleMethod(self):\n"
+            "        first = 1\n"
+            "        second = 2\n"
+            "        third = 3\n"
+            "        fourth = 4\n"
+            "        return first + second + third + fourth\n"
+        )
+
+        assert fileCheck(str(sourceFile)) == []
 
 
 class TestFrameworkDetection:
@@ -358,7 +437,7 @@ class TestQtNamingValidation:
 
     def testQtSnakeCaseViolation(self, temp_dir):
         """Test that camelCase in Qt files is flagged."""
-        qt_file = temp_dir / "test_Qt.py"
+        qt_file = temp_dir / "test_qt.py"
         content = """
 from PySide6.QtWidgets import QPushButton
 
@@ -375,7 +454,7 @@ class MyWidget:
 
     def testQtPrivateMembersValid(self, temp_dir):
         """Test that Qt private members with leading underscore are valid."""
-        qt_file = temp_dir / "test_Qt_private.py"
+        qt_file = temp_dir / "test_qtPrivate.py"
         content = """
 from PySide6.QtWidgets import QWidget
 
@@ -392,7 +471,7 @@ class MyWidget:
 
     def testQtMultipleWidgets(self, temp_dir):
         """Test validation with multiple Qt widgets."""
-        qt_file = temp_dir / "test_Qt_multi.py"
+        qt_file = temp_dir / "test_qtMulti.py"
         content = """
 from PySide6.QtWidgets import QPushButton, QLabel, QLineEdit
 
@@ -450,7 +529,7 @@ class QtWidget:
 
     def testTkinterRulesNotAppliedToQt(self, temp_dir):
         """Test that Tkinter prefix rules are not applied to Qt files."""
-        qt_file = temp_dir / "test_Qt.py"
+        qt_file = temp_dir / "test_qt.py"
         content = """
 from PySide6.QtWidgets import QPushButton
 
@@ -467,7 +546,7 @@ class MyWidget:
 
     def testQtRulesNotAppliedToTkinter(self, temp_dir):
         """Test that Qt snake_case rules are not applied to Tkinter files."""
-        tk_file = temp_dir / "test_Tk.py"
+        tk_file = temp_dir / "test_tk.py"
         content = """
 import tkinter as tk
 
@@ -488,7 +567,7 @@ class TestHorizontalVerticalNaming:
 
     def testHorizontalWidgetViolation(self, temp_dir):
         """Test that horizontalSpacer triggers a violation."""
-        test_file = temp_dir / "test_Horizontal.py"
+        test_file = temp_dir / "test_horizontal.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -507,7 +586,7 @@ class MyWidget:
 
     def testVerticalWidgetViolation(self, temp_dir):
         """Test that verticalSpacer triggers a violation."""
-        test_file = temp_dir / "test_Vertical.py"
+        test_file = temp_dir / "test_vertical.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -526,7 +605,7 @@ class MyWidget:
 
     def testHrzPrefixValid(self, temp_dir):
         """Test that hrzSpacer is valid."""
-        test_file = temp_dir / "test_Hrz_valid.py"
+        test_file = temp_dir / "test_hrzValid.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -543,7 +622,7 @@ class MyWidget:
 
     def testVrtPrefixValid(self, temp_dir):
         """Test that vrtSpacer is valid."""
-        test_file = temp_dir / "test_Vrt_valid.py"
+        test_file = temp_dir / "test_vrtValid.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem
 
@@ -560,7 +639,7 @@ class MyWidget:
 
     def testHorizontalLayoutViolation(self, temp_dir):
         """Test that horizontalLayout triggers a violation."""
-        test_file = temp_dir / "test_Horizontal_layout.py"
+        test_file = temp_dir / "test_horizontalLayout.py"
         content = """
 from PySide6.QtWidgets import QHBoxLayout
 
@@ -579,7 +658,7 @@ class MyWidget:
 
     def testVerticalLayoutViolation(self, temp_dir):
         """Test that verticalLayout triggers a violation."""
-        test_file = temp_dir / "test_Vertical_layout.py"
+        test_file = temp_dir / "test_verticalLayout.py"
         content = """
 from PySide6.QtWidgets import QVBoxLayout
 
@@ -598,7 +677,7 @@ class MyWidget:
 
     def testMultipleHorizontalVerticalViolations(self, temp_dir):
         """Test multiple horizontal and vertical widgets in same file."""
-        test_file = temp_dir / "test_Multiple_hv.py"
+        test_file = temp_dir / "test_multipleHv.py"
         content = """
 from PySide6.QtWidgets import QSpacerItem, QHBoxLayout, QVBoxLayout
 
@@ -622,7 +701,7 @@ class MyWidget:
 
     def testTkinterHorizontalVertical(self, temp_dir):
         """Test that horizontal/vertical rules apply to Tkinter too."""
-        test_file = temp_dir / "test_Tkinter_hv.py"
+        test_file = temp_dir / "test_tkinterHv.py"
         content = """
 import tkinter as tk
 
@@ -646,7 +725,7 @@ class TestLoggingRules:
 
     def testLoggerActionVariablesViolation(self, temp_dir):
         """Test that logger.action rejects variable interpolation arguments."""
-        test_file = temp_dir / "test_Logger_action.py"
+        test_file = temp_dir / "test_loggerAction.py"
         content = """
 from organiseMyProjects.logUtils import getLogger
 
@@ -669,7 +748,7 @@ class MyFrame:
 
     def testLoggerActionLiteralMessageValid(self, temp_dir):
         """Test that logger.action accepts a literal message without variables."""
-        test_file = temp_dir / "test_Logger_action_valid.py"
+        test_file = temp_dir / "test_loggerActionValid.py"
         content = """
 from organiseMyProjects.logUtils import getLogger
 
@@ -687,7 +766,7 @@ class MyFrame:
 
     def testLoggerInfoSingleVariableViolation(self, temp_dir):
         """Test that logger.info with one variable suggests logger.value."""
-        test_file = temp_dir / "test_Logger_info.py"
+        test_file = temp_dir / "test_loggerInfo.py"
         content = """
 from organiseMyProjects.logUtils import getLogger
 
@@ -709,7 +788,7 @@ class MyFrame:
 
     def testNonLoggerInfoCallIgnored(self, temp_dir):
         """Test that non-logger info-like methods are ignored."""
-        test_file = temp_dir / "test_Non_logger_info.py"
+        test_file = temp_dir / "test_nonLoggerInfo.py"
         content = """
 class StatusBar:
     info = print

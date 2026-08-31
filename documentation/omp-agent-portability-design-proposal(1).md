@@ -2,7 +2,7 @@
 
 **Scope:** Design only — no implementation. Prepared by reviewing the current
 state of `Glawster/organiseMyProjects` (README, `.github/agent-instructions.md`,
-`.github/repositoryLayout.md`, `.github/requirementsManagement.md`, and
+`documentation/repositoryLayout.md`, `documentation/requirementsManagement.md`, and
 `syncAgentInstructions.py`) before proposing anything, per the brief's
 instruction to reuse existing mechanisms rather than create parallel ones.
 
@@ -103,7 +103,7 @@ A new subcommand, consistent with the CLI standards already defined in
 `agent-instructions.md` (`application object action`, `--confirm`/`--verbose`
 universal options, non-interactive by default, exit code 0/non-zero):
 
-```
+```bash
 omp validate
 omp validate --repo <path>      # defaults to CWD
 omp validate --verbose
@@ -120,7 +120,7 @@ Checks presence (not content quality) of:
 - `project/adr/` (presence, not that it's non-empty — not every project needs
   a decision record yet)
 - `.github/agent-instructions.md`, `.github/copilot-instructions.md`,
-  `.github/repositoryLayout.md`, `.github/requirementsManagement.md` (i.e.
+  `documentation/repositoryLayout.md`, `documentation/requirementsManagement.md` (i.e.
   synced files are actually present and carry the sync comment)
 - Test and coding-standard entry points referenced from
   `agent-instructions.md` are resolvable (e.g. a `tests/` directory exists)
@@ -148,7 +148,8 @@ Add to `SYNC_SPECS` in `syncAgentInstructions.py`:
 ## 3. Files added or modified
 
 **Modified (OMP-owned, edited once in `organiseMyProjects`, then synced):**
-- `.github/repositoryLayout.md` — add `project/currentIncrement.md` row;
+
+- `documentation/repositoryLayout.md` — add `project/currentIncrement.md` row;
   add a documentation-conventions row naming `documentation/architecture.md`.
 - `.github/agent-instructions.md` — reference `project/currentIncrement.md`
   and `documentation/architecture.md` in whichever section currently tells an
@@ -157,6 +158,7 @@ Add to `SYNC_SPECS` in `syncAgentInstructions.py`:
 - `.github/AGENTS.md` — same, once its current content is confirmed.
 
 **New (OMP-owned):**
+
 - `omp validate` command implementation, wherever `createProject`'s CLI is
   defined (needs `createProject.py`/CLI entry-point layout confirmed before
   scoping the exact module).
@@ -164,6 +166,7 @@ Add to `SYNC_SPECS` in `syncAgentInstructions.py`:
   `project/requirements/templates/requirement.md` already is.
 
 **New (project-owned, created once by `createProject`, never resynced):**
+
 - `project/currentIncrement.md` (starter content) in every newly scaffolded
   project.
 - `documentation/architecture.md` (starter stub) in every newly scaffolded

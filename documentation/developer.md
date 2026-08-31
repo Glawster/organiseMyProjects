@@ -31,6 +31,11 @@ Migrate
 Check
   Read-only validation of repository and agent readiness.
 
+Role detection
+  Classifies standalone applications, packaged CLIs and libraries from
+  `main.py`, `pyproject.toml`, `setup.cfg`, `setup.py` and `src/` without
+  executing project-owned packaging metadata.
+
 **Changes from previous behaviour:**
 
 .env
@@ -59,9 +64,32 @@ DOC-001
 resulting Git/VS Code changed files and revert any scaffold-managed updates they
 do not want before committing.
 
+Managed-copy comparison ignores the OMP release header when the body is
+unchanged. The existing header therefore identifies the release that last made
+a substantive change. Missing or duplicate markers are repaired, and actual
+managed-content changes receive one current release marker.
+
+`updateProject()` detects the canonical OMP repository from its package,
+`pyproject.toml` identity and sync utility. It performs no scaffold deployment
+for that target: generic configuration is not installed, package linter modules
+are not copied into `tests/`, and canonical managed sources are never wrapped or
+overwritten. Managed-copy logic also rejects any source/destination pair that
+resolves to the same file.
+
+OMP 0.5 performs two narrowly scoped filename migrations. A legacy
+`test_Foo.py` becomes `test_foo.py` only when the destination is absent. A
+legacy single-prompt name such as `007-feature.prompt.md` becomes
+`007-feature.md` only when `features/007-feature.md` proves the relationship and
+the destination is absent; the requirements index link is updated with it.
+Ambiguous or colliding names are reported and left unchanged.
+
 #### `logUtils.py`
 
 Centralised logging utilities shared across organiseMyProjects tooling.
+
+Log records use a fixed four-character severity (`INFO`, `WARN`, `ERRO`,
+`CRIT`, or `DEBU`). `manageProject` also writes the running OMP version at
+startup so saved logs identify the implementation that produced them.
 
 **Key Functions:**
 
@@ -117,13 +145,18 @@ Parameter details:
 **Usage Examples:**
 
 ```python
-from organiseMyProjects.logUtils import drawBox, getLogger, thisApplication
+from pathlib import Path
+
+from organiseMyProjects.logUtils import drawBox, getLogger, setApplication
+
+thisApplication = Path(__file__).parent.name
+setApplication(thisApplication)
 
 # Print to stdout
 drawBox("Deployment complete")
 
 # Log via a logger instance
-log = getLogger(thisApplication)
+log = getLogger()
 drawBox("[ERROR] Database connection failed\nAttempted 3 retries.", logger=log)
 
 # Custom box characters
@@ -132,7 +165,8 @@ drawBox("Warning", border_char="-", corner_char="*", side_char="|")
 
 #### `guiNamingLinter.py`
 
-Implements custom linting rules for GUI naming conventions and code formatting.
+Implements custom linting rules for Python naming, module-level spacing, logging
+and GUI widget conventions.
 
 **Key Classes:**
 
@@ -161,6 +195,13 @@ namingRules = {
     'Class': r'^[A-Z][a-zA-Z0-9]*$',
 }
 ```
+
+Naming enforcement is context-aware. Dunder methods and required framework
+overrides retain their contract names. In test modules, pytest fixtures,
+private helpers, non-test module helpers and `_PascalCase` test doubles may use
+normal Python/pytest conventions. Test functions still follow the OMP test
+function convention. Spacing checks require two blank lines before module-level
+functions and do not require a blank line inside function or method bodies.
 
 #### `runLinter.py`
 
@@ -198,10 +239,12 @@ The package includes template files that are distributed with the package:
     guidelines
 - `.github/copilot-instructions.md` - Identical GitHub Copilot compatibility
     copy
-- `.github/repositoryLayout.md` - Canonical project layout definition copied to
+- `documentation/repositoryLayout.md` - Canonical project layout definition copied to
     generated repositories
-- `.github/requirementsManagement.md` - Canonical requirements workflow copied
+- `documentation/requirementsManagement.md` - Canonical requirements workflow copied
     to generated repositories
+- `documentation/testingProcess.md` - Canonical testing process copied to
+    generated repositories
 - Template Python modules (copied to new projects)
 
 ## Canonical Agent Instructions Access
@@ -236,13 +279,13 @@ Shared test fixtures and configuration:
 - `sample_project_name` - Standard test project name
 - `mockPythonFile` - Sample Python file with violations
 
-#### `tests/test_LogUtils.py`
+#### `tests/test_logUtils.py`
 
 Tests for logging utilities:
 
 - `TestDrawBox` - Box-drawing function tests
 
-#### `tests/test_CreateProject.py`
+#### `tests/test_createProject.py`
 
 Tests for project creation functionality:
 
@@ -250,7 +293,7 @@ Tests for project creation functionality:
 - `TestUpdateProject` - Project update functionality tests
 - `TestUtilityFunctions` - Utility function tests
 
-#### `tests/test_GuiNamingLinter.py`
+#### `tests/test_guiNamingLinter.py`
 
 Tests for linting functionality:
 
@@ -259,14 +302,14 @@ Tests for linting functionality:
 - `TestLintGuiNaming` - Directory linting tests
 - `TestNamingPatterns` - Naming pattern validation tests
 
-#### `tests/test_RunLinter.py`
+#### `tests/test_runLinter.py`
 
 Tests for command-line interface:
 
 - `TestRunLinter` - CLI functionality tests
 - `TestIntegration` - Complete workflow tests
 
-#### `tests/test_Integration.py`
+#### `tests/test_integration.py`
 
 End-to-end integration tests:
 
@@ -276,7 +319,7 @@ End-to-end integration tests:
 - `TestModuleImports` - Import verification tests
 - `TestResourceAccess` - Package resource tests
 
-#### `tests/test_SyncAgentInstructions.py`
+#### `tests/test_syncAgentInstructions.py`
 
 Tests for Agent instructions sync utility:
 
@@ -293,7 +336,7 @@ Tests for Agent instructions sync utility:
 pytest
 
 # Run specific test module
-pytest tests/test_CreateProject.py
+pytest tests/test_createProject.py
 
 # Run with verbose output
 pytest -v
@@ -302,10 +345,10 @@ pytest -v
 pytest --cov=organiseMyProjects
 
 # Run specific test class
-pytest tests/test_CreateProject.py::TestCreateProject
+pytest tests/test_createProject.py::TestCreateProject
 
 # Run specific test method
-pytest tests/test_CreateProject.py::TestCreateProject::\
+pytest tests/test_createProject.py::TestCreateProject::\
 testCreateProjectBasicStructure
 ```
 
@@ -412,14 +455,14 @@ repos:
 ### Release Process
 
 1. Update `VERSION` in `organiseMyProjects/version.py`
-2. Update `CHANGELOG.md` (if exists)
+2. Update `documentation/releaseNotes.md` and other affected living guides
 3. Run full test suite: `pytest`
 4. Run linter: `runLinter .`
 5. Format code: `black .`
 6. Run static checks: `ruff check .`
-7. Build package: `python setup.py sdist`
-8. Test installation: `pip install dist/organiseMyProjects-*.tar.gz`
-9. Tag the commit with the same release value as `VERSION`
+7. Build package: `python -m build`
+8. Test installation from the generated wheel
+9. Tag the commit as `v<VERSION>` (for example, `v0.5`)
 
 ## Extending the Package
 
@@ -429,7 +472,7 @@ To add new linting rules to `guiNamingLinter.py`:
 
 1. Add the rule to `namingRules` dictionary
 2. Update the `GuiNamingVisitor` class to check for the new rule
-3. Add tests for the new rule in `tests/test_GuiNamingLinter.py`
+3. Add tests for the new rule in `tests/test_guiNamingLinter.py`
 
 Example:
 
@@ -461,14 +504,11 @@ Only executable applications and command-line tools need an entry point. A
 reusable library module or package does not require `main.py`.
 
 1. Create the module with a `main()` function
-2. Add entry point to `setup.py`:
+2. Add the entry point under `[project.scripts]` in `pyproject.toml`:
 
-   ```python
-   entry_points={
-       "console_scripts": [
-           "newTool=organiseMyProjects.newTool:main",
-       ]
-   }
+   ```toml
+   [project.scripts]
+   newTool = "organiseMyProjects.newTool:main"
    ```
 
 3. Add tests for the new tool
@@ -486,7 +526,7 @@ reusable library module or package does not require `main.py`.
 #### Resource Access Issues
 
 - Ensure files are included in `MANIFEST.in`
-- Check that `include_package_data=True` in `setup.py`
+- Check that `include-package-data = true` in `pyproject.toml`
 - Verify resource access uses `importlib.resources`
 
 #### Test Failures

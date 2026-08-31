@@ -1,8 +1,8 @@
-import os
-import shutil
-import subprocess
 import argparse
 import importlib.util
+import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -103,9 +103,9 @@ repos:
         types: [python]
 """
 
-PYTEST_INI_CONTENT = """[tool:pytest]
+PYTEST_INI_CONTENT = """[pytest]
 testpaths = tests
-python_files = test[!_]*.py
+python_files = test_[a-z]*.py
 python_functions = test*
 python_classes = Test*
 addopts = 
@@ -118,13 +118,62 @@ filterwarnings =
     ignore::PendingDeprecationWarning
 """
 
+ENVIRONMENT_CONTENT = """name: application
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - pip
+  - pip:
+      - -e .[dev]
+"""
+
+
+def _pyprojectContentBuild(projectName: str) -> str:
+    """Return project-neutral Python package and tool metadata."""
+    return f"""[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{Path(projectName).name}"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["black", "pre-commit", "pytest", "ruff"]
+
+[tool.setuptools]
+package-dir = {{"" = "src"}}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+target-version = ["py310"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_[a-z]*.py"]
+python_functions = ["test*"]
+python_classes = ["Test*"]
+"""
+
+
 VSCODE_SETTINGS_CONTENT = """{
    "python.testing.pytestEnabled": true,
    "python.testing.unittestEnabled": false,
    "python.testing.nosetestsEnabled": false,
    "python.testing.pytestArgs": [
       "tests",
-      "--override-ini=python_files=test[a-zA-Z]*.py"
+      "--override-ini=python_files=test_[a-z]*.py"
    ]
 }
 """
@@ -150,59 +199,39 @@ See `project/adr/` for significant architectural decisions.
 
 CURRENT_INCREMENT_CONTENT = """# Current Development Increment
 
+## Increment
+
+<!-- Identifier and concise name of the active increment, or None when idle. -->
+
 ## Status
 
 Idle
 <!-- Options: Active, Idle, Blocked, InReview -->
 
+## Requirement
+
+<!-- Governing requirement path, or None. -->
+
 ## Objective
 
-<!-- When work is active, describe the capability currently being delivered. -->
-
-## Governing References
-
-- Primary Requirement: None
-- Supporting ADRs: None
-- Milestone / Roadmap: None
+<!-- Short description of the capability currently being delivered. -->
 
 ## Scope
 
 <!-- Work included in the current increment. -->
 
-## Explicit Exclusions
+## Verification
 
-<!-- Related work deliberately excluded from the current increment. -->
-
-## In-Progress Tasks
-
-<!-- Immediate work units, for example:
-- [ ] Implement capability
+<!-- Keep only acceptance and verification still required, for example:
+- [ ] Focused tests
+- [ ] Full suite
+- [ ] Manual acceptance
 -->
 
-## Relevant Files & Components
+## Next
 
-<!-- Source, test and documentation paths relevant to the current increment. -->
-
-## Verification Procedures
-
-<!-- Reference the authoritative build/test instructions and add
-increment-specific verification only where necessary. -->
-
-## Definition of Done
-
-<!-- Observable conditions required to conclude this increment. -->
-
-## Handoff & Unresolved Context
-
-<!-- Context, assumptions, blockers or decisions needed by the next agent. -->
-
-## Agent Readiness
-
-Run:
-
-```bash
-manageProject --check
-```
+<!-- Immediate next action or known next increment. Replace completed-increment
+history when a new increment starts; Git retains delivery history. -->
 """
 
 PROJECT_YAML_CONTENT = """name: "project"
@@ -256,14 +285,6 @@ Describe the current problem and relevant constraints.
 ## Verification
 
 - Planned tests or review evidence.
-
-## Traceability
-
-- Implementation: pending
-- Tests: pending
-- Documentation: pending
-- Pull request: pending
-- Agent runs: None
 
 ## Change history
 
@@ -321,7 +342,8 @@ Next available number: 001
 | --- | --- | --- | --- |
 """
 
-def _build_readme_content(projectName: str) -> str:
+
+def _readmeContentBuild(projectName: str) -> str:
     return f"""# {projectName}
 
 Project scaffold created by manageProject.py.
@@ -333,9 +355,13 @@ Project scaffold created by manageProject.py.
 - [Current Increment](project/currentIncrement.md)
 - [Requirements](project/requirements/README.md)
 - [Architecture Decisions](project/adr/README.md)
-- [Release Guide](.github/howToRelease.md)
+- [Release Guide](documentation/howToRelease.md)
+- [Repository Layout](documentation/repositoryLayout.md)
+- [Requirements Management](documentation/requirementsManagement.md)
+- [Testing Process](documentation/testingProcess.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 """
+
 
 TEMPLATE_DIR = Path(__file__).resolve().parent
 UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
@@ -407,23 +433,27 @@ MANAGED_COPY_TEMPLATES = [
         Path("CLAUDE.md"),
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md",
-        Path(".github") / "repositoryLayout.md",
+        TEMPLATE_DIR.parent / "documentation" / "repositoryLayout.md",
+        Path("documentation") / "repositoryLayout.md",
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md",
-        Path(".github") / "requirementsManagement.md",
+        TEMPLATE_DIR.parent / "documentation" / "requirementsManagement.md",
+        Path("documentation") / "requirementsManagement.md",
     ),
     (
-        TEMPLATE_DIR.parent / ".github" / "howToRelease.md",
-        Path(".github") / "howToRelease.md",
+        TEMPLATE_DIR.parent / "documentation" / "testingProcess.md",
+        Path("documentation") / "testingProcess.md",
+    ),
+    (
+        TEMPLATE_DIR.parent / "documentation" / "howToRelease.md",
+        Path("documentation") / "howToRelease.md",
     ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
 
 
-def _iter_template_modules(includeUi: bool = False, includeQt: bool = False):
+def _templateModulesIterate(includeUi: bool = False, includeQt: bool = False):
     modules = [
         (TEMPLATE_DIR / "globalVars.py", Path("src") / "globalVars.py"),
         (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
@@ -447,6 +477,8 @@ def _projectRoleDetect(basePath: Path) -> str:
     if (basePath / "main.py").exists():
         return "standalone-application"
 
+    # Inspect packaging metadata without importing or executing project-owned
+    # configuration. Console entry points make the package a packaged CLI.
     pyproject = basePath / "pyproject.toml"
     if pyproject.exists():
         try:
@@ -465,10 +497,50 @@ def _projectRoleDetect(basePath: Path) -> str:
         if "console_scripts" in content:
             return "packaged-cli"
 
+    setupPy = basePath / "setup.py"
+    if setupPy.exists():
+        try:
+            content = setupPy.read_text(encoding="utf-8")
+        except OSError:
+            content = ""
+        if "console_scripts" in content:
+            return "packaged-cli"
+
+        # A setup.py file is itself an unambiguous legacy Python-package
+        # marker, including repositories whose package lives at the root.
+        return "library"
+
     if (basePath / "src").exists():
         return "library"
 
+    # A PEP 621 project without an entry point is an importable package even
+    # when it uses a flat package layout rather than src/.
+    if pyproject.exists() and "[project]" in content:
+        return "library"
+
     return "unknown"
+
+
+def _projectIsCanonicalOmp(basePath: Path) -> bool:
+    """Return whether the target is the organiseMyProjects source repository."""
+    pyproject = basePath / "pyproject.toml"
+    packageManager = basePath / "organiseMyProjects" / "manageProject.py"
+    syncUtility = basePath / "syncAgentInstructions.py"
+    if not (pyproject.is_file() and packageManager.is_file() and syncUtility.is_file()):
+        return False
+
+    try:
+        content = pyproject.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+    return bool(
+        re.search(
+            r'^\s*name\s*=\s*["\']organiseMyProjects["\']\s*$',
+            content,
+            re.IGNORECASE | re.MULTILINE,
+        )
+    )
 
 
 def _loadSyncModule():
@@ -509,7 +581,6 @@ def createProject(
         folders = [
             "src",
             "tests",
-            "logs",
             ".github",
             "documentation",
             "project",
@@ -541,17 +612,29 @@ def createProject(
         (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
         (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
         (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
-        (basePath / "README.md").write_text(_build_readme_content(projectName))
-        (basePath / "documentation" / "architecture.md").write_text(ARCHITECTURE_CONTENT)
-        (basePath / "project" / "currentIncrement.md").write_text(CURRENT_INCREMENT_CONTENT)
+        (basePath / "environment.yml").write_text(ENVIRONMENT_CONTENT)
+        (basePath / "pyproject.toml").write_text(
+            _pyprojectContentBuild(str(projectName))
+        )
+        (basePath / "README.md").write_text(_readmeContentBuild(projectName))
+        (basePath / "documentation" / "architecture.md").write_text(
+            ARCHITECTURE_CONTENT
+        )
+        (basePath / "project" / "currentIncrement.md").write_text(
+            CURRENT_INCREMENT_CONTENT
+        )
         (basePath / "project" / "project.yaml").write_text(PROJECT_YAML_CONTENT)
         (basePath / "project" / "roadmap.md").write_text(ROADMAP_CONTENT)
-        (basePath / "project" / "requirements" / "README.md").write_text(REQUIREMENTS_README_CONTENT)
+        (basePath / "project" / "requirements" / "README.md").write_text(
+            REQUIREMENTS_README_CONTENT
+        )
         (
             basePath / "project" / "requirements" / "templates" / "requirement.md"
         ).write_text(REQUIREMENT_TEMPLATE_CONTENT)
         (basePath / "project" / "adr" / "README.md").write_text(ADR_README_CONTENT)
-        (basePath / "project" / "adr" / "templates" / "adr.md").write_text(ADR_TEMPLATE_CONTENT)
+        (basePath / "project" / "adr" / "templates" / "adr.md").write_text(
+            ADR_TEMPLATE_CONTENT
+        )
 
     # Copy the guidelines file
     srcGuidelines = TEMPLATE_DIR.parent / "projectGuidelines.md"
@@ -559,7 +642,7 @@ def createProject(
         logger.action("copying project guidelines")
         if not dryRun:
             (basePath / "projectGuidelines.md").write_text(
-                _build_managed_content(srcGuidelines.read_text())
+                _managedContentBuild(srcGuidelines.read_text())
             )
 
     # Copy the agent instructions file
@@ -568,7 +651,7 @@ def createProject(
         logger.action("copying agent guidelines")
         if not dryRun:
             (basePath / ".github" / "agent-instructions.md").write_text(
-                _build_managed_content(srcAgentGuidelines.read_text())
+                _managedContentBuild(srcAgentGuidelines.read_text())
             )
 
     srcCopilot = TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
@@ -576,7 +659,7 @@ def createProject(
         logger.action("copying copilot shim")
         if not dryRun:
             (basePath / ".github" / "copilot-instructions.md").write_text(
-                _build_managed_content(srcCopilot.read_text())
+                _managedContentBuild(srcCopilot.read_text())
             )
 
     srcClaude = TEMPLATE_DIR.parent / ".github" / "CLAUDE.md"
@@ -584,7 +667,7 @@ def createProject(
         logger.action("copying claude shim")
         if not dryRun:
             (basePath / "CLAUDE.md").write_text(
-                _build_managed_content(srcClaude.read_text())
+                _managedContentBuild(srcClaude.read_text())
             )
 
     # Copy the Codex agent instructions file
@@ -593,42 +676,50 @@ def createProject(
         logger.action("copying agent instructions")
         if not dryRun:
             (basePath / "AGENTS.md").write_text(
-                _build_managed_content(srcAgentInstructions.read_text())
+                _managedContentBuild(srcAgentInstructions.read_text())
             )
 
     # Copy the repository layout definition
-    srcRepositoryLayout = TEMPLATE_DIR.parent / ".github" / "repositoryLayout.md"
+    srcRepositoryLayout = TEMPLATE_DIR.parent / "documentation" / "repositoryLayout.md"
     if srcRepositoryLayout.exists():
         logger.action("copying repository layout")
         if not dryRun:
-            (basePath / ".github" / "repositoryLayout.md").write_text(
-                _build_managed_content(srcRepositoryLayout.read_text())
+            (basePath / "documentation" / "repositoryLayout.md").write_text(
+                _managedContentBuild(srcRepositoryLayout.read_text())
             )
 
     # Copy the requirements management guide
     srcRequirementsManagement = (
-        TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md"
+        TEMPLATE_DIR.parent / "documentation" / "requirementsManagement.md"
     )
     if srcRequirementsManagement.exists():
         logger.action("copying requirements management guide")
         if not dryRun:
-            (basePath / ".github" / "requirementsManagement.md").write_text(
-                _build_managed_content(srcRequirementsManagement.read_text())
+            (basePath / "documentation" / "requirementsManagement.md").write_text(
+                _managedContentBuild(srcRequirementsManagement.read_text())
+            )
+
+    srcTestingProcess = TEMPLATE_DIR.parent / "documentation" / "testingProcess.md"
+    if srcTestingProcess.exists():
+        logger.action("copying testing process guide")
+        if not dryRun:
+            (basePath / "documentation" / "testingProcess.md").write_text(
+                _managedContentBuild(srcTestingProcess.read_text())
             )
 
     # Copy the release process guide
-    srcHowToRelease = TEMPLATE_DIR.parent / ".github" / "howToRelease.md"
+    srcHowToRelease = TEMPLATE_DIR.parent / "documentation" / "howToRelease.md"
     if srcHowToRelease.exists():
         logger.action("copying release process guide")
         if not dryRun:
-            (basePath / ".github" / "howToRelease.md").write_text(
-                _build_managed_content(srcHowToRelease.read_text())
+            (basePath / "documentation" / "howToRelease.md").write_text(
+                _managedContentBuild(srcHowToRelease.read_text())
             )
 
     # Copy template modules into the new project
     logger.action("copying template modules")
     if not dryRun:
-        for src, destRel in _iter_template_modules(includeUi, includeQt):
+        for src, destRel in _templateModulesIterate(includeUi, includeQt):
             shutil.copy(src, basePath / destRel)
 
     # Create main.py starter
@@ -666,7 +757,8 @@ def createProject(
     if dryRun:
         logger.info("create simulation complete: no changes were applied")
 
-def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
+
+def _fileCopyIfNewer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
@@ -675,7 +767,7 @@ def _copy_if_newer(src: Path, dest: Path, dryRun: bool = False):
             shutil.copy(src, dest)
 
 
-def _update_text_file(dest: Path, content: str, dryRun: bool = False):
+def _textFileUpdate(dest: Path, content: str, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     new_bytes = content.encode("utf-8")
@@ -694,10 +786,9 @@ def _update_text_file(dest: Path, content: str, dryRun: bool = False):
             dest.write_bytes(new_bytes)
 
 
-def _build_managed_content(sourceContent: str, suffix: str = ".md") -> str:
+def _managedContentBuild(sourceContent: str, suffix: str = ".md") -> str:
     """Add the scaffold release marker to canonical managed content."""
-    if sourceContent.startswith("<!-- synced from Glawster/organiseMyProjects"):
-        sourceContent = sourceContent.partition("\n")[2]
+    sourceContent, _ = _managedContentBody(sourceContent)
     if suffix != ".py":
         return DEPLOYMENT_COMMENT + sourceContent
 
@@ -707,11 +798,54 @@ def _build_managed_content(sourceContent: str, suffix: str = ".md") -> str:
     return PYTHON_DEPLOYMENT_COMMENT + sourceContent
 
 
-def _update_managed_copy(src: Path, dest: Path, dryRun: bool = False):
-    """Deploy a managed text file with its originating scaffold release."""
-    _update_text_file(
+def _managedContentBody(content: str) -> tuple[str, int]:
+    """Return content without leading OMP release markers and their count."""
+    lines = content.splitlines(keepends=True)
+    if not lines:
+        return content, 0
+
+    markerPrefixes = (
+        "<!-- deployed from Glawster/organiseMyProjects release ",
+        "<!-- synced from Glawster/organiseMyProjects release ",
+        "# deployed from Glawster/organiseMyProjects release ",
+        "# synced from Glawster/organiseMyProjects release ",
+    )
+    markerIndex = 1 if lines[0].startswith("#!") else 0
+    markerCount = 0
+    while markerIndex < len(lines) and lines[markerIndex].startswith(markerPrefixes):
+        del lines[markerIndex]
+        markerCount += 1
+
+    return "".join(lines), markerCount
+
+
+def _managedCopyUpdate(src: Path, dest: Path, dryRun: bool = False):
+    """Deploy a managed file only when its substantive content changed."""
+    # The canonical repository is the source of managed files. Never wrap or
+    # rewrite a source file when updateProject targets the source checkout.
+    if src.resolve() == dest.resolve():
+        return
+
+    managedContent = _managedContentBuild(
+        src.read_text(encoding="utf-8"), suffix=dest.suffix
+    )
+
+    # A release-marker-only change would create noise without changing the
+    # managed guidance or code. Preserve the marker from the release that last
+    # changed the file's substantive content.
+    if dest.exists():
+        try:
+            currentContent = dest.read_text(encoding="utf-8")
+        except OSError:
+            currentContent = ""
+        currentBody, currentMarkerCount = _managedContentBody(currentContent)
+        managedBody, _ = _managedContentBody(managedContent)
+        if currentMarkerCount == 1 and currentBody == managedBody:
+            return
+
+    _textFileUpdate(
         dest,
-        _build_managed_content(src.read_text(), suffix=dest.suffix),
+        managedContent,
         dryRun,
     )
 
@@ -726,7 +860,7 @@ def _createTextFileIfMissing(dest: Path, content: str, dryRun: bool = False):
         dest.write_text(content)
 
 
-def _copy_if_missing(src: Path, dest: Path, dryRun: bool = False):
+def _fileCopyIfMissing(src: Path, dest: Path, dryRun: bool = False):
     if dest.exists():
         return
     if not dryRun:
@@ -737,7 +871,7 @@ def _copy_if_missing(src: Path, dest: Path, dryRun: bool = False):
 
 
 def migrateProject(projectName, dryRun: bool = False):
-    """ Add missing OMP project-management/context structures without creating application scaffolding or overwriting project-owned files. """
+    """Add missing OMP project-management/context structures without creating application scaffolding or overwriting project-owned files."""
     basePath = Path(projectName)
     if not basePath.exists():
         logger.info(f"project '{projectName}' does not exist")
@@ -769,10 +903,49 @@ def migrateProject(projectName, dryRun: bool = False):
         logger.info("migration simulation complete: no changes were applied")
 
 
+def _migrateManagedNames(basePath: Path, dryRun: bool = False) -> None:
+    """Safely migrate only unambiguous legacy OMP-managed filenames."""
+    testsPath = basePath / "tests"
+    if testsPath.is_dir():
+        for source in sorted(testsPath.glob("test_[A-Z]*.py")):
+            concept = source.name.removeprefix("test_")
+            destination = source.with_name(f"test_{concept[0].lower()}{concept[1:]}")
+            if destination.exists():
+                logger.info(f"test rename skipped because target exists: {destination}")
+                continue
+            logger.action(f"renamed {source} to {destination}")
+            if not dryRun:
+                source.rename(destination)
+
+    featuresPath = basePath / "project" / "requirements" / "features"
+    promptsPath = basePath / "project" / "requirements" / "prompt"
+    if featuresPath.is_dir() and promptsPath.is_dir():
+        for source in sorted(promptsPath.glob("*.prompt.md")):
+            destination = source.with_name(source.name.replace(".prompt.md", ".md"))
+            matchingFeature = featuresPath / destination.name
+            if not matchingFeature.exists() or destination.exists():
+                logger.info(
+                    f"prompt rename skipped because mapping is ambiguous: {source}"
+                )
+                continue
+            logger.action(f"renamed {source} to {destination}")
+            if not dryRun:
+                source.rename(destination)
+                requirementsIndex = basePath / "project" / "requirements" / "README.md"
+                if requirementsIndex.exists():
+                    indexText = requirementsIndex.read_text(encoding="utf-8")
+                    updatedText = indexText.replace(source.name, destination.name)
+                    if updatedText != indexText:
+                        requirementsIndex.write_text(updatedText, encoding="utf-8")
+
+
 def updateProject(
     projectName,
-    dryRun: bool = False
+    dryRun: bool = False,
+    includeUi: bool = False,
+    includeQt: bool = False,
 ):
+    """Refresh managed project files while preserving project-owned scaffolds."""
 
     basePath = Path(projectName)
     if not basePath.exists():
@@ -782,16 +955,27 @@ def updateProject(
     logger.doing(f"updating project at {basePath}")
     detectedRole = _projectRoleDetect(basePath)
     logger.value("detected role", detectedRole)
+    if _projectIsCanonicalOmp(basePath):
+        logger.info(
+            "canonical OMP repository detected: scaffold deployment is not applicable"
+        )
+        logger.done("project unchanged")
+        return
+
     logger.action("ensuring managed directories")
     if not dryRun:
         (basePath / ".github").mkdir(parents=True, exist_ok=True)
 
     for destRel, content in MANAGED_TEXT_TEMPLATES:
-        _update_text_file(basePath / destRel, content, dryRun)
+        _createTextFileIfMissing(basePath / destRel, content, dryRun)
 
     for src, destRel in MANAGED_COPY_TEMPLATES:
         if src.exists():
-            _update_managed_copy(src, basePath / destRel, dryRun)
+            _managedCopyUpdate(src, basePath / destRel, dryRun)
+
+    # OMP 0.5 migrations are deliberately limited to deterministic legacy
+    # names. Existing destinations are never overwritten.
+    _migrateManagedNames(basePath, dryRun)
 
     logger.done("project updated")
     if dryRun:
@@ -927,6 +1111,7 @@ def main():
         includeConsole=True,
         dryRun=dryRun,
     )
+    logger.value("OMP version", VERSION)
     logger.doing(thisApplication)
 
     if args.sync:
@@ -962,7 +1147,9 @@ def main():
         project_path = projectPath or Path.cwd()
         updateProject(
             project_path,
-            dryRun=dryRun
+            dryRun=dryRun,
+            includeUi=args.ui,
+            includeQt=args.qt,
         )
     else:
         if args.create is False and projectPath is None:

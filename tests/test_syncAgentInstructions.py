@@ -17,6 +17,23 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import syncAgentInstructions as sci
 
 
+def testMainInitialisesSharedLoggingContext(monkeypatch):
+    """The sync entry point follows the canonical OMP logging pattern."""
+    monkeypatch.setattr(sys, "argv", ["syncAgentInstructions.py"])
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+
+    with (
+        patch.object(sci, "setApplication") as setApplication,
+        patch.object(sci, "getLogger") as getLogger,
+        patch.object(sci, "configLoadToken", return_value=""),
+        pytest.raises(SystemExit),
+    ):
+        sci.main()
+
+    setApplication.assert_called_once_with("syncAgentInstructions")
+    getLogger.assert_called_once_with(includeConsole=True, dryRun=True)
+
+
 class TestConfigToken:
     """Tests for persistent GitHub token configuration."""
 
@@ -108,19 +125,19 @@ class TestSyncSpecs:
     def testIncludesRepositoryLayout(self):
         """The shared repository layout should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
-        layoutSpec = specsByTarget[".github/repositoryLayout.md"]
+        layoutSpec = specsByTarget["documentation/repositoryLayout.md"]
         assert layoutSpec["sourceFile"].name == "repositoryLayout.md"
 
     def testIncludesRequirementsManagement(self):
         """The shared requirements guide should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
-        guideSpec = specsByTarget[".github/requirementsManagement.md"]
+        guideSpec = specsByTarget["documentation/requirementsManagement.md"]
         assert guideSpec["sourceFile"].name == "requirementsManagement.md"
 
     def testIncludesHowToRelease(self):
         """The shared release guide should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
-        releaseSpec = specsByTarget[".github/howToRelease.md"]
+        releaseSpec = specsByTarget["documentation/howToRelease.md"]
         assert releaseSpec["sourceFile"].name == "howToRelease.md"
 
 
@@ -195,7 +212,9 @@ class TestGetTargetRepos:
     def testFetchesAllPages(self):
         """A full API page should cause the next page to be requested."""
         firstPage = MagicMock()
-        firstPage.json.return_value = [self._repo(f"repo{index}") for index in range(100)]
+        firstPage.json.return_value = [
+            self._repo(f"repo{index}") for index in range(100)
+        ]
         secondPage = MagicMock()
         secondPage.json.return_value = [self._repo("finalRepo")]
 
@@ -497,16 +516,12 @@ class TestSyncRepo:
         preparedBranches = set()
         logger = self._makeLogger()
 
-        with patch(
-            "syncAgentInstructions.getRemoteFile", return_value=remoteData
-        ), patch(
-            "syncAgentInstructions.getDefaultBranch", return_value="main"
-        ), patch(
-            "syncAgentInstructions.getBranchHeadSha", return_value="head-sha"
-        ), patch(
-            "syncAgentInstructions.createBranch"
-        ) as mockCreate, patch(
-            "syncAgentInstructions.putRemoteFile"
+        with (
+            patch("syncAgentInstructions.getRemoteFile", return_value=remoteData),
+            patch("syncAgentInstructions.getDefaultBranch", return_value="main"),
+            patch("syncAgentInstructions.getBranchHeadSha", return_value="head-sha"),
+            patch("syncAgentInstructions.createBranch") as mockCreate,
+            patch("syncAgentInstructions.putRemoteFile"),
         ):
             for targetPath in (".github/agent-instructions.md", "AGENTS.md"):
                 result = sci.syncRepo(
@@ -527,6 +542,4 @@ class TestSyncRepo:
             "owner/repo", "sync/instructions-20260722", "head-sha", {}
         )
         assert preparedBranches == {"owner/repo"}
-        assert logger.action.call_args_list.count(
-            (("prepare sync branch",), {})
-        ) == 1
+        assert logger.action.call_args_list.count((("prepare sync branch",), {})) == 1

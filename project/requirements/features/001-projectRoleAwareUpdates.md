@@ -80,8 +80,8 @@ has a UI.
 
 ## Dependencies and decisions
 
-- The managed standards in `.github/repositoryLayout.md` and
-  `.github/requirementsManagement.md`.
+- The managed standards in `documentation/repositoryLayout.md` and
+  `documentation/requirementsManagement.md`.
 - An architecture decision may be needed to define role metadata and the
   ownership-policy manifest; pending refinement.
 

@@ -1,30 +1,5 @@
-from setuptools import setup, find_packages
+"""Compatibility shim for tools that still invoke setup.py directly."""
 
-setup(
-    name="organiseMyProjects",
-    packages=find_packages(exclude=["tests", "tests.*"]),
-    include_package_data=True,
-    install_requires=[
-        'pywin32; sys_platform == "win32"',
-        "black",
-        "pytest",
-        "pre-commit",
-        "ruff",
-    ],
-    entry_points={
-        "console_scripts": [
-            "manageProject=organiseMyProjects.manageProjectCli:main",
-            "createProject=organiseMyProjects.manageProject:main",
-            "updateProject=organiseMyProjects.manageProject:main",
-            "runLinter=organiseMyProjects.runLinter:main",
-            "fixMarkup=organiseMyProjects.fixMarkup:main",
-        ]
-    },
-    author="Andy Wilson (andyw@glawster.com)",
-    description="A project scaffolding and GUI linter toolkit for Python projects.",
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
-    ],
-    python_requires=">=3.7",
-)
+from setuptools import setup
+
+setup()

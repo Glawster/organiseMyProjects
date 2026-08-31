@@ -2,8 +2,6 @@
 Integration tests for the entire organiseMyProjects package.
 """
 
-import pytest
-import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -45,8 +43,8 @@ class TestEndToEndWorkflow:
         # Verify project was created
         assert projectPath.exists()
         assert (projectPath / ".github" / "agent-instructions.md").exists()
-        assert (projectPath / ".github" / "repositoryLayout.md").exists()
-        assert (projectPath / ".github" / "requirementsManagement.md").exists()
+        assert (projectPath / "documentation" / "repositoryLayout.md").exists()
+        assert (projectPath / "documentation" / "requirementsManagement.md").exists()
         assert (projectPath / "ui" / "mainMenu.py").exists()
 
         # Step 2: Add some Python code with violations to the project
@@ -130,7 +128,7 @@ class TestFrame:
         (projectPath / "main.py").write_text(customMain)
 
         with patch("organiseMyProjects.manageProject.subprocess.run"):
-            updateProject( str(projectPath))
+            updateProject(str(projectPath))
 
         assert (projectPath / "main.py").read_text() == customMain
 
@@ -145,13 +143,15 @@ class TestFrame:
             createProject(str(projectPath))
 
         # Define expected structure
-        expectedDirs = ["src", "tests", "logs", ".github"]
+        expectedDirs = ["src", "tests", ".github"]
 
         expectedFiles = [
             "main.py",
             ".gitignore",
             "requirements.txt",
             "dev-requirements.txt",
+            "environment.yml",
+            "pyproject.toml",
             "README.md",
             ".pre-commit-config.yaml",
             "src/__init__.py",
@@ -264,9 +264,7 @@ class TestResourceAccess:
         """Test that agent instructions exist at the canonical .github/ path."""
         from organiseMyProjects.manageProject import TEMPLATE_DIR
 
-        srcAgentInstructions = (
-            TEMPLATE_DIR.parent / ".github" / "agent-instructions.md"
-        )
+        srcAgentInstructions = TEMPLATE_DIR.parent / ".github" / "agent-instructions.md"
         assert (
             srcAgentInstructions.is_file()
         ), f"agent-instructions.md not found at {srcAgentInstructions}"
@@ -284,7 +282,7 @@ class TestResourceAccess:
         assert "agent-instructions.md" in claudeInstructions.read_text()
 
         requirementsManagement = (
-            TEMPLATE_DIR.parent / ".github" / "requirementsManagement.md"
+            TEMPLATE_DIR.parent / "documentation" / "requirementsManagement.md"
         )
         assert requirementsManagement.is_file()
         assert "# Requirements management" in requirementsManagement.read_text()

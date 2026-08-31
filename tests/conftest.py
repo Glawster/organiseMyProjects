@@ -1,19 +1,20 @@
 """
 Test configuration and fixtures for organiseMyProjects.
 """
-import pytest
-import tempfile
+
 import shutil
+import tempfile
 from pathlib import Path
+
+import pytest
+
 
 @pytest.fixture
 def testFilePath(tmp_path):
     file = tmp_path / "example.py"
-    file.write_text(
-        "def greet(name):\n"
-        "    return f'hello {name}'\n"
-    )
+    file.write_text("def greet(name):\n" "    return f'hello {name}'\n")
     return file  # return Path; str(file) if your code expects a string
+
 
 @pytest.fixture
 def tempDir():
@@ -46,8 +47,8 @@ def sample_project_name():
 @pytest.fixture
 def mockPythonFile(tempDir):
     """Create a sample Python file for testing the linter."""
-    pythonFile = tempDir / "test_File.py"
-    content = '''
+    pythonFile = tempDir / "test_file.py"
+    content = """
 import tkinter as tk
 from tkinter import ttk
 
@@ -67,7 +68,7 @@ class TestFrame:
         line3 = "test"
         line4 = "test"
         line5 = "test"
-'''
+"""
     pythonFile.write_text(content)
     return pythonFile
 
@@ -75,8 +76,8 @@ class TestFrame:
 @pytest.fixture
 def mockQtFile(tempDir):
     """Create a sample Qt/PySide6 Python file for testing the linter."""
-    qtFile = tempDir / "test_Qt_file.py"
-    content = '''
+    qtFile = tempDir / "test_qtFile.py"
+    content = """
 from PySide6.QtWidgets import QWidget, QPushButton, QLabel
 
 class TestWidget(QWidget):
@@ -85,6 +86,6 @@ class TestWidget(QWidget):
         self.title_label = QLabel()  # Valid snake_case
         self.invalidButton = QPushButton()  # Invalid - not snake_case
         self._internal_widget = QWidget()  # Valid - private member
-'''
+"""
     qtFile.write_text(content)
     return qtFile

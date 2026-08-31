@@ -36,14 +36,6 @@ For more complex conditions, use the following format:
 
 - Planned tests or review evidence.
 
-## Traceability
-
-- Implementation: pending
-- Tests: pending
-- Documentation: pending
-- Pull request: pending
-- Agent runs: None
-
 ## Change history
 
 - YYYY-MM-DD: created — reason or source.

@@ -91,5 +91,6 @@ def main() -> None:
         if not found:
             _lintTarget(".")
 
+
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-<!-- synced from Glawster/organiseMyProjects -- do not edit directly -->
+<!-- deployed from Glawster/organiseMyProjects release 0.5 -- do not edit directly -->
 # Repository layout
 
 This managed guide explains what belongs in each top-level directory and where
@@ -8,6 +8,10 @@ repository-specific additions or exceptions belong in
 
 The central convention is to keep project-management records separate from the
 durable documentation and content that a project produces.
+
+Status has one owner. Requirements describe obligations, design documentation
+describes behaviour, and Git records delivery history.
+`project/currentIncrement.md` alone records transient implementation status.
 
 ## Choosing between `project/` and `documentation/`
 
@@ -114,7 +118,7 @@ normally be ignored unless an export is deliberately approved for publication.
 | Path | Purpose |
 | --- | --- |
 | `project/project.yaml` | Current project purpose, scope, audience, risks and milestones. |
-| `project/currentIncrement.md` | Active development objective, scope, in-progress tasks, and verification commands. |
+| `project/currentIncrement.md` | Authoritative transient status for the active increment: objective, scope, acceptance work, verification still required and immediate next action. |
 | `project/requirements/features/` | Requirement records at every lifecycle stage, kept at stable paths. |
 | `project/requirements/templates/` | Templates used to create consistent project records. |
 | `project/adr/` | Significant project-shaping decisions and their consequences. |
@@ -137,10 +141,18 @@ rules should live in `project/requirements/README.md` and
 - Keep Mermaid source (`.mmd`) beside the document or subject it explains.
 - Link from the root README to living guides so contributors can discover them.
 - Prefer relative links so documentation works both locally and on GitHub.
+- Do not copy transient increment progress into requirements, ADRs, README files
+  or durable design documentation. Update those artifacts only when the
+  obligation, decision, introduction or implemented behaviour they own changes.
+- Requirement lifecycle states such as `ToDo`, `InProgress` and `Completed` are
+  durable workflow metadata and may remain in requirement records and indexes;
+  they are distinct from transient implementation detail.
+- Use tests as executable acceptance and regression evidence and Git commits,
+  pull requests, tags and releases as delivery history.
 
 ## Applying this shared layout
 
-This is a managed baseline stored at `.github/repositoryLayout.md` in every
+This is a managed baseline stored at `documentation/repositoryLayout.md` in every
 repository. Do not edit a downstream copy directly because a later sync will
 replace it.
 

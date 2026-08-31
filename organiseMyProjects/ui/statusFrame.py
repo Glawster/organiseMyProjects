@@ -11,9 +11,9 @@ class StatusMessage:
         wraplength=400,
     ):
         self.parent = parent
-        self.frame = tk.Frame(parent, highlightthickness=1)
-        self.label = tk.Label(
-            self.frame,
+        self.frmStatus = tk.Frame(parent, highlightthickness=1)
+        self.lblStatus = tk.Label(
+            self.frmStatus,
             text="",
             anchor="center",
             font=font,
@@ -21,16 +21,18 @@ class StatusMessage:
             wraplength=wraplength,
             justify="center",
         )
-        self.label.pack(fill=tk.X)
+        self.lblStatus.pack(fill=tk.X)
         self.timeout = timeout
 
-    def show(self, message, success=True):
+    def messageShow(self, message, success=True):
         color = "green" if success else "red"
-        self.label.config(text=message, fg=color)
-        self.frame.config(highlightbackground=color, highlightcolor=color)
-        self.frame.after(self.timeout, self.clear)
+        self.lblStatus.config(text=message, fg=color)
+        self.frmStatus.config(highlightbackground=color, highlightcolor=color)
+        self.frmStatus.after(self.timeout, self.messageClear)
 
-    def clear(self):
-        self.label.config(text="")
-        bg = self.parent.cget("bg") if "bg" in self.parent.keys() else "SystemButtonFace"
-        self.frame.config(highlightbackground=bg, highlightcolor=bg)
+    def messageClear(self):
+        self.lblStatus.config(text="")
+        bg = (
+            self.parent.cget("bg") if "bg" in self.parent.keys() else "SystemButtonFace"
+        )
+        self.frmStatus.config(highlightbackground=bg, highlightcolor=bg)

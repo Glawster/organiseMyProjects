@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -9,7 +10,7 @@ LOG_UTILS = Path(__file__).parents[1] / "organiseMyProjects" / "logUtils.sh"
 
 
 def _runShell(logDir: Path, dryRun: bool, calls: str) -> list[str]:
-    """Source logUtils.sh, execute calls, and return messages without timestamps."""
+    """Source logUtils.sh, execute calls, and return semantic messages."""
     dryRunValue = "1" if dryRun else ""
     script = f"""
 source "{LOG_UTILS}"
@@ -23,7 +24,19 @@ dryRun="{dryRunValue}"
         capture_output=True,
         text=True,
     )
-    return [line.split("] ", 1)[1] for line in result.stdout.splitlines()[1:]]
+    outputLines = result.stdout.splitlines()[1:]
+    pattern = re.compile(
+        r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] " r"\[INFO\] testLogUtils (.*)$"
+    )
+    matches = [pattern.fullmatch(line) for line in outputLines]
+    assert all(matches), outputLines
+    return [match.group(1) for match in matches if match is not None]
+
+
+def testLogLineUsesAlignedLevelAndExtensionlessSource(tmp_path):
+    """Emit the common timestamp, aligned level, source and message shape."""
+    messages = _runShell(tmp_path, False, 'log_info "message"')
+    assert messages == ["...message"]
 
 
 def testProgressMethodsMarkDryRunAndUseAlternateMessages(tmp_path):

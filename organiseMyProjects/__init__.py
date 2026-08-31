@@ -23,20 +23,17 @@ Usage:
     from organiseMyProjects.logUtils import getLogger, thisApplication
 """
 
+# Expose main functionality for programmatic use
+from . import agentCheck, logUtils, manageProject, runLinter
+from .guiNamingLinter import lintFile, lintGuiNaming
 from .version import VERSION as __version__
 
-# Expose main functionality for programmatic use
-from . import manageProject
-from .guiNamingLinter import lintFile, lintGuiNaming
-from . import runLinter
-from . import logUtils
-from . import agentCheck
-
 __all__ = [
-    "manageProject",
+    "__version__",
+    "agentCheck",
     "lintFile",
     "lintGuiNaming",
-    "runLinter",
     "logUtils",
-    "agentCheck",
+    "manageProject",
+    "runLinter",
 ]

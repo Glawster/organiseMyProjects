@@ -18,7 +18,9 @@
 ## 1. Minimum Viable First Increment
 
 ### 1.1 Objective
+
 To enable an AI coding agent with **zero prior conversation history** to open an OMP-managed repository and independently determine:
+
 1. The project's purpose and system context.
 2. Architecture boundaries and build/run/test procedures.
 3. The exact objective, scope, and exclusions of the **current development increment**.
@@ -37,9 +39,9 @@ To enable an AI coding agent with **zero prior conversation history** to open an
 │   (Synchronised by OMP v0.4)   │         │     (Scaffolded, Never Synced)  │
 ├────────────────────────────────┤         ├─────────────────────────────────┤
 │ .github/agent-instructions.md  │         │ README.md (Overview & Doc Index)│
-│ .github/repositoryLayout.md    │         │ documentation/architecture.md   │
-│ .github/requirementsManagement │         │ project/roadmap.md              │
-│ .github/howToRelease.md        │         │ project/requirements/           │
+│ documentation/repositoryLayout │         │ documentation/architecture.md   │
+│ documentation/requirements... │         │ project/roadmap.md              │
+│ documentation/howToRelease.md │         │ project/requirements/           │
 │ Vendor Shims (Copilot, Claude) │         │ project/adr/                    │
 │ tests/agentCheck.py (Linter)   │         │ project/currentIncrement.md     │
 └────────────────────────────────┘         └─────────────────────────────────┘
@@ -52,6 +54,7 @@ To enable an AI coding agent with **zero prior conversation history** to open an
 ```
 
 ### 1.2 Scope Boundaries for Increment 1
+
 - **In Scope**:
   - `AGENTS.md` as universal discovery root with lightweight, justified vendor shims.
   - Standardized project-owned documentation templates: `documentation/architecture.md`, `project/currentIncrement.md`, `project/roadmap.md`, `project/project.yaml`, `project/requirements/templates/requirement.md`, `project/adr/templates/adr.md`.
@@ -76,9 +79,9 @@ OMP already has proven scaffolding, synchronization, and code quality tools. We 
 | **Local Project Scaffolding** | `organiseMyProjects/manageProject.py` | **Extend `PROJECT_TEXT_TEMPLATES`** | Add missing project-owned templates (`currentIncrement.md`, `architecture.md`, `roadmap.md`, `project.yaml`, ADR/requirement templates). These are written *only if missing* and never overwritten during `--update`. |
 | **Logging & Output** | `organiseMyProjects/logUtils.py` / `.sh` | **Reuse directly** | Use standard semantic methods (`doing`, `done`, `info`, `value`, `action`) for the `agentCheck` utility. |
 | **Code / Layout Linting** | `guiNamingLinter.py` / `runLinter.py` | **Reuse pattern** | Follow the established linter pattern (dual-purpose utility in package + test entry point) for the new `agentCheck.py` tool. |
-| **Repository Layout Definition** | `.github/repositoryLayout.md` | **Extend tables in place** | Formalize `project/currentIncrement.md` and `documentation/architecture.md` inside the existing layout tables. |
-| **Requirements Management** | `.github/requirementsManagement.md` | **Reuse directly** | The existing 3-digit requirement workflow (`features/`, `prompt/`, `README.md` matrix) is already robust and remains unchanged. |
-| **Release Workflow** | `.github/howToRelease.md` | **Reuse directly** | Standard `vX.Y` tagging and `release/X.Y` branch workflow remains authoritative. |
+| **Repository Layout Definition** | `documentation/repositoryLayout.md` | **Extend tables in place** | Formalize `project/currentIncrement.md` and `documentation/architecture.md` inside the existing layout tables. |
+| **Requirements Management** | `documentation/requirementsManagement.md` | **Reuse directly** | The existing 3-digit requirement workflow (`features/`, `prompt/`, `README.md` matrix) is already robust and remains unchanged. |
+| **Release Workflow** | `documentation/howToRelease.md` | **Reuse directly** | Standard `vX.Y` tagging and `release/X.Y` branch workflow remains authoritative. |
 
 ---
 
@@ -87,6 +90,7 @@ OMP already has proven scaffolding, synchronization, and code quality tools. We 
 Every artifact touched or introduced by OMP is strictly classified under one ownership category:
 
 ### 3.1 OMP-Owned Standards & Tools (Synchronised & Managed)
+
 *Managed by OMP; overwritten or synchronized via PR during updates/releases.*
 
 | Path | Purpose | Lifecycle & Sync Behavior |
@@ -95,13 +99,14 @@ Every artifact touched or introduced by OMP is strictly classified under one own
 | `.github/agent-instructions.md` | Universal master guidelines (v2) | Synced from OMP template; single source of truth for coding/testing/logging rules. |
 | `.github/copilot-instructions.md` | GitHub Copilot discovery shim | Synced pointer shim directing Copilot to `AGENTS.md`. |
 | `CLAUDE.md` | Claude Code discovery shim | Synced pointer shim directing Claude Code to `AGENTS.md`. |
-| `.github/repositoryLayout.md` | Authoritative directory placement rules | Synced from OMP template. |
-| `.github/requirementsManagement.md` | Canonical requirements workflow | Synced from OMP template. |
-| `.github/howToRelease.md` | Release and tag governance | Synced from OMP template. |
+| `documentation/repositoryLayout.md` | Authoritative directory placement rules | Synced from OMP template. |
+| `documentation/requirementsManagement.md` | Canonical requirements workflow | Synced from OMP template. |
+| `documentation/howToRelease.md` | Release and tag governance | Synced from OMP template. |
 | `organiseMyProjects/agentCheck.py` | Package module for validation | Maintained in OMP package. |
 | `tests/agentCheck.py` | Local test entry point for validation | Scaffolded/synced into `tests/` across managed projects. |
 
 ### 3.2 Project-Owned Knowledge & Governance (Scaffolded Once, NEVER Overwritten)
+
 *Scaffolded as initial templates on creation/update if missing; owned exclusively by the project thereafter.*
 
 | Path | Purpose | Lifecycle & Guard Policy |
@@ -122,79 +127,56 @@ Every artifact touched or introduced by OMP is strictly classified under one own
 ## 4. Strengthened Current Development Record (`project/currentIncrement.md`)
 
 ### 4.1 Placement Decision
-Following `.github/repositoryLayout.md`, top-level operational files in `project/` live directly under `project/` alongside `project/project.yaml` and `project/roadmap.md`, while historical/domain subtrees use dedicated directories (`requirements/`, `adr/`, `reviews/`). 
+
+Following `documentation/repositoryLayout.md`, top-level operational files in `project/` live directly under `project/` alongside `project/project.yaml` and `project/roadmap.md`, while historical/domain subtrees use dedicated directories (`requirements/`, `adr/`, `reviews/`).
 
 Therefore, the active state file is **`project/currentIncrement.md`**.
 
 ### 4.2 Template Specification
-The template answers all 9 key operational questions by reference, preventing stale duplication of requirements or ADRs:
+
+The template is the sole transient implementation-status record. It stays small
+enough to replace when the active increment changes instead of accumulating a
+delivery history:
 
 ```markdown
 # Current Development Increment
+
+## Increment
+
+001A — Feature name
 
 ## Status
 
 Active
 <!-- Options: Active, Idle, Blocked, InReview -->
 
+## Requirement
+
+`project/requirements/features/001-featureName.md`
+
 ## Objective
 
-<!-- Concise 1-2 sentence statement of what capability is being delivered right now -->
-
-## Governing References
-
-- Primary Requirement: `project/requirements/features/001-featureName.md`
-- Supporting ADRs: `project/adr/001-architectureDecision.md` (or `None`)
-- Milestone / Roadmap: `project/roadmap.md#milestone-id`
+<!-- Short statement of what capability is being delivered right now. -->
 
 ## Scope
 
-<!-- Key user/system behaviors included in this active increment -->
-- [ ] Deliverable behavior 1
-- [ ] Deliverable behavior 2
+- Behaviour included in this increment.
 
-## Explicit Exclusions
+## Verification
 
-<!-- Adjacent work deliberately excluded from this increment to avoid scope creep -->
-- Excluded item 1
+- [ ] Focused tests
+- [ ] Full suite
+- [ ] Manual acceptance
 
-## In-Progress Tasks
+## Next
 
-<!-- Checkbox list of immediate work units -->
-- [x] Task 1 completed
-- [ ] Task 2 in progress
-- [ ] Task 3 planned
-
-## Relevant Files & Components
-
-<!-- Authoritative list of source, test, and documentation paths for this increment -->
-- Implementation: `src/path/to/module.py`
-- Tests: `tests/test_module.py`
-- Documentation: `documentation/topic.md`
-
-## Verification Procedures
-
-<!-- Concrete commands an agent must run to verify changes -->
-```bash
-pytest tests/test_module.py
-ruff check .
-black --check .
+<!-- Immediate next action or known next increment. -->
 ```
 
-## Definition of Done
-
-<!-- Observable conditions required to conclude this increment -->
-1. All acceptance criteria in `project/requirements/features/001-featureName.md` demonstrated.
-2. Automated tests pass with zero regressions.
-3. Relevant living documentation updated.
-4. `agentCheck` passes with zero errors.
-
-## Handoff & Unresolved Context
-
-<!-- Context, assumptions, or decisions needed by the next agent -->
-- Current state: Task 2 implementation started in `src/...`.
-- Blockers / Open questions: None.
-```
+Requirements retain lifecycle states such as `ToDo`, `InProgress` and
+`Completed`, while this file owns the changing task and verification detail.
+ADRs own decisions, living documentation owns durable behaviour, tests own
+executable evidence and Git owns delivery history.
 
 ---
 
@@ -204,12 +186,13 @@ To maintain vendor neutrality while accommodating tool-specific discovery conven
 
 | File | Target Tool | Discovery Mechanism Justification | Content |
 | :--- | :--- | :--- | :--- |
-| `AGENTS.md` | Universal Standard / Linux Foundation / Codex / Antigravity | Root-level discovery standard for multi-agent repositories. | Direct pointer referencing `.github/agent-instructions.md`, `.github/additional-instructions.md`, and `.github/repositoryLayout.md`. |
+| `AGENTS.md` | Universal Standard / Linux Foundation / Codex / Antigravity | Root-level discovery standard for multi-agent repositories. | Direct pointer referencing `.github/agent-instructions.md` and optional `.github/additional-instructions.md`; the canonical instructions load the other mandatory guides. |
 | `.github/copilot-instructions.md` | GitHub Copilot | GitHub Copilot specifically looks for `.github/copilot-instructions.md` in repository settings and web context. | **Direct Shim**: Replaces the old 22KB duplicate with a direct pointer to `.github/agent-instructions.md` and `.github/additional-instructions.md`. |
 | `CLAUDE.md` | Claude Code | Claude Code automatically reads `CLAUDE.md` from the project root at session initialization. | **Direct Shim**: Direct pointer to `.github/agent-instructions.md` and `.github/additional-instructions.md`. |
 | *Others (Cursor, Gemini CLI, Roo, etc.)* | Native / Workspace | These tools natively parse `AGENTS.md` or workspace root files; no additional shims required. | *None required.* |
 
 ### Standard Shim Content (`.github/copilot-instructions.md` and `CLAUDE.md`)
+
 ```markdown
 <!-- deployed from Glawster/organiseMyProjects release 0.4 -- do not edit directly -->
 # Agent Instructions
@@ -217,8 +200,6 @@ To maintain vendor neutrality while accommodating tool-specific discovery conven
 Read and follow `.github/agent-instructions.md`.
 
 Also read and follow `.github/additional-instructions.md` when it exists.
-
-Read `.github/repositoryLayout.md` before adding or moving repository content.
 ```
 
 ---
@@ -228,6 +209,7 @@ Read `.github/repositoryLayout.md` before adding or moving repository content.
 `agentCheck` is a deterministic static analyzer. It evaluates repository consistency, relational integrity, and placeholder elimination.
 
 ### 6.1 Invocation & Interface
+
 ```bash
 # Direct test entry point in project
 python tests/agentCheck.py
@@ -267,12 +249,11 @@ python tests/agentCheck.py --strict
 | **`DOC-003`** | **FAILURE** | Build/Test Procedures | `.github/additional-instructions.md` does not specify verification commands. |
 | **`INC-001`** | **FAILURE** | Current Increment Exists | `project/currentIncrement.md` is missing. |
 | **`INC-002`** | **FAILURE** | Increment Consistency | `currentIncrement.md` is `Active` but references a requirement marked `Completed` or not found in `project/requirements/features/`. |
-| **`INC-003`** | **FAILURE** | Increment File Resolution | A path listed under `Relevant Files & Components` does not exist on disk. |
+| **`INC-003`** | **WARNING** | Increment File Resolution | A path listed under the legacy `Relevant Files & Components` heading does not exist on disk. Retained for compatibility with existing project-owned increment files. |
 | **`INC-004`** | **WARNING** | Placeholder Detection | `currentIncrement.md` contains unedited scaffold placeholders (e.g. `<!-- Concise 1-2 sentence... -->` or `Deliverable behavior 1`). |
 | **`REQ-001`** | **FAILURE** | Requirements Index Alignment | A file exists in `project/requirements/features/` but is missing from `project/requirements/README.md` (or vice versa). |
 | **`REQ-002`** | **FAILURE** | Status Agreement | The `Status` column in `project/requirements/README.md` contradicts the `## Status` in the feature file. |
 | **`REQ-003`** | **FAILURE** | ADR Reference Integrity | An ADR linked in a requirement or current increment does not exist in `project/adr/`. |
-| **`REQ-004`** | **WARNING** | Verification Evidence | A requirement marked `Completed` has `pending` in its `Traceability -> Tests` or `Implementation` section. |
 
 *Note: No rule checks document age or timestamps. Staleness is evaluated strictly through concrete structural contradictions.*
 
@@ -286,7 +267,7 @@ For existing repositories (e.g., `fmsat`, `sportVision`, `eolas`):
 Step 1: Release OMP v0.4
    │
 Step 2: Remote Standards Sync (python syncAgentInstructions.py --confirm --merge)
-   ├── Updates AGENTS.md, .github/agent-instructions.md, .github/repositoryLayout.md
+   ├── Updates AGENTS.md, .github/agent-instructions.md, documentation/repositoryLayout.md
    └── Deploys lightweight shims (CLAUDE.md, copilot-instructions.md)
    │
 Step 3: Local Scaffolding Update (createProject --update)
@@ -317,6 +298,7 @@ The following capabilities are deliberately excluded from Increment 1:
 ## 9. Pre-Implementation Assumptions & Verifications
 
 Before implementing Increment 1, verify the following in the repository:
+
 1. **GitHub Copilot Token Permissions**: Confirm that GitHub PATs used by `syncAgentInstructions.py` have sufficient `repo` permissions to create branches and pull requests for new shim paths (`CLAUDE.md`).
 2. **Pre-commit Compatibility**: Ensure adding `tests/agentCheck.py` as a pre-commit check does not cause circular dependencies or performance regressions in local git hooks.
 3. **Conda / Virtualenv Packaging**: Confirm `organiseMyProjects` editable installs (`pip install -e .`) correctly expose `organiseMyProjects.agentCheck` across consuming environments.
@@ -330,16 +312,20 @@ Before implementing Increment 1, verify the following in the repository:
 **Context**: A fresh AI coding agent is initialized in an OMP-managed repository with **no previous conversation history or chat context**.
 
 #### Step 1: Bootstrap Execution
+
 The agent is prompted:
 > *"Inspect this repository and summarize the active work state and standards."*
 
 #### Step 2: Observable Agent Actions
+
 1. The agent reads `AGENTS.md` (or discovers it via `CLAUDE.md` / `.github/copilot-instructions.md`).
-2. The agent follows the links to `.github/agent-instructions.md`, `.github/additional-instructions.md`, and `.github/repositoryLayout.md`.
+2. The agent follows the shim to `.github/agent-instructions.md`, which requires `documentation/requirementsManagement.md`, `documentation/repositoryLayout.md`, and `documentation/testingProcess.md`, and reads optional `.github/additional-instructions.md`.
 3. The agent navigates to `project/currentIncrement.md` and reads the linked requirement in `project/requirements/features/` and architecture in `documentation/architecture.md`.
 
 #### Step 3: Acceptance Assertions
+
 The test passes if and only if the agent's response accurately states:
+
 - [x] **Project Purpose**: Correct summary of what the project does from `README.md` and `project/project.yaml`.
 - [x] **Architecture Boundaries**: Explicit mention that core domain logic has no UI dependencies and UI modules only orchestrate.
 - [x] **Active Objective**: Exact statement of what is currently being delivered in `project/currentIncrement.md`.

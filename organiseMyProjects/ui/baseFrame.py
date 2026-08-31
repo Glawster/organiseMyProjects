@@ -30,7 +30,7 @@ class BaseFrame(tk.Toplevel):
         frmButtons.pack(fill="x", pady=(12, 0))
 
         self.statusField = StatusMessage(frmButtons)
-        self.statusField.frame.pack(fill=tk.X, pady=(0, 8))
+        self.statusField.frmStatus.pack(fill=tk.X, pady=(0, 8))
 
         ttk.Button(
             frmButtons,
@@ -46,4 +46,6 @@ class BaseFrame(tk.Toplevel):
         ).pack(side=tk.LEFT)
 
     def onAction(self):
-        self.statusField.show("Override onAction() in your frame.", success=False)
+        self.statusField.messageShow(
+            "Override onAction() in your frame.", success=False
+        )

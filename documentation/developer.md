@@ -16,8 +16,9 @@ The main module responsible for project scaffolding functionality.
 **Key Functions:**
 
 Create
-  Creates a new project.
-  May create application scaffold, dependencies and requested UI/Qt scaffold.
+  Creates a new project as a root-level Python package named after the project.
+  Does not create a generic `src/` directory or a root `main.py`.
+  Optional UI/Qt scaffolds are placed inside the project package.
 
 Update
   Refreshes OMP-owned managed files.
@@ -86,6 +87,7 @@ Ambiguous or colliding names are reported and left unchanged.
 #### `logUtils.py`
 
 Centralised logging utilities shared across organiseMyProjects tooling.
+Import them as `from organiseMyProjects.logUtils import getLogger, setApplication`.
 
 Log records use a fixed four-character severity (`INFO`, `WARN`, `ERRO`,
 `CRIT`, or `DEBU`). `manageProject` also writes the running OMP version at

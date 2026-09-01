@@ -24,6 +24,9 @@ from typing import Optional
 import requests
 
 from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.managedContent import (
+    managedContentBuild,
+)
 from organiseMyProjects.version import VERSION
 
 # ---------------------------------------------------------------------------
@@ -76,11 +79,14 @@ SYNC_SPECS = [
         "targetPath": "documentation/howToRelease.md",
         "commitMessage": "sync: update release process guide",
     },
+    {
+        "sourceFile": Path(__file__).resolve().parent
+        / "documentation"
+        / "testingProcess.md",
+        "targetPath": "documentation/testingProcess.md",
+        "commitMessage": "sync: update testing process guide",
+    },
 ]
-SYNC_COMMENT = (
-    f"<!-- synced from Glawster/organiseMyProjects release {VERSION} "
-    "-- do not edit directly -->\n"
-)
 API_BASE = "https://api.github.com"
 REPO_OWNER = "Glawster"
 SOURCE_REPO = f"{REPO_OWNER}/organiseMyProjects"
@@ -349,9 +355,12 @@ def syncPullRequest(
 # ---------------------------------------------------------------------------
 
 
-def buildTargetContent(sourceContent: str) -> str:
+def buildTargetContent(sourceContent: str, targetPath: str = "") -> str:
     """Return the content to write to each target repo (with sync comment prepended)."""
-    return SYNC_COMMENT + sourceContent
+    suffix = Path(targetPath).suffix if targetPath else ".md"
+    if suffix == "":
+        suffix = ".md"
+    return managedContentBuild(sourceContent, suffix=suffix, sync=True)
 
 
 def syncRepo(
@@ -492,6 +501,7 @@ def main() -> None:
     setApplication(thisApplication)
     logger = getLogger(includeConsole=True, dryRun=dryRun)
     logger.doing("starting")
+    logger.value("OMP version", VERSION)
     logger.value("dryRun", dryRun)
 
     syncBranch = f"sync/instructions-{datetime.date.today().strftime('%Y%m%d')}"
@@ -549,7 +559,7 @@ def main() -> None:
                 "sourceFile": spec["sourceFile"],
                 "targetPath": spec["targetPath"],
                 "commitMessage": spec["commitMessage"],
-                "targetContent": buildTargetContent(sourceContent),
+                "targetContent": buildTargetContent(sourceContent, spec["targetPath"]),
             }
         )
 

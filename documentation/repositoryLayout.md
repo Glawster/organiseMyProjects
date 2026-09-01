@@ -1,24 +1,45 @@
-<!-- deployed from Glawster/organiseMyProjects release 0.5 -- do not edit directly -->
+<!-- deployed from Glawster/organiseMyProjects release 0.6 -- do not edit directly -->
 # Repository layout
 
-This managed guide explains what belongs in each top-level directory and where
-to put new material. It is synchronized unchanged across repositories;
-repository-specific additions or exceptions belong in
+This managed guide defines the standard OMP repository structure and where new
+material belongs. Repository-specific additions or exceptions belong in
 `.github/additional-instructions.md`.
 
 The central convention is to keep project-management records separate from the
-durable documentation and content that a project produces.
+durable documentation and content a project produces.
 
 Status has one owner. Requirements describe obligations, design documentation
 describes behaviour, and Git records delivery history.
 `project/currentIncrement.md` alone records transient implementation status.
 
+## README and directory-index convention
+
+OMP uses one repository README rule:
+
+- `README.md` is reserved for the repository root.
+- Do not create OMP-owned `README.md` files in subdirectories.
+- When a directory genuinely needs an index, navigation page, catalogue or
+  directory-specific instructions, derive the filename from the directory as
+  `<folderName>Index.md`.
+- Do not create an index merely because a directory exists.
+- Named artifacts such as requirements, prompts, ADRs, specifications and
+  guides keep descriptive filenames rather than being stored as a directory
+  `README.md` or generic index file.
+- OMP cleanup must preserve arbitrary user-owned or third-party nested README
+  files unless a deterministic OMP migration proves ownership and destination.
+
+The standard OMP project-management indexes are:
+
+```text
+project/requirements/requirementsIndex.md
+project/adr/adrIndex.md
+```
+
 ## Choosing between `project/` and `documentation/`
 
 Use `project/` for records about planning, governing and delivering the work.
-Use `documentation/` for maintained explanations of the product, its domain
-and the principles contributors need to understand it. These two directories
-form the reusable core of this layout.
+Use `documentation/` for maintained explanations of the product, its domain and
+the principles contributors need to understand it.
 
 A useful test is:
 
@@ -27,201 +48,248 @@ A useful test is:
 - if it answers **what is this product, how does it work, or what does a
   contributor need to understand?**, put it in `documentation/`.
 
-For example, a proposed outcome belongs in `project/requirements/`. A durable
-explanation of the resulting behaviour belongs in `documentation/`. A choice
-between competing approaches and its consequences belongs in `project/adr/`.
-Do not duplicate the same explanation in both places: link to the authoritative
-document instead.
+A proposed outcome belongs in `project/requirements/`. A durable explanation of
+the resulting behaviour belongs in `documentation/`. A consequential technical
+choice belongs in `project/adr/`. Do not duplicate the same explanation in both
+places; link to the authoritative document.
+
+## Standard Python project layout
+
+New OMP Python projects use a root-level Python package named after the project.
+OMP does not use a generic `src/` directory for newly scaffolded projects.
+
+For a project named `footballVision`:
+
+```text
+footballVision/
+├── .github/
+├── .vscode/
+├── documentation/
+├── project/
+│   ├── adr/
+│   │   ├── adrIndex.md
+│   │   └── templates/
+│   ├── requirements/
+│   │   ├── requirementsIndex.md
+│   │   ├── features/
+│   │   ├── prompt/
+│   │   └── templates/
+│   ├── reviews/
+│   ├── currentIncrement.md
+│   ├── project.yaml
+│   └── roadmap.md
+├── footballVision/
+│   ├── __init__.py
+│   └── ...
+├── tests/
+├── pyproject.toml
+├── footballVisionEnvironment.yml
+├── README.md
+└── .gitignore
+```
+
+The package directory is the primary home for project Python code. Individual
+`.py` files inside it are modules; the importable directory containing
+`__init__.py` is the Python package.
 
 ## Top-level directories
 
 | Path | Purpose | Examples |
 | --- | --- | --- |
-| `app/` | Optional user-facing application code and application-specific resources. | Screens, application entry points and UI orchestration. |
-| `brand/` | Optional approved visual identity assets and guidance. | Logos, icons, imagery, colours and the style guide. |
-| `data/` | Optional structured, non-secret data used by the project. | Schemas, safe fixtures and fictional examples. |
-| `documentation/` | Living product, domain and contributor documentation. | Product vision, principles, personas, glossary, domain model, privacy model and this guide. |
-| `src/` or the project package | Reusable core and domain code, independent of a particular UI. | Domain models, validation and transformations. |
-| `ui/` or `qt/` | Optional user-interface code and resources. | Views, frames, widgets and UI orchestration. |
+| `<projectName>/` | Required Python package for newly scaffolded Python projects. | Domain models, application services, CLI modules and reusable project code. |
+| `app/` | Optional non-package application resources where a genuine separate concern exists. | Static resources or deployment wrappers. |
+| `brand/` | Optional approved visual identity assets and guidance. | Logos, icons, imagery, colours and style guidance. |
+| `data/` | Optional structured, non-secret data. | Schemas, safe fixtures and fictional examples. |
+| `documentation/` | Living product, domain and contributor documentation. | Architecture, product vision, glossary and technical guides. |
 | `project/` | Planning, governance and historical delivery records. | Requirements, ADRs, roadmap and point-in-time reviews. |
-| `scripts/` | Maintainer tools and repeatable development tasks. | Asset-generation and repository-maintenance scripts. |
-| `tests/` | Automated tests, arranged to mirror the code they verify. | Tests for source modules and application behaviour. |
+| `scripts/` | Maintainer tools and repeatable development tasks. | Repository-maintenance and asset-generation scripts. |
+| `tests/` | Automated tests arranged around package behaviour. | Unit, integration and application tests. |
+
+Do not introduce a top-level `src/` directory in a newly scaffolded OMP
+project. Existing projects that already use `src/` are not automatically
+reorganised by ordinary updates.
 
 ## Entry-point conventions
 
-The required files depend on the project's role:
+Every new OMP Python project is importable as a package. Executable behaviour
+depends on project role:
 
-- a reusable library module or package is imported by other code and does not
-  require `main.py` or another executable entry point;
-- a packaged command-line tool declares a console-script entry point that
-  normally calls a `main()` function inside its package./fmsat;
-- a standalone application keeps `main.py` at its project root.
+- reusable library packages require no executable entry point;
+- command-line tools declare console-script entry points in `pyproject.toml`;
+- GUI or standalone applications expose their application entry point from the
+  project package; and
+- `package/__main__.py` may be used when `python -m package` is an intended
+  interface.
 
-Do not add a placeholder `main.py` to a library merely to match an application
-layout. Add an executable entry point only when the module has an executable
-workflow to expose.
+A root-level `main.py` is not part of the standard OMP 0.6 scaffold.
+
+## Packaging and environment conventions
+
+- `pyproject.toml` is the authoritative package metadata, dependency and entry
+  point definition.
+- Use `<projectName>Environment.yml` as the project-specific camelCase Conda
+  environment filename.
+- Document Conda before alternative virtual-environment workflows.
+- Install the project editable during development.
+- Do not make `requirements.txt` the primary dependency mechanism for newly
+  scaffolded packaged projects.
+- Do not auto-install dependencies at runtime.
+- Validate required external tools explicitly and fail fast when missing.
 
 ## Repositories containing multiple projects
 
 A repository may contain several independently runnable or releasable projects.
 Treat the repository root and each contained project as separate ownership
-boundaries. Each project should have its own applicable folders rather than
-placing all project content in the repository-level folders.
+boundaries.
 
 ```text
 repository/
-├── .github/                    # Shared repository and agent definitions
-├── documentation/             # Cross-project documentation
-├── project/                   # Repository-wide planning and decisions
-├── scripts/                   # Cross-project maintenance tools
-├── tests/                     # Cross-project and repository integration tests
+├── README.md
+├── .github/
+├── documentation/
+├── project/
+├── scripts/
+├── tests/
 └── projects/
     ├── projectOne/
-    │   ├── src/
+    │   ├── projectOne/
     │   ├── documentation/
     │   ├── project/
     │   ├── scripts/
     │   └── tests/
     └── projectTwo/
-        ├── src/
+        ├── projectTwo/
         ├── documentation/
         ├── project/
         ├── scripts/
         └── tests/
 ```
 
-Use the nearest owning boundary:
-
-- repository-level `tests/` contains cross-project integration tests and tests
-  for repository-level tooling;
-- `<project>/tests/` contains tests for that project's code and behaviour;
-- repository-level `documentation/`, `project/`, and `scripts/` contain shared
-  or cross-project material;
-- the corresponding folders beneath a project contain material owned solely by
-  that project;
-- dependencies, configuration, entry points, build output and generated output
-  should likewise live at the narrowest boundary that owns them;
-- `.github/` remains repository-wide because GitHub reads it from the repository
-  root. Use a nested `AGENTS.md` when a project needs additional agent guidance.
-
-Do not make a repository-level test suite import project-internal test helpers
-unless they are deliberately exposed as shared test utilities. Cross-project
-tests should exercise projects through their supported interfaces.
+Use the nearest owning boundary. Repository-level tests cover cross-project
+integration and repository tooling; project-level tests cover that project's
+code. `.github/` remains repository-wide because GitHub reads it from the
+repository root.
 
 Generated output, local caches, virtual environments, secrets and real user
-data do not belong in version control. A routine that creates output
-files should write them beneath a root-level `output/` directory, which should
-normally be ignored unless an export is deliberately approved for publication.
+data do not belong in version control. Generated output should normally live
+beneath root-level `output/` and be ignored unless deliberately published.
 
 ## Inside `project/`
 
 | Path | Purpose |
 | --- | --- |
 | `project/project.yaml` | Current project purpose, scope, audience, risks and milestones. |
-| `project/currentIncrement.md` | Authoritative transient status for the active increment: objective, scope, acceptance work, verification still required and immediate next action. |
-| `project/requirements/features/` | Requirement records at every lifecycle stage, kept at stable paths. |
-| `project/requirements/templates/` | Templates used to create consistent project records. |
-| `project/adr/` | Significant project-shaping decisions and their consequences. |
-| `project/reviews/` | Point-in-time assessments that should not be mistaken for living guidance. |
+| `project/currentIncrement.md` | Authoritative transient status for the active increment. |
+| `project/requirements/requirementsIndex.md` | Requirement index and next-ID authority. |
+| `project/requirements/features/` | Flat numbered requirement specifications at stable paths. |
+| `project/requirements/prompt/` | Flat requirement prompts plus optional shared prompt support. |
+| `project/requirements/templates/` | Requirement templates. |
+| `project/adr/adrIndex.md` | ADR index and directory-level ADR guidance. |
+| `project/adr/` | Numbered architecture decision records. |
+| `project/reviews/` | Point-in-time assessments. |
 | `project/roadmap.md` | Current sequencing and priorities. |
 
-When a repository uses requirements or ADR workflows, their detailed naming
-rules should live in `project/requirements/README.md` and
-`project/adr/README.md` respectively.
+Detailed requirement naming and prompt rules live in
+[`requirementsManagement.md`](requirementsManagement.md).
+
+## Requirement and prompt placement
+
+Requirements and prompts are named flat files, not per-artifact folders:
+
+```text
+project/requirements/features/003-viewManagement.md
+project/requirements/prompt/003-viewManagement.md
+```
+
+When several prompts belong to one requirement:
+
+```text
+project/requirements/prompt/003a-viewManagement.md
+project/requirements/prompt/003b-viewManagement.md
+```
+
+Do not create `features/003-viewManagement/README.md` or
+`prompt/003-viewManagement/README.md` as a substitute for the named artifact.
 
 ## Documentation conventions
 
-- Keep only `README.md` as the main documentation entry point at the repository
-  root; place other maintained guides under `documentation/` or the directory
-  whose contents they introduce.
-- Use camelCase Markdown filenames, except for `README.md` and records with a
-  stable identifier such as an ADR or requirement.
-- Put a directory-specific `README.md` in a directory when readers need an
-  index or instructions for working with its contents.
-- Keep Mermaid source (`.mmd`) beside the document or subject it explains.
-- Link from the root README to living guides so contributors can discover them.
-- Prefer relative links so documentation works both locally and on GitHub.
-- Do not copy transient increment progress into requirements, ADRs, README files
-  or durable design documentation. Update those artifacts only when the
-  obligation, decision, introduction or implemented behaviour they own changes.
-- Requirement lifecycle states such as `ToDo`, `InProgress` and `Completed` are
-  durable workflow metadata and may remain in requirement records and indexes;
-  they are distinct from transient implementation detail.
-- Use tests as executable acceptance and regression evidence and Git commits,
-  pull requests, tags and releases as delivery history.
+- Keep the sole OMP-standard `README.md` at repository root.
+- Use `<folderName>Index.md` for a directory index only when that directory
+  genuinely needs navigation, catalogue or local instructions.
+- Use camelCase Markdown filenames except the root `README.md` and stable-ID
+  records such as requirements and ADRs.
+- Keep Mermaid source beside the subject it explains.
+- Prefer relative links.
+- Do not copy transient increment progress into requirements, ADRs or durable
+  documentation.
+- Requirement lifecycle state may remain in requirement records and the
+  requirements index; it is distinct from transient implementation status.
+- Use tests as executable evidence and Git as delivery history.
 
 ## Applying this shared layout
 
-This is a managed baseline stored at `documentation/repositoryLayout.md` in every
-repository. Do not edit a downstream copy directly because a later sync will
-replace it.
+This managed baseline is stored at `documentation/repositoryLayout.md` in every
+repository. Downstream projects should not edit the managed copy directly.
 
-When applying the layout in another repository:
+When applying it:
 
-1. keep the `project/` versus `documentation/` distinction unless the project
-   has a documented reason to use a different model;
-2. interpret `src/` as the repository's actual source-package directory;
-3. use optional directories such as `app/`, `brand/`, `data/`, `ui/` or `qt/`
-   only when they represent a genuine top-level concern;
-4. record project-specific additions or exceptions in
-   `.github/additional-instructions.md`, linking back to this managed baseline;
-5. link this guide from the project's root `README.md`.
-
-Avoid copying empty directories merely to resemble this repository. Each
-top-level directory should represent a real, distinct responsibility.
+1. keep the `project/` versus `documentation/` distinction unless a documented
+   exception is necessary;
+2. use the root-level project package for new Python projects;
+3. reserve `README.md` for repository root;
+4. derive directory-index filenames as `<folderName>Index.md` only where an
+   index is genuinely needed;
+5. keep named artifacts in their canonical files;
+6. use optional top-level directories only for real separate concerns; and
+7. record project-specific exceptions in `.github/additional-instructions.md`.
 
 ## Placement examples
 
 | New item | Location | Reason |
 | --- | --- | --- |
-| Active development state and handoff | `project/currentIncrement.md` | It records the active deliverable and operational handoff. |
-| A requirement at any lifecycle stage | `project/requirements/features/` | Its stable path remains valid as status changes. |
-| The decision to use a particular implementation approach | `project/adr/` | It records a consequential choice and rationale. |
-| An explanation of implemented behaviour | `documentation/` | It is maintained product or technical knowledge. |
-| A review of project risks on a particular date | `project/reviews/` | It is a point-in-time assessment. |
-| The current security model | `documentation/securityModel.md` | It is living guidance. |
-| A fictional fixture used by tests | `data/` | It is structured, safe project data. |
-| A command used to regenerate icons | `scripts/` | It is a repeatable maintainer task. |
-| A test for one contained project | `<project>/tests/` | It is owned by that project's code and lifecycle. |
-| A workflow spanning two contained projects | `tests/` | It verifies repository-level integration. |
+| Project Python module | `<projectName>/<moduleName>.py` | Part of the importable project package. |
+| Active development state | `project/currentIncrement.md` | Records current operational handoff. |
+| Requirement specification | `project/requirements/features/nnn-requirementName.md` | Stable numbered requirement artifact. |
+| Requirement prompt | `project/requirements/prompt/nnn-requirementName.md` | Matching durable prompt artifact. |
+| Requirements index | `project/requirements/requirementsIndex.md` | Index/navigation for the requirements directory. |
+| ADR index | `project/adr/adrIndex.md` | Index/navigation for the ADR directory. |
+| Architecture decision | `project/adr/nnn-decisionName.md` | Consequential project decision. |
+| Implemented-behaviour guide | `documentation/<guideName>.md` | Living product or technical knowledge. |
+| Point-in-time review | `project/reviews/<reviewName>.md` | Historical assessment. |
+| Test fixture | `data/` | Structured safe test/project data. |
+| Maintainer command | `scripts/` | Repeatable repository maintenance. |
 
-When a document changes category, move it rather than copying it, update links
-in the same change and preserve its version-control history.
+When a document changes category, move it rather than copying it and update
+links in the same change.
 
-## `omp/` — Shared Runtime Infrastructure
+## OMP 0.6 index migration
 
-The `omp` package contains runtime support modules synchronised from the
-canonical `Glawster/organiseMyProjects` repository.
-
-The name `omp` stands for **organiseMyProjects**.
-
-Unlike the files in `.github/`, which define development standards for AI
-agents and contributors, the `omp` package contains Python modules used at
-application runtime.
-
-Typical contents include:
+`manageProject --update` recognises historical or mistaken OMP index names and
+migrates them to the folder-derived canonical names:
 
 ```text
-omp/
-├── __init__.py
-├── logUtils.py
-├── version.py
-├── configUtils.py
-├── cliUtils.py
-└── ...
+project/requirements/README.md
+project/requirements/folderIndex.md
+    -> project/requirements/requirementsIndex.md
+
+project/adr/README.md
+project/adr/folderIndex.md
+    -> project/adr/adrIndex.md
 ```
 
-Rules
+Only deterministic, no-loss migrations are applied. Collisions, ambiguous
+content and arbitrary user-owned nested README files are preserved for manual
+review. Dry-run reports intended operations without modifying files.
 
-- Files originate in the canonical `organiseMyProjects` repository.
-- Projects import these modules using `from omp...`.
-- Projects must not import runtime modules directly from
-  `organiseMyProjects`.
-- Local modifications should not be made to synchronised files.
-- Behavioural changes are implemented in `organiseMyProjects` and then
-  synchronised into consuming repositories.
-- Only general-purpose infrastructure belongs in `omp`.
-- Application-specific business logic must never be placed in `omp`.
+## Shared runtime infrastructure
 
-This approach keeps every project self-contained and deployable while
-maintaining a single canonical implementation.
+The canonical runtime package is `organiseMyProjects`. Logging and related
+helpers are imported from that package:
+
+```python
+from organiseMyProjects.logUtils import getLogger, setApplication
+```
+
+Do not add a second runtime package named `omp` inside the
+`organiseMyProjects` repository. Project-specific application code belongs in
+the project's own package.

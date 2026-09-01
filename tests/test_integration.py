@@ -45,10 +45,10 @@ class TestEndToEndWorkflow:
         assert (projectPath / ".github" / "agent-instructions.md").exists()
         assert (projectPath / "documentation" / "repositoryLayout.md").exists()
         assert (projectPath / "documentation" / "requirementsManagement.md").exists()
-        assert (projectPath / "ui" / "mainMenu.py").exists()
+        assert (projectPath / "testEndToEnd" / "ui" / "mainMenu.py").exists()
 
         # Step 2: Add some Python code with violations to the project
-        uiDir = projectPath / "ui"
+        uiDir = projectPath / "testEndToEnd" / "ui"
         testFrame = uiDir / "testFrame.py"
 
         codeWithViolations = """
@@ -103,16 +103,19 @@ class TestFrame:
         # Verify initial creation
         assert projectPath.exists()
 
-        # Remove a file to test update
-        (projectPath / "main.py").unlink()
-        assert not (projectPath / "main.py").exists()
+        packageInit = projectPath / projectName / "__init__.py"
+        originalInit = packageInit.read_text()
+        packageInit.write_text("# custom package\n")
 
         # Update the project
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        # Verify project-owned scaffold file was not recreated by default
+        # Verify project-owned package files are not overwritten
+        assert packageInit.read_text() == "# custom package\n"
         assert not (projectPath / "main.py").exists()
+        assert not (projectPath / "src").exists()
+        del originalInit
 
     def testUpdateExistingProjectPreservesCustomMain(self, temp_dir):
         """Test that scaffold refresh does not overwrite custom main.py code."""
@@ -143,22 +146,28 @@ class TestFrame:
             createProject(str(projectPath))
 
         # Define expected structure
-        expectedDirs = ["src", "tests", ".github"]
+        expectedDirs = [
+            projectName,
+            "tests",
+            ".github",
+            "documentation",
+            "project",
+        ]
 
         expectedFiles = [
-            "main.py",
             ".gitignore",
-            "requirements.txt",
-            "dev-requirements.txt",
-            "environment.yml",
+            f"{projectName}Environment.yml",
             "pyproject.toml",
             "README.md",
             ".pre-commit-config.yaml",
-            "src/__init__.py",
+            f"{projectName}/__init__.py",
             ".github/agent-instructions.md",
         ]
 
-        expectedCopiedModules = ["tests/runLinter.py", "tests/guiNamingLinter.py"]
+        expectedCopiedModules = [
+            "tests/runLinter.py",
+            "tests/guiNamingLinter.py",
+        ]
 
         # Check directories
         for dirName in expectedDirs:

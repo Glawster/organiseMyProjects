@@ -2,49 +2,92 @@ import argparse
 import importlib.util
 import re
 import shutil
+import stat as statModule
 import subprocess
 import sys
 from pathlib import Path
 
 from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.managedContent import (
+    POLICY_MANAGED_BLOCK_MERGE,
+    POLICY_MANAGED_OVERWRITE,
+    POLICY_PROJECT_OWNED_MISSING_ONLY,
+    managedBlockMergeText,
+    managedContentBody,
+    managedContentBuild,
+)
 from organiseMyProjects.version import VERSION
 
-thisApplication = Path(__file__).stem
-setApplication(thisApplication)
-logger = getLogger(includeConsole=False)
 
-DEPLOYMENT_COMMENT = (
-    f"<!-- deployed from Glawster/organiseMyProjects release {VERSION} "
-    "-- do not edit directly -->\n"
-)
-PYTHON_DEPLOYMENT_COMMENT = (
-    f"# deployed from Glawster/organiseMyProjects release {VERSION} "
-    "-- do not edit directly\n"
-)
+class _ImportSafeLogger:
+    """Swallow semantic logs until the CLI entry point configures logging."""
+
+    def doing(self, *args, **kwargs):
+        return None
+
+    def done(self, *args, **kwargs):
+        return None
+
+    def info(self, *args, **kwargs):
+        return None
+
+    def value(self, *args, **kwargs):
+        return None
+
+    def action(self, *args, **kwargs):
+        return None
+
+    def error(self, *args, **kwargs):
+        return None
+
+    def warning(self, *args, **kwargs):
+        return None
+
+
+# Importing this module must not create log files (requirement 001).
+logger = _ImportSafeLogger()
 
 # text templates used when creating or updating projects
 GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
-REQUIREMENTS_CONTENT = ""
-DEV_REQUIREMENTS_CONTENT = "black\npytest\npre-commit\nruff\n"
-MAIN_PY_CONTENT = """from pathlib import Path
+REQUIREMENTS_CONTENT = (
+    "# OMP-MANAGED-BEGIN\n"
+    "# Production dependencies belong to the project. OMP does not add any.\n"
+    "# OMP-MANAGED-END\n"
+)
+DEV_REQUIREMENTS_CONTENT = (
+    "# OMP-MANAGED-BEGIN\n"
+    "black\n"
+    "pytest\n"
+    "pre-commit\n"
+    "ruff\n"
+    "# OMP-MANAGED-END\n"
+)
+REQUIREMENTS_MANAGED_BLOCK = (
+    "# Production dependencies belong to the project. OMP does not add any."
+)
+DEV_REQUIREMENTS_MANAGED_BLOCK = "black\npytest\npre-commit\nruff"
+PACKAGE_MAIN_CONTENT = """from pathlib import Path
+
 from organiseMyProjects.logUtils import getLogger, setApplication
 
-thisApplication = Path(__file__).parent.name
+thisApplication = Path(__file__).resolve().parent.name
 setApplication(thisApplication)
 
 logger = getLogger(includeConsole=False)
 
 try:
-    from ui.mainMenu import mainMenu as tkinterMainMenu
+    from .ui.mainMenu import mainMenu as tkinterMainMenu
 except ModuleNotFoundError as exc:
-    if exc.name is None or exc.name != "ui":
+    if exc.name is None or not str(exc.name).endswith(".ui"):
         raise
     tkinterMainMenu = None
 
 try:
-    from qt.mainMenu import mainMenu as qtMainMenu
+    from .qt.mainMenu import mainMenu as qtMainMenu
 except ModuleNotFoundError as exc:
-    if exc.name is None or exc.name not in {"qt", "PySide6"}:
+    if exc.name is None or (
+        not str(exc.name).endswith(".qt") and exc.name != "PySide6"
+    ):
         raise
     qtMainMenu = None
 
@@ -60,11 +103,7 @@ def main():
 
     dryRun = not args.confirm
 
-    logDir = Path.home() / ".local" / "state" / thisApplication
-    logDir.mkdir(parents=True, exist_ok=True)
-
     logger = getLogger(
-        logDir=logDir,
         includeConsole=True,
         dryRun=dryRun,
     )
@@ -75,15 +114,14 @@ def main():
     elif qtMainMenu is not None:
         qtMainMenu()
     else:
-        logger.info(
-            "No UI scaffold installed."
-        )
+        logger.info("no ui scaffold installed")
     logger.done("main")
 
 
 if __name__ == "__main__":
     main()
 """
+MAIN_PY_CONTENT = PACKAGE_MAIN_CONTENT
 
 PRECOMMIT_CONTENT = """default_language_version:
   python: python3
@@ -94,6 +132,7 @@ repos:
     hooks:
       - id: black
 
+  # OMP-MANAGED-BEGIN
   - repo: local
     hooks:
       - id: gui-naming-linter
@@ -101,11 +140,21 @@ repos:
         entry: runLinter
         language: python
         types: [python]
+  # OMP-MANAGED-END
 """
+PRECOMMIT_MANAGED_BLOCK = """  - repo: local
+    hooks:
+      - id: gui-naming-linter
+        name: GUI Naming Linter
+        entry: runLinter
+        language: python
+        types: [python]"""
 
 PYTEST_INI_CONTENT = """[pytest]
 testpaths = tests
+# OMP-MANAGED-BEGIN
 python_files = test_[a-z]*.py
+# OMP-MANAGED-END
 python_functions = test*
 python_classes = Test*
 addopts = 
@@ -117,38 +166,75 @@ filterwarnings =
     ignore::DeprecationWarning
     ignore::PendingDeprecationWarning
 """
+PYTEST_MANAGED_BLOCK = "python_files = test_[a-z]*.py"
 
 ENVIRONMENT_CONTENT = """name: application
 channels:
   - conda-forge
 dependencies:
+  # OMP-MANAGED-BEGIN
   - python>=3.10
+  # OMP-MANAGED-END
+  - pip
+  - pip:
+      - -e .[dev]
+"""
+ENVIRONMENT_MANAGED_BLOCK = "- python>=3.10"
+
+
+def _packageNameFor(projectName: str | Path) -> str:
+    """Return the root Python package name for a project path or name."""
+    return Path(projectName).name
+
+
+def _environmentFileName(packageName: str) -> str:
+    """Return the camelCase Conda environment filename for a package."""
+    return f"{packageName}Environment.yml"
+
+
+def _environmentContentBuild(packageName: str) -> str:
+    """Return a project-specific Conda environment with editable install."""
+    return f"""name: {packageName}
+channels:
+  - conda-forge
+dependencies:
+  # OMP-MANAGED-BEGIN
+  - python>=3.10
+  # OMP-MANAGED-END
   - pip
   - pip:
       - -e .[dev]
 """
 
 
-def _pyprojectContentBuild(projectName: str) -> str:
+def _pyprojectContentBuild(
+    projectName: str,
+    includeUi: bool = False,
+    includeQt: bool = False,
+) -> str:
     """Return project-neutral Python package and tool metadata."""
+    packageName = _packageNameFor(projectName)
+    scripts = ""
+    if includeUi or includeQt:
+        scripts = f"""
+[project.scripts]
+{packageName} = "{packageName}.__main__:main"
+"""
     return f"""[build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "{Path(projectName).name}"
+name = "{packageName}"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = []
 
 [project.optional-dependencies]
 dev = ["black", "pre-commit", "pytest", "ruff"]
-
+{scripts}
 [tool.setuptools]
-package-dir = {{"" = "src"}}
-
-[tool.setuptools.packages.find]
-where = ["src"]
+packages = ["{packageName}"]
 
 [tool.black]
 target-version = ["py310"]
@@ -168,6 +254,7 @@ python_classes = ["Test*"]
 
 
 VSCODE_SETTINGS_CONTENT = """{
+   // OMP-MANAGED-BEGIN
    "python.testing.pytestEnabled": true,
    "python.testing.unittestEnabled": false,
    "python.testing.nosetestsEnabled": false,
@@ -175,8 +262,16 @@ VSCODE_SETTINGS_CONTENT = """{
       "tests",
       "--override-ini=python_files=test_[a-z]*.py"
    ]
+   // OMP-MANAGED-END
 }
 """
+VSCODE_MANAGED_BLOCK = """   "python.testing.pytestEnabled": true,
+   "python.testing.unittestEnabled": false,
+   "python.testing.nosetestsEnabled": false,
+   "python.testing.pytestArgs": [
+      "tests",
+      "--override-ini=python_files=test_[a-z]*.py"
+   ]"""
 
 ARCHITECTURE_CONTENT = """# Architecture
 
@@ -238,7 +333,7 @@ PROJECT_YAML_CONTENT = """name: "project"
 description: "Project description"
 version: "0.1.0"
 runtime: "python3.12"
-role: "standalone-application"
+role: "library"
 """
 
 ROADMAP_CONTENT = """# Project Roadmap
@@ -344,9 +439,14 @@ Next available number: 001
 
 
 def _readmeContentBuild(projectName: str) -> str:
-    return f"""# {projectName}
+    packageName = _packageNameFor(projectName)
+    return f"""# {packageName}
 
 Project scaffold created by manageProject.py.
+
+The importable Python package is `{packageName}/`. Install the project with
+`pip install -e .` from the Conda environment defined in
+`{packageName}Environment.yml`. Logging uses `organiseMyProjects.logUtils`.
 
 ## Documentation
 
@@ -380,17 +480,9 @@ QT_TEMPLATE_FILES = [
     "frameTemplate.py",
     "statusFrame.py",
 ]
-MANAGED_TEXT_TEMPLATES = [
-    (Path(".pre-commit-config.yaml"), PRECOMMIT_CONTENT),
-    (Path("pytest.ini"), PYTEST_INI_CONTENT),
-    (Path(".vscode") / "settings.json", VSCODE_SETTINGS_CONTENT),
-]
 PROJECT_TEXT_TEMPLATES = [
     (Path(".gitignore"), GITIGNORE_CONTENT),
-    (Path("requirements.txt"), REQUIREMENTS_CONTENT),
-    (Path("dev-requirements.txt"), DEV_REQUIREMENTS_CONTENT),
     (Path("README.md"), None),
-    (Path("main.py"), MAIN_PY_CONTENT),
     (Path("documentation") / "architecture.md", ARCHITECTURE_CONTENT),
     (Path("project") / "currentIncrement.md", CURRENT_INCREMENT_CONTENT),
     (Path("project") / "project.yaml", PROJECT_YAML_CONTENT),
@@ -451,22 +543,137 @@ MANAGED_COPY_TEMPLATES = [
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
+MANAGED_RELOCATIONS = [
+    (
+        Path(".github") / "repositoryLayout.md",
+        Path("documentation") / "repositoryLayout.md",
+    ),
+    (
+        Path(".github") / "requirementsManagement.md",
+        Path("documentation") / "requirementsManagement.md",
+    ),
+    (
+        Path(".github") / "howToRelease.md",
+        Path("documentation") / "howToRelease.md",
+    ),
+]
+MANAGED_BLOCK_TEMPLATES = [
+    (
+        Path("pytest.ini"),
+        PYTEST_INI_CONTENT,
+        PYTEST_MANAGED_BLOCK,
+        "#",
+    ),
+    (
+        Path(".pre-commit-config.yaml"),
+        PRECOMMIT_CONTENT,
+        PRECOMMIT_MANAGED_BLOCK,
+        "#",
+    ),
+    (
+        Path(".vscode") / "settings.json",
+        VSCODE_SETTINGS_CONTENT,
+        VSCODE_MANAGED_BLOCK,
+        "//",
+    ),
+    (
+        Path("environment.yml"),
+        ENVIRONMENT_CONTENT,
+        ENVIRONMENT_MANAGED_BLOCK,
+        "#",
+    ),
+    (
+        Path("requirements.txt"),
+        REQUIREMENTS_CONTENT,
+        REQUIREMENTS_MANAGED_BLOCK,
+        "#",
+    ),
+    (
+        Path("dev-requirements.txt"),
+        DEV_REQUIREMENTS_CONTENT,
+        DEV_REQUIREMENTS_MANAGED_BLOCK,
+        "#",
+    ),
+]
+
+# Exactly one ownership policy for every file createProject can deploy.
+FILE_OWNERSHIP = {
+    "AGENTS.md": POLICY_MANAGED_OVERWRITE,
+    "CLAUDE.md": POLICY_MANAGED_OVERWRITE,
+    "projectGuidelines.md": POLICY_MANAGED_OVERWRITE,
+    ".github/agent-instructions.md": POLICY_MANAGED_OVERWRITE,
+    ".github/copilot-instructions.md": POLICY_MANAGED_OVERWRITE,
+    "documentation/repositoryLayout.md": POLICY_MANAGED_OVERWRITE,
+    "documentation/requirementsManagement.md": POLICY_MANAGED_OVERWRITE,
+    "documentation/testingProcess.md": POLICY_MANAGED_OVERWRITE,
+    "documentation/howToRelease.md": POLICY_MANAGED_OVERWRITE,
+    "tests/runLinter.py": POLICY_MANAGED_OVERWRITE,
+    "tests/guiNamingLinter.py": POLICY_MANAGED_OVERWRITE,
+    "pytest.ini": POLICY_MANAGED_BLOCK_MERGE,
+    ".pre-commit-config.yaml": POLICY_MANAGED_BLOCK_MERGE,
+    ".vscode/settings.json": POLICY_MANAGED_BLOCK_MERGE,
+    "environment.yml": POLICY_MANAGED_BLOCK_MERGE,
+    "requirements.txt": POLICY_MANAGED_BLOCK_MERGE,
+    "dev-requirements.txt": POLICY_MANAGED_BLOCK_MERGE,
+    ".gitignore": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "README.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "main.py": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "pyproject.toml": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "documentation/architecture.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/currentIncrement.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/project.yaml": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/roadmap.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/requirements/README.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/requirements/templates/requirement.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/adr/README.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/adr/templates/adr.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+}
+FILE_OWNERSHIP.update(
+    {
+        f"ui/{name}": POLICY_PROJECT_OWNED_MISSING_ONLY
+        for name in ["__init__.py", *UI_TEMPLATE_FILES]
+    }
+)
+FILE_OWNERSHIP.update(
+    {
+        f"qt/{name}": POLICY_PROJECT_OWNED_MISSING_ONLY
+        for name in ["__init__.py", *QT_TEMPLATE_FILES]
+    }
+)
 
 
-def _templateModulesIterate(includeUi: bool = False, includeQt: bool = False):
+def ownershipPolicy(destRel: Path | str, packageName: str | None = None) -> str:
+    """Return the declared ownership policy for a deployed relative path."""
+    key = Path(destRel).as_posix()
+    if key in FILE_OWNERSHIP:
+        return FILE_OWNERSHIP[key]
+    if key.endswith("Environment.yml"):
+        return POLICY_MANAGED_BLOCK_MERGE
+    if packageName:
+        prefix = f"{packageName}/"
+        if key == f"{packageName}/__init__.py" or key.startswith(prefix):
+            return POLICY_PROJECT_OWNED_MISSING_ONLY
+    raise RuntimeError(f"No ownership policy declared for {key}")
+
+
+def _templateModulesIterate(
+    packageName: str,
+    includeUi: bool = False,
+    includeQt: bool = False,
+):
     modules = [
-        (TEMPLATE_DIR / "globalVars.py", Path("src") / "globalVars.py"),
+        (TEMPLATE_DIR / "globalVars.py", Path(packageName) / "globalVars.py"),
         (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
         (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
     ]
     if includeUi:
         modules.extend(
-            (UI_TEMPLATE_DIR / src_name, Path("ui") / src_name)
+            (UI_TEMPLATE_DIR / src_name, Path(packageName) / "ui" / src_name)
             for src_name in UI_TEMPLATE_FILES
         )
     if includeQt:
         modules.extend(
-            (QT_TEMPLATE_DIR / src_name, Path("qt") / src_name)
+            (QT_TEMPLATE_DIR / src_name, Path(packageName) / "qt" / src_name)
             for src_name in QT_TEMPLATE_FILES
         )
     return modules
@@ -573,13 +780,15 @@ def createProject(
         logger.info(f"project '{projectName}' already exists")
         return
 
+    packageName = _packageNameFor(projectName)
     logger.doing(f"creating project at {basePath}")
+    logger.value("package name", packageName)
 
     # Create folders
     logger.action("creating directories")
     if not dryRun:
         folders = [
-            "src",
+            packageName,
             "tests",
             ".github",
             "documentation",
@@ -593,28 +802,29 @@ def createProject(
             "project/reviews",
         ]
         if includeUi:
-            folders.append("ui")
+            folders.append(f"{packageName}/ui")
         if includeQt:
-            folders.append("qt")
+            folders.append(f"{packageName}/qt")
         for folder in folders:
             (basePath / folder).mkdir(parents=True, exist_ok=True)
 
-        # Make directories importable packages
-        (basePath / "src" / "__init__.py").touch(exist_ok=True)
+        (basePath / packageName / "__init__.py").write_text("")
         if includeUi:
-            (basePath / "ui" / "__init__.py").touch(exist_ok=True)
+            (basePath / packageName / "ui" / "__init__.py").touch(exist_ok=True)
         if includeQt:
-            (basePath / "qt" / "__init__.py").touch(exist_ok=True)
+            (basePath / packageName / "qt" / "__init__.py").touch(exist_ok=True)
 
     # Create core files
     logger.action("writing core files")
     if not dryRun:
         (basePath / ".gitignore").write_text(GITIGNORE_CONTENT)
-        (basePath / "requirements.txt").write_text(REQUIREMENTS_CONTENT)
-        (basePath / "dev-requirements.txt").write_text(DEV_REQUIREMENTS_CONTENT)
-        (basePath / "environment.yml").write_text(ENVIRONMENT_CONTENT)
+        (basePath / _environmentFileName(packageName)).write_text(
+            _environmentContentBuild(packageName)
+        )
         (basePath / "pyproject.toml").write_text(
-            _pyprojectContentBuild(str(projectName))
+            _pyprojectContentBuild(
+                str(projectName), includeUi=includeUi, includeQt=includeQt
+            )
         )
         (basePath / "README.md").write_text(_readmeContentBuild(projectName))
         (basePath / "documentation" / "architecture.md").write_text(
@@ -719,13 +929,15 @@ def createProject(
     # Copy template modules into the new project
     logger.action("copying template modules")
     if not dryRun:
-        for src, destRel in _templateModulesIterate(includeUi, includeQt):
-            shutil.copy(src, basePath / destRel)
+        for src, destRel in _templateModulesIterate(packageName, includeUi, includeQt):
+            dest = basePath / destRel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(src, dest)
 
-    # Create main.py starter
-    logger.action("writing main.py")
-    if not dryRun:
-        (basePath / "main.py").write_text(MAIN_PY_CONTENT)
+    if includeUi or includeQt:
+        logger.action("writing package entry point")
+        if not dryRun:
+            (basePath / packageName / "__main__.py").write_text(PACKAGE_MAIN_CONTENT)
 
     # Create .pre-commit-config.yaml
     logger.action("writing .pre-commit-config.yaml")
@@ -758,13 +970,37 @@ def createProject(
         logger.info("create simulation complete: no changes were applied")
 
 
+def _fileActionLog(dest: Path, existsAlready: bool, dryRun: bool) -> None:
+    """Log a create/update. Dry-run wording is independent of logger prefixing."""
+    if dryRun:
+        verb = "would update" if existsAlready else "would create"
+    else:
+        verb = "updated" if existsAlready else "created"
+    logger.action(f"{verb} {dest}")
+
+
+def _executableBitCopy(src: Path, dest: Path, dryRun: bool) -> None:
+    """Preserve or restore executable permission on deployed shell helpers."""
+    if dryRun or not dest.exists():
+        return
+    sourceIsExecutable = src.exists() and bool(src.stat().st_mode & statModule.S_IXUSR)
+    if sourceIsExecutable or dest.suffix == ".sh":
+        dest.chmod(
+            dest.stat().st_mode
+            | statModule.S_IXUSR
+            | statModule.S_IXGRP
+            | statModule.S_IXOTH
+        )
+
+
 def _fileCopyIfNewer(src: Path, dest: Path, dryRun: bool = False):
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
     if not dest.exists() or src.stat().st_mtime > dest.stat().st_mtime:
-        logger.action(f"updated {dest}")
+        _fileActionLog(dest, dest.exists(), dryRun)
         if not dryRun:
             shutil.copy(src, dest)
+            _executableBitCopy(src, dest, dryRun)
 
 
 def _textFileUpdate(dest: Path, content: str, dryRun: bool = False):
@@ -778,45 +1014,19 @@ def _textFileUpdate(dest: Path, content: str, dryRun: bool = False):
         current = None
 
     if current != new_bytes:
-        if existsAlready:
-            logger.action(f"updated {dest}")
-        else:
-            logger.action(f"created {dest}")
+        _fileActionLog(dest, existsAlready, dryRun)
         if not dryRun:
             dest.write_bytes(new_bytes)
 
 
 def _managedContentBuild(sourceContent: str, suffix: str = ".md") -> str:
     """Add the scaffold release marker to canonical managed content."""
-    sourceContent, _ = _managedContentBody(sourceContent)
-    if suffix != ".py":
-        return DEPLOYMENT_COMMENT + sourceContent
-
-    if sourceContent.startswith("#!"):
-        shebang, separator, remainder = sourceContent.partition("\n")
-        return shebang + separator + PYTHON_DEPLOYMENT_COMMENT + remainder
-    return PYTHON_DEPLOYMENT_COMMENT + sourceContent
+    return managedContentBuild(sourceContent, suffix=suffix)
 
 
 def _managedContentBody(content: str) -> tuple[str, int]:
     """Return content without leading OMP release markers and their count."""
-    lines = content.splitlines(keepends=True)
-    if not lines:
-        return content, 0
-
-    markerPrefixes = (
-        "<!-- deployed from Glawster/organiseMyProjects release ",
-        "<!-- synced from Glawster/organiseMyProjects release ",
-        "# deployed from Glawster/organiseMyProjects release ",
-        "# synced from Glawster/organiseMyProjects release ",
-    )
-    markerIndex = 1 if lines[0].startswith("#!") else 0
-    markerCount = 0
-    while markerIndex < len(lines) and lines[markerIndex].startswith(markerPrefixes):
-        del lines[markerIndex]
-        markerCount += 1
-
-    return "".join(lines), markerCount
+    return managedContentBody(content)
 
 
 def _managedCopyUpdate(src: Path, dest: Path, dryRun: bool = False):
@@ -841,6 +1051,7 @@ def _managedCopyUpdate(src: Path, dest: Path, dryRun: bool = False):
         currentBody, currentMarkerCount = _managedContentBody(currentContent)
         managedBody, _ = _managedContentBody(managedContent)
         if currentMarkerCount == 1 and currentBody == managedBody:
+            _executableBitCopy(src, dest, dryRun)
             return
 
     _textFileUpdate(
@@ -848,6 +1059,7 @@ def _managedCopyUpdate(src: Path, dest: Path, dryRun: bool = False):
         managedContent,
         dryRun,
     )
+    _executableBitCopy(src, dest, dryRun)
 
 
 def _createTextFileIfMissing(dest: Path, content: str, dryRun: bool = False):
@@ -855,7 +1067,7 @@ def _createTextFileIfMissing(dest: Path, content: str, dryRun: bool = False):
         return
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
-    logger.action(f"created {dest}")
+    _fileActionLog(dest, False, dryRun)
     if not dryRun:
         dest.write_text(content)
 
@@ -865,9 +1077,38 @@ def _fileCopyIfMissing(src: Path, dest: Path, dryRun: bool = False):
         return
     if not dryRun:
         dest.parent.mkdir(parents=True, exist_ok=True)
-    logger.action(f"created {dest}")
+    _fileActionLog(dest, False, dryRun)
     if not dryRun:
         shutil.copy(src, dest)
+        _executableBitCopy(src, dest, dryRun)
+
+
+def _managedBlockMerge(
+    dest: Path,
+    fullContent: str,
+    blockInner: str,
+    commentPrefix: str,
+    dryRun: bool = False,
+) -> None:
+    """Create a missing project-owned file or merge its OMP-managed block."""
+    if not dest.exists():
+        _textFileUpdate(dest, fullContent, dryRun)
+        return
+
+    try:
+        existing = dest.read_text(encoding="utf-8")
+    except OSError:
+        existing = ""
+    merged = managedBlockMergeText(
+        existing,
+        blockInner,
+        commentPrefix,
+        jsonStyle=dest.suffix == ".json",
+    )
+    if merged != existing:
+        _fileActionLog(dest, True, dryRun)
+        if not dryRun:
+            dest.write_text(merged, encoding="utf-8")
 
 
 def migrateProject(projectName, dryRun: bool = False):
@@ -901,6 +1142,34 @@ def migrateProject(projectName, dryRun: bool = False):
     logger.done("project context migrated")
     if dryRun:
         logger.info("migration simulation complete: no changes were applied")
+
+
+def _fileIsOmpManaged(path: Path) -> bool:
+    """Return whether a file carries an OMP deployment or sync marker."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    _body, markerCount = managedContentBody(text)
+    return markerCount > 0
+
+
+def _managedPathRelocate(basePath: Path, dryRun: bool = False) -> None:
+    """Move recognised OMP-managed files to their canonical 0.6 paths."""
+    for oldRel, newRel in MANAGED_RELOCATIONS:
+        oldPath = basePath / oldRel
+        if not oldPath.exists() or not oldPath.is_file():
+            continue
+        if not _fileIsOmpManaged(oldPath):
+            logger.info(
+                f"legacy path preserved because ownership is ambiguous: {oldPath}"
+            )
+            continue
+        if dryRun:
+            logger.action(f"would remove obsolete managed file {oldPath}")
+        else:
+            logger.action(f"removed obsolete managed file {oldPath}")
+            oldPath.unlink()
 
 
 def _migrateManagedNames(basePath: Path, dryRun: bool = False) -> None:
@@ -955,27 +1224,43 @@ def updateProject(
     logger.doing(f"updating project at {basePath}")
     detectedRole = _projectRoleDetect(basePath)
     logger.value("detected role", detectedRole)
+    if includeUi or includeQt:
+        logger.info(
+            "update does not install or infer ui scaffolds; --ui/--qt apply to create only"
+        )
     if _projectIsCanonicalOmp(basePath):
         logger.info(
-            "canonical OMP repository detected: scaffold deployment is not applicable"
+            "canonical omp repository detected: scaffold deployment is not applicable"
         )
         logger.done("project unchanged")
         return
+
+    applicationRoles = {"standalone-application"}
+    if detectedRole not in applicationRoles:
+        logger.info(
+            "preserving packaged/library layout: main.py, src/globalvars.py and ui "
+            "templates are not added"
+        )
 
     logger.action("ensuring managed directories")
     if not dryRun:
         (basePath / ".github").mkdir(parents=True, exist_ok=True)
 
-    for destRel, content in MANAGED_TEXT_TEMPLATES:
-        _createTextFileIfMissing(basePath / destRel, content, dryRun)
+    for destRel, content, blockInner, commentPrefix in MANAGED_BLOCK_TEMPLATES:
+        ownershipPolicy(destRel)
+        _managedBlockMerge(
+            basePath / destRel, content, blockInner, commentPrefix, dryRun
+        )
 
     for src, destRel in MANAGED_COPY_TEMPLATES:
         if src.exists():
+            ownershipPolicy(destRel)
             _managedCopyUpdate(src, basePath / destRel, dryRun)
 
     # OMP 0.5 migrations are deliberately limited to deterministic legacy
     # names. Existing destinations are never overwritten.
     _migrateManagedNames(basePath, dryRun)
+    _managedPathRelocate(basePath, dryRun)
 
     logger.done("project updated")
     if dryRun:
@@ -1103,11 +1388,7 @@ def main():
 
     projectPath = args.project if args.project is not None else args.projectOption
 
-    logDir = Path.home() / ".local" / "state" / thisApplication
-    logDir.mkdir(parents=True, exist_ok=True)
-
     logger = getLogger(
-        logDir=logDir,
         includeConsole=True,
         dryRun=dryRun,
     )

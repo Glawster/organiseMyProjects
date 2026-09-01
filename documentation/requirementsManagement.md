@@ -1,113 +1,104 @@
-<!-- deployed from Glawster/organiseMyProjects release 0.5 -- do not edit directly -->
+<!-- deployed from Glawster/organiseMyProjects release 0.6 -- do not edit directly -->
 # Requirements management
 
-This guide defines the shared process for capturing, agreeing, delivering and
-maintaining requirements. It incorporates the practices established while
-developing fmparser: small outcome-focused records, permanent identifiers and
-paths, an explicit status index, requirement-owned documentation, and evidence
-that connects each requirement to its implementation and tests.
+This guide defines the shared OMP process for capturing, agreeing, delivering
+and maintaining requirements.
 
-The process is deliberately lightweight. A requirement should contain enough
-information to make the intended outcome and proof of completion unambiguous,
-without becoming a second implementation plan.
-
-## Principles
+## Core principles
 
 - Describe the user or system outcome before proposing an implementation.
-- Give every requirement a permanent identifier and stable file path.
-- Keep one authoritative requirement record; link to it instead of copying it.
-- Make scope, acceptance criteria and exclusions explicit before development.
+- Give every requirement a permanent three-digit identifier and stable path.
+- Keep one authoritative requirement specification; link to it instead of
+  copying it.
 - Keep requirements small enough to implement and verify independently.
-- Trace implementation, tests, documentation and decisions back to the
-  requirement.
-- Treat a changed requirement as a controlled change, not an informal edit.
-- Complete a requirement only when objective evidence demonstrates every
-  acceptance criterion.
-- Keep requirement lifecycle state here, but keep transient implementation
-  status solely in `project/currentIncrement.md`.
-- Change a requirement when its obligation changes, not merely because
-  implementation progresses. Use Git history for what was delivered and when.
+- Make scope, exclusions, acceptance criteria and verification explicit.
+- Keep transient implementation status solely in
+  `project/currentIncrement.md`.
+- Use Git history for delivery history rather than rewriting completed records.
+- `README.md` is reserved for the repository root.
+- When a directory genuinely needs an index, derive its filename as
+  `<folderName>Index.md`.
 
 ## Authoritative locations
 
-Requirements are project-management records and follow
-[`repositoryLayout.md`](repositoryLayout.md):
-
 ```text
 project/requirements/
-├── README.md
+├── requirementsIndex.md
+├── features/
+│   └── 003-viewManagement.md
 ├── prompt/
-│   ├── adapters/
-│   │   ├── codex.md
-│   │   └── copilot.md
-│   ├── 003a-viewManagement.md
-│   └── 003b-viewManagement.md
-├── templates/
-│   └── requirement.md
-└── features/
-    └── 003-viewManagement.md
+│   ├── 003-viewManagement.md
+│   └── adapters/
+└── templates/
+    └── requirement.md
 ```
 
-- `project/requirements/README.md` is the requirements index and records the
-  next available number, workflow state and project-specific conventions.
-- `project/requirements/features/` contains every requirement at every
-  lifecycle stage. Files are not moved when their status changes.
-- `project/requirements/prompt/` contains one or more durable prompts per
-  requirement in a flat layout, plus reusable agent adapters.
-- `project/requirements/templates/` contains the project's approved templates.
-- `documentation/<requirementName>/` contains living documentation owned by a
-  single requirement. Cross-cutting documentation remains directly under
-  `documentation/`.
-- Significant architectural or project-shaping decisions belong in
-  `project/adr/` and are linked from the affected requirements.
+- `project/requirements/requirementsIndex.md` is the requirements index and
+  next-ID authority.
+- `project/requirements/features/` contains every requirement specification at
+  every lifecycle stage.
+- `project/requirements/prompt/` contains one or more flat prompt files per
+  requirement plus optional shared support directories such as `adapters/`.
+- `project/requirements/templates/` contains approved requirement templates.
+- Significant decisions belong in `project/adr/` and are linked from affected
+  requirements. Its index is `project/adr/adrIndex.md`.
 
-## Identification and naming
+Do not create a per-requirement or per-prompt directory merely to hold a
+`README.md`, an index file, `prompt.md`, or one specification/prompt file.
 
-Allocate the next number from `project/requirements/README.md` when a
-requirement record is created:
+## Requirement identification and naming
+
+Allocate the next number from `project/requirements/requirementsIndex.md` and
+create:
 
 ```text
-ddd-conciseCamelCaseName.md
+project/requirements/features/nnn-requirementName.md
 ```
 
-The three-digit number is sequential, permanent and never reused, including
-when a requirement is rejected or retired. The filename and identifier do not
-change after allocation. Update the next available number in the same change
-that creates the record so concurrent work cannot allocate it twice.
-The identifier must also appear inside the requirement record.
+For example:
 
-Use the numeric identifier in the record heading and in relevant issue, branch,
-commit, pull-request, test and documentation references. Repository-specific
-prefixes may be used in external tools when necessary, but they are not part of
-the requirement filename.
+```text
+project/requirements/features/003-viewManagement.md
+```
 
-When a requirement has one prompt, its filename is identical to the requirement
-filename and differs only by directory. When it has multiple prompts, append
-sequential lowercase letters to the requirement number and give each prompt the
-same requirement name:
+Rules:
+
+- `nnn` is a zero-padded three-digit sequential identifier.
+- The identifier is permanent and never reused.
+- `requirementName` is a concise camelCase name.
+- The filename and identifier do not change when lifecycle status changes.
+- Repository-specific prefixes may be used in external tools but are not part
+  of the OMP filename.
+- Individual requirements are named Markdown files, not directory indexes.
+
+## Prompt naming
+
+A requirement with one prompt uses the same filename under the prompt folder:
 
 ```text
 project/requirements/features/003-viewManagement.md
 project/requirements/prompt/003-viewManagement.md
-project/requirements/prompt/003a-viewManagement.md
-project/requirements/prompt/003b-viewManagement.md
 ```
 
-Use the unsuffixed form only while there is a single prompt. For multiple
-prompts, `a` identifies the primary prompt and subsequent prompts use `b`, `c`
-and so on. Never reuse a suffix. If a second prompt is added later, rename the
-existing unsuffixed prompt to the `a` form while preserving its version-control
-history, create the `b` prompt, and update all references in the same change.
-The suffixed identities are stable after allocation.
+When one requirement genuinely needs multiple prompts, append sequential
+lowercase letters to the requirement number while keeping the same name:
 
-Living documentation owned by one requirement belongs in a directory named
-after the requirement without its number or extension, for example
-`documentation/viewManagement/`. General documentation spanning multiple
-requirements remains directly under the owning `documentation/` directory.
+```text
+project/requirements/prompt/003a-viewManagement.md
+project/requirements/prompt/003b-viewManagement.md
+project/requirements/prompt/003c-viewManagement.md
+```
+
+Use the unsuffixed form only while there is one prompt. If a second prompt is
+added later, rename the existing unsuffixed prompt to the `a` form, create `b`,
+and update all references in the same change. Never reuse a prompt suffix.
+
+A prompt assigns work; it does not redefine the requirement. The requirement
+specification remains authoritative for outcome, scope and acceptance criteria.
 
 ## Requirement record
 
-Each requirement should use this minimum structure:
+Each requirement should use at least:
 
 ```markdown
 # 003: View management
@@ -122,7 +113,7 @@ As a <user or system>, I need <capability> so that <measurable benefit>.
 
 ## Context
 
-Why this is needed, including the current problem and relevant constraints.
+Why this is needed and the relevant constraints.
 
 ## Scope
 
@@ -135,7 +126,6 @@ Why this is needed, including the current problem and relevant constraints.
 ## Acceptance criteria
 
 1. Given <starting condition>, when <action>, then <observable result>.
-2. Failure and boundary behaviour is explicitly defined.
 
 ## Dependencies and decisions
 
@@ -143,320 +133,60 @@ Why this is needed, including the current problem and relevant constraints.
 
 ## Verification
 
-- Planned and completed tests, review steps or other evidence.
+- Planned tests, review steps or other evidence.
 
 ## Change history
 
 - YYYY-MM-DD: created — reason or source.
 ```
 
-Add non-functional constraints such as performance, security, privacy,
-compatibility, accessibility or data migration only when they apply. State
-measurable thresholds rather than words such as "fast", "secure" or "easy".
-
-## Writing good requirements
-
-The outcome states the need and value, not the chosen code structure. Acceptance
-criteria define externally observable behaviour and form the basis of tests.
-Each criterion should be necessary, unambiguous and independently verifiable.
-
-During refinement, check that the requirement:
-
-- has one clear outcome and an identified user, stakeholder or system;
-- defines normal, boundary and relevant failure behaviour;
-- separates included work from tempting adjacent work;
-- identifies dependencies, risks and assumptions;
-- does not conflict with an approved requirement or ADR;
-- can be demonstrated by tests or another named verification method; and
-- is small enough to review without hiding unrelated outcomes.
-
-Split a record when its parts have different stakeholders, priorities,
-dependencies or completion evidence. Link the resulting requirements rather
-than creating a parent record whose completion is ambiguous.
+Add measurable non-functional constraints only when they apply.
 
 ## Workflow
 
-The index in `project/requirements/README.md` contains a traceability matrix.
-Each requirement has one row whose `Status` is `ToDo`, `InProgress` or
-`Completed`. These states mean, respectively: captured or ready but not yet
-started; accepted and actively being delivered; or verified as delivered (or
-closed with a visible disposition such as rejected, superseded or retired).
-
-Use this operating process:
-
 ### 1. Capture
 
-Search the index and existing records for duplicates. Allocate the next number,
-create the record and its primary prompt from the approved templates, add the
-matrix row with status `ToDo`, and record the requirement's origin and purpose.
-Early uncertainty should be written as an assumption or open question, not
-silently resolved.
+Search existing records for duplicates. Allocate the next number from
+`requirementsIndex.md`, create the requirement and its primary prompt, add the
+index row with `ToDo`, and record the requirement's origin.
 
 ### 2. Refine and agree
 
-Review the outcome, scope, exclusions, acceptance criteria, dependencies and
-verification approach with the relevant stakeholder. Resolve contradictions or
-record a decision in an ADR. A requirement is ready for implementation when its
-criteria can be tested and no material product decision is left implicit.
-
-Record who or what approved the requirement and the approval date when formal
-approval is needed. For small projects, review acceptance in the pull request
-may be sufficient if the decision remains traceable.
+Review outcome, scope, exclusions, acceptance criteria, dependencies and
+verification. Record consequential implementation choices as ADRs rather than
+embedding their rationale in the requirement.
 
 ### 3. Start delivery
 
-Set the index entry to `InProgress` and update the record's lifecycle status in
-the same change. Record the active objective, scope, acceptance checklist and
-verification still required in `project/currentIncrement.md`. Before coding,
-map each acceptance criterion to planned test coverage or another verification
-method. For substantial requirements, use the test-plan table and
-production-path guidance in
-[`testingProcess.md`](testingProcess.md). Link
-any implementation plan, issue or ADR; do not turn the requirement itself into
-a task-by-task coding diary.
+Set both the requirement record and its row in `requirementsIndex.md` to
+`InProgress`. Record the active delivery state in
+`project/currentIncrement.md`.
 
-### 4. Implement and maintain traceability
+### 4. Implement
 
-Keep the change focused on the agreed scope. Reference the requirement from the
-implementation and tests through meaningful names, comments only where useful,
-and commit or pull-request metadata. Update `project/currentIncrement.md` as
-work progresses. Update owned living documentation only when the implemented
-behaviour it describes changes; do not add increment-completion narratives.
-
-If delivery exposes a material ambiguity or changes an agreed outcome, stop and
-apply the change-control process below before continuing. Implementation detail
-that preserves the agreed outcome does not require a requirement revision.
+Keep implementation and tests within the agreed scope. Update durable product
+or technical documentation when delivered behaviour changes. If the agreed
+outcome changes materially, update the requirement through change control.
 
 ### 5. Verify and complete
 
-Verify every acceptance criterion and record the evidence. Evidence normally
-includes automated test paths and results, plus manual or stakeholder validation
-where automated tests cannot prove the outcome. Confirm that relevant living
-documentation and ADRs are current and that no temporary assumption remains.
-
-Set the index entry and record lifecycle state to `Completed` only after all
-criteria pass. Record completion and any remaining verification or immediate
-next action in `project/currentIncrement.md`, and rely on commits, pull requests,
-tags and releases for delivery history. Keep the requirement file in
-`features/`; its stable path remains valid for future references.
-
-## Requirements and architecture decisions
-
-A requirement defines the outcome and the evidence needed to accept it. An
-architecture decision record (ADR) explains a consequential implementation or
-project-shaping choice, the alternatives considered and the consequences of the
-selected approach. Keep these responsibilities separate so a later technical
-decision can change without rewriting the underlying need.
-
-Create or update an ADR when satisfying a requirement introduces a decision
-that is difficult or costly to reverse, affects several requirements or
-components, changes a public interface or data model, selects a significant
-dependency, or materially affects security, privacy, performance or operations.
-Routine local implementation choices do not need ADRs.
-
-Handle the relationship as follows:
-
-1. identify the decision during refinement or implementation and link a
-   proposed ADR from `Dependencies and decisions`;
-2. record the context, viable options, decision, rationale, consequences and
-   status in `project/adr/` according to `project/adr/README.md`;
-3. accept the ADR before work that depends on the decision becomes difficult to
-   unwind;
-4. link the requirement from the ADR and the accepted ADR from every affected
-   requirement; and
-5. verify both the requirement's observable acceptance criteria and any
-   constraints introduced by the ADR.
-
-One ADR may support several requirements and one requirement may depend on
-several ADRs. Do not duplicate the ADR rationale in each requirement. Do not
-hide a user-visible outcome or acceptance criterion only in an ADR. If an ADR
-changes agreed scope or observable behaviour, apply requirement change control
-and obtain the necessary agreement rather than treating it as a purely
-technical update. Supersede an obsolete ADR through the ADR process while
-retaining its stable link and history.
-
-## Prompts and agent-assisted delivery
-
-The requirement is the source of truth for every agent. A prompt assigns work;
-it does not redefine the requirement. This distinction allows Codex, GitHub
-Copilot and other coding or review agents to work from the same agreed outcome
-without maintaining separate versions of the scope.
-
-### Canonical prompt and agent adapters
-
-Write each task brief from the authoritative requirement, then add only the
-minimum agent-specific wrapper needed for the selected tool. Multiple prompts
-must partition roles or scope clearly and must not redefine the requirement or
-allow their acceptance criteria to drift apart.
-
-Store a single prompt at:
-
-```text
-project/requirements/prompt/<ddd-requirementName>.md
-```
-
-If separate prompts are needed, store them as:
-
-```text
-project/requirements/prompt/<ddd>a-<requirementName>.md
-project/requirements/prompt/<ddd>b-<requirementName>.md
-```
-
-For example, separate implementation and verification prompts for
-`003-viewManagement.md` are `003a-viewManagement.md` and
-`003b-viewManagement.md`. Keep reusable tool-specific instructions in
-`project/requirements/prompt/adapters/<agent>.md` and combine the applicable
-adapter with the relevant prompt when starting a run. Do not create an
-additional prompt merely to change the agent name.
-
-Prompt paths are durable delivery records. Apart from converting a single
-unsuffixed prompt to the required multi-prompt naming, do not move them when the
-requirement is completed or another prompt is added. Update a prompt in place
-before it is issued. After it has been used, preserve its issued meaning in
-version control; a material revision must be recorded in the requirement's
-change history. Git, pull-request or issue history records the associated agent
-run.
-
-The canonical brief contains:
-
-- the requirement identifier and repository-relative path;
-- the requested role, such as refine, implement, test, review or document;
-- the exact acceptance criteria assigned to the run;
-- relevant scope, exclusions, constraints, dependencies and ADR links;
-- the files or component boundaries the agent may change;
-- required verification commands and expected evidence; and
-- the required handoff format, including changed files, checks run, results,
-  assumptions and unresolved items.
-
-An agent adapter may add tool syntax, available capabilities, response format or
-an instruction to inspect a particular repository entry point. It must not
-weaken acceptance criteria, expand authority or silently make product decisions.
-For example, repository agents should be told to follow the nearest `AGENTS.md`
-and its linked instructions; GitHub Copilot should follow
-`.github/copilot-instructions.md`; and agents operating outside the repository
-must receive the applicable instruction text or a stable link to it.
-
-Use this prompt pattern:
-
-```text
-Requirement: 003 — project/requirements/features/003-viewManagement.md
-Role: implement
-
-Read the requirement and applicable repository instructions before changing
-anything. Deliver acceptance criteria 1–3 only. Preserve the stated exclusions
-and follow ADR-002. Limit changes to <paths/components>.
-
-Verify with:
-- <automated command>
-- <manual or review check>
-
-If the requirement is ambiguous or the outcome must change, stop and report the
-decision needed. Do not infer new scope.
-
-Handoff with:
-- files changed and why;
-- acceptance criterion-to-evidence mapping;
-- commands run and results;
-- assumptions, risks and unresolved items.
-```
-
-### Choosing and separating agent roles
-
-Assign agents according to the work they can independently verify:
-
-- a refinement agent may identify ambiguity, duplicates, risks and proposed
-  acceptance criteria, but a stakeholder still agrees the outcome;
-- an implementation agent changes only the assigned scope and supplies test
-  evidence;
-- a test or verification agent checks criteria against observable behaviour and
-  should not merely repeat the implementation agent's conclusions;
-- a review agent looks for regressions, missing criteria, unsafe assumptions and
-  conflicts with repository guidance; and
-- a documentation agent updates maintained explanations from the delivered
-  behaviour, without inventing behaviour that was not verified.
-
-Where multiple agents work concurrently, give them non-overlapping ownership or
-isolated branches/worktrees and name one coordinating run. The coordinator
-reconciles results against the requirement. Agents must not overwrite another
-run's changes, claim shared files implicitly or treat a partial handoff as proof
-that the complete requirement is delivered.
-
-### Context, handoff and traceability
-
-Prefer directing a repository-aware agent to the stable requirement path over
-pasting a copy that may become stale. If an agent cannot access the repository,
-provide a controlled snapshot and identify its commit or date. Regenerate the
-prompt after a material requirement change and tell active agents that their
-previous brief is superseded.
-
-Use the issued prompt plus commits, pull requests or issues as the durable record
-of material agent work. Do not add a running agent-use history to the
-requirement. Do not commit secrets, credentials, sensitive user data, transient
-chat transcripts or vendor-specific internal reasoning.
-
-Agent output is proposed work and evidence, not automatic approval. A human or
-designated coordinating process reviews the diff, runs the relevant checks and
-maps the final evidence to every acceptance criterion before completion.
-
-## Change control
-
-Requirements may evolve, but their history and delivered meaning must remain
-clear.
-
-- Before implementation, refine the existing record and add a dated reason to
-  its Change history.
-- During implementation, update the requirement only for a material change to
-  scope, acceptance criteria, dependencies or another durable obligation.
-- After completion, do not rewrite history to make new behaviour appear part of
-  the original delivery. Create a new linked requirement for a new outcome.
-- Correcting a typo or clarifying wording that does not alter meaning may be
-  made in place and noted when the distinction could matter later.
-- When superseding, rejecting or retiring a requirement, keep its file and
-  identifier, record the reason and related replacement, and place it in the
-  index's `Completed` section with its disposition visible.
-
-Never recycle a cancelled identifier, rename a requirement to reflect its
-replacement, or move completed records to an archive directory.
-
-## Review checklist
-
-Before moving a requirement to `InProgress`, confirm:
-
-- the outcome, value, scope and exclusions are clear;
-- acceptance criteria are observable and testable;
-- dependencies, assumptions, risks and decisions are linked;
-- a verification approach exists for every criterion; and
-- the record and index agree.
-
-Before moving it to `Completed`, confirm:
-
-- every acceptance criterion has recorded evidence;
-- tests cover normal, boundary and relevant failure behaviour;
-- acceptance evidence is sufficient and relevant ADR links are current;
-- maintained documentation describes the delivered behaviour;
-- no unresolved item is being hidden by completion; and
-- the record and index are updated together.
+Verify every acceptance criterion. Set both the requirement and its index row
+to `Completed` only when the evidence is sufficient. Git commits, pull requests,
+tags and releases remain the delivery history.
 
 ## Requirements index
 
-The traceability matrix must use these columns in this order:
+`project/requirements/requirementsIndex.md` contains the traceability matrix
+using these columns:
 
 | Column | Purpose |
 | --- | --- |
-| `Req ID` | Permanent zero-padded requirement identifier. |
-| `Requirement` | Link to the authoritative requirement record. |
-| `Description` | Concise statement of what the requirement is about. |
-| `Status` | Current lifecycle state: `ToDo`, `InProgress` or `Completed`. |
-| `Agent Prompt` | Links to the requirement's durable prompt or prompts. |
-| `Architecture Decisions` | Links to supporting ADRs, `Pending`, or `Not required`. |
-
-Keep descriptions short enough for the matrix to remain scannable; detailed
-scope belongs in the linked requirement. Every requirement links to at least
-one prompt; when there are several, list them in suffix order. A requirement
-may link to zero or more ADRs. ADRs link back to the requirements they support.
-The requirement record remains authoritative for scope and lifecycle status.
-`project/currentIncrement.md` remains authoritative for transient delivery
-status.
+| `Req ID` | Permanent zero-padded identifier. |
+| `Requirement` | Link to the authoritative requirement specification. |
+| `Description` | Concise description. |
+| `Status` | `ToDo`, `InProgress`, or `Completed`. |
+| `Agent Prompt` | Link(s) to the durable prompt file(s). |
+| `Architecture Decisions` | Supporting ADR links, `Pending`, or `Not required`. |
 
 Example:
 
@@ -468,9 +198,99 @@ Next available number: 006
 | Req ID | Requirement | Description | Status | Agent Prompt | Architecture Decisions |
 | --- | --- | --- | --- | --- | --- |
 | 003 | [Manage views](features/003-viewManagement.md) | Create and manage saved views. | Completed | [Implement](prompt/003a-viewManagement.md), [verify](prompt/003b-viewManagement.md) | [ADR-002](../adr/002-viewStorage.md) |
-| 004 | [Export parsed messages](features/004-exportParsedMessages.md) | Export parsed messages in supported formats. | ToDo | [Prompt](prompt/004-exportParsedMessages.md) | Pending |
-| 005 | [Report malformed input](features/005-reportMalformedInput.md) | Explain malformed input without losing valid results. | InProgress | [Prompt](prompt/005-reportMalformedInput.md) | Not required |
+| 004 | [Export parsed messages](features/004-exportParsedMessages.md) | Export parsed messages. | ToDo | [Prompt](prompt/004-exportParsedMessages.md) | Pending |
 ```
 
-The index is a navigation and status view, not a substitute for the individual
-records. Keep detailed scope, evidence and history in the requirement file.
+The index is navigation/status metadata, not a replacement for the individual
+requirements.
+
+## Requirements and ADRs
+
+A requirement defines the outcome and acceptance evidence. An ADR records a
+consequential implementation or project-shaping decision. ADR directory
+navigation and local instructions use `project/adr/adrIndex.md`; individual
+ADRs remain named numbered files.
+
+One ADR may support several requirements and one requirement may depend on
+several ADRs. Link both directions where useful; do not duplicate rationale.
+
+## Prompt content and agent handoff
+
+A prompt should identify:
+
+- the requirement ID and path;
+- the requested role (implement, test, review, document, etc.);
+- assigned acceptance criteria;
+- relevant exclusions, constraints and ADRs;
+- allowed component/file boundaries;
+- verification commands; and
+- the expected handoff evidence.
+
+Shared agent adapters may live under
+`project/requirements/prompt/adapters/`. If that directory ever needs its own
+index, the filename would be `adaptersIndex.md`; do not create one unless the
+index has a real purpose.
+
+## Change control
+
+- Before implementation, refine the existing requirement in place.
+- During implementation, change the record only when a durable obligation
+  changes materially.
+- After completion, create a new linked requirement for a new outcome rather
+  than rewriting the original delivery.
+- Never recycle identifiers or move completed requirements to an archive.
+
+## OMP 0.6 legacy cleanup
+
+`manageProject --update` may migrate only deterministic, no-loss legacy forms.
+Recognised index migrations include:
+
+```text
+project/requirements/README.md
+project/requirements/folderIndex.md
+    -> project/requirements/requirementsIndex.md
+
+project/adr/README.md
+project/adr/folderIndex.md
+    -> project/adr/adrIndex.md
+```
+
+`requirementsIndex.md` and `adrIndex.md` are the canonical destinations.
+
+Recognised erroneous artifact forms include a single deterministic file such as:
+
+```text
+project/requirements/features/003-viewManagement/README.md
+    -> project/requirements/features/003-viewManagement.md
+
+project/requirements/prompt/003-viewManagement/README.md
+    -> project/requirements/prompt/003-viewManagement.md
+```
+
+Cleanup rules:
+
+- establish the exact artifact identity before changing anything;
+- preserve user-owned or third-party nested READMEs;
+- preserve directories containing additional/ambiguous content;
+- never overwrite a different canonical destination automatically;
+- remove a legacy directory only when it is empty after successful migration;
+- dry-run reports intended changes without modifying files; and
+- successful reruns are idempotent.
+
+## Review checklist
+
+Before `InProgress`:
+
+- outcome, scope and exclusions are clear;
+- acceptance criteria are testable;
+- dependencies and decisions are linked;
+- verification exists; and
+- specification and `requirementsIndex.md` agree.
+
+Before `Completed`:
+
+- every criterion has evidence;
+- tests cover relevant normal/boundary/failure behaviour;
+- documentation and ADR links are current;
+- no unresolved item is hidden by completion; and
+- specification and `requirementsIndex.md` agree.

@@ -12,26 +12,27 @@ Status has one owner. Requirements describe obligations, design documentation
 describes behaviour, and Git records delivery history.
 `project/currentIncrement.md` alone records transient implementation status.
 
-## README and folder-index convention
+## README and directory-index convention
 
 OMP uses one repository README rule:
 
 - `README.md` is reserved for the repository root.
 - Do not create OMP-owned `README.md` files in subdirectories.
 - When a directory genuinely needs an index, navigation page, catalogue or
-  directory-specific instructions, name it `folderIndex.md`.
-- Do not create `folderIndex.md` merely because a directory exists.
+  directory-specific instructions, derive the filename from the directory as
+  `<folderName>Index.md`.
+- Do not create an index merely because a directory exists.
 - Named artifacts such as requirements, prompts, ADRs, specifications and
-  guides keep descriptive filenames rather than being stored as a folder
-  `README.md` or `folderIndex.md`.
+  guides keep descriptive filenames rather than being stored as a directory
+  `README.md` or generic index file.
 - OMP cleanup must preserve arbitrary user-owned or third-party nested README
   files unless a deterministic OMP migration proves ownership and destination.
 
-The standard OMP indexes are:
+The standard OMP project-management indexes are:
 
 ```text
-project/requirements/folderIndex.md
-project/adr/folderIndex.md
+project/requirements/requirementsIndex.md
+project/adr/adrIndex.md
 ```
 
 ## Choosing between `project/` and `documentation/`
@@ -66,10 +67,10 @@ footballVision/
 ├── documentation/
 ├── project/
 │   ├── adr/
-│   │   ├── folderIndex.md
+│   │   ├── adrIndex.md
 │   │   └── templates/
 │   ├── requirements/
-│   │   ├── folderIndex.md
+│   │   ├── requirementsIndex.md
 │   │   ├── features/
 │   │   ├── prompt/
 │   │   └── templates/
@@ -179,11 +180,11 @@ beneath root-level `output/` and be ignored unless deliberately published.
 | --- | --- |
 | `project/project.yaml` | Current project purpose, scope, audience, risks and milestones. |
 | `project/currentIncrement.md` | Authoritative transient status for the active increment. |
-| `project/requirements/folderIndex.md` | Requirement index and next-ID authority. |
+| `project/requirements/requirementsIndex.md` | Requirement index and next-ID authority. |
 | `project/requirements/features/` | Flat numbered requirement specifications at stable paths. |
 | `project/requirements/prompt/` | Flat requirement prompts plus optional shared prompt support. |
 | `project/requirements/templates/` | Requirement templates. |
-| `project/adr/folderIndex.md` | ADR index and directory-level ADR guidance. |
+| `project/adr/adrIndex.md` | ADR index and directory-level ADR guidance. |
 | `project/adr/` | Numbered architecture decision records. |
 | `project/reviews/` | Point-in-time assessments. |
 | `project/roadmap.md` | Current sequencing and priorities. |
@@ -213,8 +214,8 @@ Do not create `features/003-viewManagement/README.md` or
 ## Documentation conventions
 
 - Keep the sole OMP-standard `README.md` at repository root.
-- Use `folderIndex.md` for a directory index only when that directory genuinely
-  needs navigation or local instructions.
+- Use `<folderName>Index.md` for a directory index only when that directory
+  genuinely needs navigation, catalogue or local instructions.
 - Use camelCase Markdown filenames except the root `README.md` and stable-ID
   records such as requirements and ADRs.
 - Keep Mermaid source beside the subject it explains.
@@ -236,7 +237,8 @@ When applying it:
    exception is necessary;
 2. use the root-level project package for new Python projects;
 3. reserve `README.md` for repository root;
-4. use `folderIndex.md` only for directories that genuinely need an index;
+4. derive directory-index filenames as `<folderName>Index.md` only where an
+   index is genuinely needed;
 5. keep named artifacts in their canonical files;
 6. use optional top-level directories only for real separate concerns; and
 7. record project-specific exceptions in `.github/additional-instructions.md`.
@@ -249,8 +251,8 @@ When applying it:
 | Active development state | `project/currentIncrement.md` | Records current operational handoff. |
 | Requirement specification | `project/requirements/features/nnn-requirementName.md` | Stable numbered requirement artifact. |
 | Requirement prompt | `project/requirements/prompt/nnn-requirementName.md` | Matching durable prompt artifact. |
-| Requirements index | `project/requirements/folderIndex.md` | Index/navigation for the requirements directory. |
-| ADR index | `project/adr/folderIndex.md` | Index/navigation for the ADR directory. |
+| Requirements index | `project/requirements/requirementsIndex.md` | Index/navigation for the requirements directory. |
+| ADR index | `project/adr/adrIndex.md` | Index/navigation for the ADR directory. |
 | Architecture decision | `project/adr/nnn-decisionName.md` | Consequential project decision. |
 | Implemented-behaviour guide | `documentation/<guideName>.md` | Living product or technical knowledge. |
 | Point-in-time review | `project/reviews/<reviewName>.md` | Historical assessment. |
@@ -262,16 +264,17 @@ links in the same change.
 
 ## OMP 0.6 index migration
 
-`manageProject --update` recognises historical OMP index names:
+`manageProject --update` recognises historical or mistaken OMP index names and
+migrates them to the folder-derived canonical names:
 
 ```text
 project/requirements/README.md
-project/requirements/requirementsIndex.md
-    -> project/requirements/folderIndex.md
+project/requirements/folderIndex.md
+    -> project/requirements/requirementsIndex.md
 
 project/adr/README.md
-project/adr/adrIndex.md
-    -> project/adr/folderIndex.md
+project/adr/folderIndex.md
+    -> project/adr/adrIndex.md
 ```
 
 Only deterministic, no-loss migrations are applied. Collisions, ambiguous

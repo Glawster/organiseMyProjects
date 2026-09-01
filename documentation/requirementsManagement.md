@@ -15,14 +15,15 @@ and maintaining requirements.
 - Keep transient implementation status solely in
   `project/currentIncrement.md`.
 - Use Git history for delivery history rather than rewriting completed records.
-- `README.md` is reserved for the repository root. Directory indexes use
-  `folderIndex.md` only when a directory genuinely needs an index.
+- `README.md` is reserved for the repository root.
+- When a directory genuinely needs an index, derive its filename as
+  `<folderName>Index.md`.
 
 ## Authoritative locations
 
 ```text
 project/requirements/
-├── folderIndex.md
+├── requirementsIndex.md
 ├── features/
 │   └── 003-viewManagement.md
 ├── prompt/
@@ -32,22 +33,23 @@ project/requirements/
     └── requirement.md
 ```
 
-- `project/requirements/folderIndex.md` is the requirements index and next-ID
-  authority.
+- `project/requirements/requirementsIndex.md` is the requirements index and
+  next-ID authority.
 - `project/requirements/features/` contains every requirement specification at
   every lifecycle stage.
 - `project/requirements/prompt/` contains one or more flat prompt files per
   requirement plus optional shared support directories such as `adapters/`.
 - `project/requirements/templates/` contains approved requirement templates.
 - Significant decisions belong in `project/adr/` and are linked from affected
-  requirements.
+  requirements. Its index is `project/adr/adrIndex.md`.
 
 Do not create a per-requirement or per-prompt directory merely to hold a
-`README.md`, `folderIndex.md`, `prompt.md`, or one specification/prompt file.
+`README.md`, an index file, `prompt.md`, or one specification/prompt file.
 
 ## Requirement identification and naming
 
-Allocate the next number from `project/requirements/folderIndex.md` and create:
+Allocate the next number from `project/requirements/requirementsIndex.md` and
+create:
 
 ```text
 project/requirements/features/nnn-requirementName.md
@@ -67,7 +69,7 @@ Rules:
 - The filename and identifier do not change when lifecycle status changes.
 - Repository-specific prefixes may be used in external tools but are not part
   of the OMP filename.
-- Individual requirements are named Markdown files, not folder indexes.
+- Individual requirements are named Markdown files, not directory indexes.
 
 ## Prompt naming
 
@@ -145,8 +147,8 @@ Add measurable non-functional constraints only when they apply.
 ### 1. Capture
 
 Search existing records for duplicates. Allocate the next number from
-`folderIndex.md`, create the requirement and its primary prompt, add the index
-row with `ToDo`, and record the requirement's origin.
+`requirementsIndex.md`, create the requirement and its primary prompt, add the
+index row with `ToDo`, and record the requirement's origin.
 
 ### 2. Refine and agree
 
@@ -156,7 +158,7 @@ embedding their rationale in the requirement.
 
 ### 3. Start delivery
 
-Set both the requirement record and its row in `folderIndex.md` to
+Set both the requirement record and its row in `requirementsIndex.md` to
 `InProgress`. Record the active delivery state in
 `project/currentIncrement.md`.
 
@@ -174,8 +176,8 @@ tags and releases remain the delivery history.
 
 ## Requirements index
 
-`project/requirements/folderIndex.md` contains the traceability matrix using
-these columns:
+`project/requirements/requirementsIndex.md` contains the traceability matrix
+using these columns:
 
 | Column | Purpose |
 | --- | --- |
@@ -206,8 +208,8 @@ requirements.
 
 A requirement defines the outcome and acceptance evidence. An ADR records a
 consequential implementation or project-shaping decision. ADR directory
-navigation and local instructions use `project/adr/folderIndex.md` when needed;
-individual ADRs remain named numbered files.
+navigation and local instructions use `project/adr/adrIndex.md`; individual
+ADRs remain named numbered files.
 
 One ADR may support several requirements and one requirement may depend on
 several ADRs. Link both directions where useful; do not duplicate rationale.
@@ -225,8 +227,9 @@ A prompt should identify:
 - the expected handoff evidence.
 
 Shared agent adapters may live under
-`project/requirements/prompt/adapters/`. That shared support directory may use a
-`folderIndex.md` only if it genuinely needs directory-level guidance.
+`project/requirements/prompt/adapters/`. If that directory ever needs its own
+index, the filename would be `adaptersIndex.md`; do not create one unless the
+index has a real purpose.
 
 ## Change control
 
@@ -244,13 +247,15 @@ Recognised index migrations include:
 
 ```text
 project/requirements/README.md
-project/requirements/requirementsIndex.md
-    -> project/requirements/folderIndex.md
+project/requirements/folderIndex.md
+    -> project/requirements/requirementsIndex.md
 
 project/adr/README.md
-project/adr/adrIndex.md
-    -> project/adr/folderIndex.md
+project/adr/folderIndex.md
+    -> project/adr/adrIndex.md
 ```
+
+`requirementsIndex.md` and `adrIndex.md` are the canonical destinations.
 
 Recognised erroneous artifact forms include a single deterministic file such as:
 
@@ -280,7 +285,7 @@ Before `InProgress`:
 - acceptance criteria are testable;
 - dependencies and decisions are linked;
 - verification exists; and
-- specification and `folderIndex.md` agree.
+- specification and `requirementsIndex.md` agree.
 
 Before `Completed`:
 
@@ -288,4 +293,4 @@ Before `Completed`:
 - tests cover relevant normal/boundary/failure behaviour;
 - documentation and ADR links are current;
 - no unresolved item is hidden by completion; and
-- specification and `folderIndex.md` agree.
+- specification and `requirementsIndex.md` agree.

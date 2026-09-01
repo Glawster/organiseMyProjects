@@ -330,8 +330,13 @@ class TestCreateProject:
         assert "## Handoff & Unresolved Context" not in incrementText
         assert (projectPath / "project" / "project.yaml").exists()
         assert (projectPath / "project" / "roadmap.md").exists()
-        assert (projectPath / "project" / "requirements" / "folderIndex.md").exists()
+        assert (
+            projectPath / "project" / "requirements" / "requirementsIndex.md"
+        ).exists()
         assert not (projectPath / "project" / "requirements" / "README.md").exists()
+        assert not (
+            projectPath / "project" / "requirements" / "folderIndex.md"
+        ).exists()
         assert (
             projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).exists()
@@ -339,8 +344,9 @@ class TestCreateProject:
             projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).read_text()
         assert "## Traceability" not in requirementText
-        assert (projectPath / "project" / "adr" / "folderIndex.md").exists()
+        assert (projectPath / "project" / "adr" / "adrIndex.md").exists()
         assert not (projectPath / "project" / "adr" / "README.md").exists()
+        assert not (projectPath / "project" / "adr" / "folderIndex.md").exists()
         assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
 
 

@@ -1,4 +1,4 @@
-"""OMP 0.6 requirement, prompt, and folder-index layout compatibility.
+"""OMP 0.6 requirement, prompt, and directory-index layout compatibility.
 
 The migration is intentionally conservative. It recognises only known OMP
 index shapes and deterministic per-requirement/per-prompt directory forms.
@@ -14,46 +14,35 @@ from typing import Callable
 _INDEX_MIGRATIONS = (
     (
         Path("project/requirements/README.md"),
-        Path("project/requirements/folderIndex.md"),
-        ("# Requirements", "Next available number:", "## Requirement index"),
+        Path("project/requirements/requirementsIndex.md"),
+        ("# Requirements", "Next available number:"),
     ),
     (
-        Path("project/requirements/requirementsIndex.md"),
         Path("project/requirements/folderIndex.md"),
-        ("# Requirements", "Next available number:", "## Requirement index"),
+        Path("project/requirements/requirementsIndex.md"),
+        ("# Requirements", "Next available number:"),
     ),
     (
         Path("project/adr/README.md"),
-        Path("project/adr/folderIndex.md"),
-        (
-            "# Architecture Decision Records",
-            "Next available number:",
-            "## Decision index",
-        ),
+        Path("project/adr/adrIndex.md"),
+        ("# Architecture decision records",),
     ),
     (
-        Path("project/adr/adrIndex.md"),
         Path("project/adr/folderIndex.md"),
-        (
-            "# Architecture Decision Records",
-            "Next available number:",
-            "## Decision index",
-        ),
+        Path("project/adr/adrIndex.md"),
+        ("# Architecture decision records",),
     ),
 )
 
 _REFERENCE_REPLACEMENTS = (
-    ("project/requirements/README.md", "project/requirements/folderIndex.md"),
-    (
-        "project/requirements/requirementsIndex.md",
-        "project/requirements/folderIndex.md",
-    ),
-    ("project/adr/README.md", "project/adr/folderIndex.md"),
-    ("project/adr/adrIndex.md", "project/adr/folderIndex.md"),
-    ("requirements/README.md", "requirements/folderIndex.md"),
-    ("requirements/requirementsIndex.md", "requirements/folderIndex.md"),
-    ("adr/README.md", "adr/folderIndex.md"),
-    ("adr/adrIndex.md", "adr/folderIndex.md"),
+    ("project/requirements/README.md", "project/requirements/requirementsIndex.md"),
+    ("project/requirements/folderIndex.md", "project/requirements/requirementsIndex.md"),
+    ("project/adr/README.md", "project/adr/adrIndex.md"),
+    ("project/adr/folderIndex.md", "project/adr/adrIndex.md"),
+    ("requirements/README.md", "requirements/requirementsIndex.md"),
+    ("requirements/folderIndex.md", "requirements/requirementsIndex.md"),
+    ("adr/README.md", "adr/adrIndex.md"),
+    ("adr/folderIndex.md", "adr/adrIndex.md"),
 )
 
 _REQUIREMENT_DIR_RE = re.compile(r"^(\d{3})-([A-Za-z][A-Za-z0-9_-]*)$")
@@ -79,7 +68,24 @@ def _textRead(path: Path) -> str | None:
 
 def _indexRecognised(path: Path, markers: tuple[str, ...]) -> bool:
     text = _textRead(path)
-    return text is not None and all(marker in text for marker in markers)
+    if text is None:
+        return False
+
+    folded = text.casefold()
+    if not all(marker.casefold() in folded for marker in markers):
+        return False
+
+    if path.parent.name == "requirements":
+        return "## requirement index" in folded or re.search(
+            r"\]\(features/\d{3}-[^)]+\.md\)", text
+        ) is not None
+
+    if path.parent.name == "adr":
+        return "## decision index" in folded or re.search(
+            r"\]\(\d{3}-[^)]+\.md\)", text
+        ) is not None
+
+    return False
 
 
 def _referencePathsIterate(basePath: Path):
@@ -101,10 +107,10 @@ def _referencesUpdate(basePath: Path, dryRun: bool, logger) -> None:
         if updated == text:
             continue
         if dryRun:
-            _loggerAction(logger, f"would update folder-index reference {path}")
+            _loggerAction(logger, f"would update directory-index reference {path}")
         else:
             path.write_text(updated, encoding="utf-8")
-            _loggerAction(logger, f"updated folder-index reference {path}")
+            _loggerAction(logger, f"updated directory-index reference {path}")
 
 
 def _indexMigrate(basePath: Path, dryRun: bool, logger) -> None:
@@ -123,15 +129,13 @@ def _indexMigrate(basePath: Path, dryRun: bool, logger) -> None:
         oldText = _textRead(oldPath)
         newText = _textRead(newPath) if newPath.is_file() else None
         if newText is not None and newText != oldText:
-            # A freshly scaffolded empty legacy index can be discarded when a
-            # real folderIndex already owns the directory state.
             scaffoldOnly = "Next available number: 001" in (
                 oldText or ""
             ) and not re.search(r"^\|\s*\d{3}\s*\|", oldText or "", re.MULTILINE)
             if not scaffoldOnly:
                 _loggerInfo(
                     logger,
-                    f"folder index migration skipped because target exists: {newPath}",
+                    f"directory index migration skipped because target exists: {newPath}",
                 )
                 continue
 
@@ -166,9 +170,16 @@ def _directoryArtifactMigrate(
         if match is None:
             continue
         entries = sorted(directory.iterdir())
-        candidates = [
-            entry for entry in entries if entry.name in {"README.md", "prompt.md"}
-        ]
+        if promptMode:
+            candidates = [
+                entry
+                for entry in entries
+                if entry.is_file() and entry.suffix.casefold() == ".md"
+            ]
+        else:
+            candidates = [
+                entry for entry in entries if entry.name in {"README.md", "prompt.md"}
+            ]
         if len(entries) != 1 or len(candidates) != 1:
             _loggerInfo(
                 logger,
@@ -319,7 +330,7 @@ def manageProjectPatchesInstall(manageProjectModule) -> None:
 
 
 def agentCheckPatchesInstall(agentCheckModule) -> None:
-    """Teach agent readiness checks about folderIndex.md and nested README policy."""
+    """Teach agent readiness checks about named directory indexes and nested README policy."""
     validator = agentCheckModule.AgentCheckValidator
     if getattr(validator, "_requirement004Patched", False):
         return
@@ -335,18 +346,16 @@ def agentCheckPatchesInstall(agentCheckModule) -> None:
             self.report.add(
                 "DOC-005",
                 agentCheckModule.Severity.FAILURE,
-                "README.md is reserved for the repository root; use folderIndex.md for directory indexes",
+                "README.md is reserved for the repository root; directory indexes use <folderName>Index.md",
                 readme,
             )
 
     def _checkRequirementsAndAdrs(self):
         reqDir = self.rootPath / "project" / "requirements"
-        indexPath = reqDir / "folderIndex.md"
-        legacyPaths = (reqDir / "README.md", reqDir / "requirementsIndex.md")
+        indexPath = reqDir / "requirementsIndex.md"
+        legacyPaths = (reqDir / "README.md", reqDir / "folderIndex.md")
         existingLegacy = next((path for path in legacyPaths if path.exists()), None)
         if existingLegacy is not None:
-            # DOC-005 reports README specifically; legacy named indexes remain
-            # migration targets. Run the old validation only for README shape.
             if existingLegacy.name == "README.md":
                 originalRequirements(self)
             return
@@ -368,7 +377,7 @@ def agentCheckPatchesInstall(agentCheckModule) -> None:
                 self.report.add(
                     "REQ-001",
                     agentCheckModule.Severity.FAILURE,
-                    f"Requirement '{featureName}' is not listed in project/requirements/folderIndex.md index",
+                    f"Requirement '{featureName}' is not listed in project/requirements/requirementsIndex.md index",
                     featurePath,
                 )
             try:
@@ -388,7 +397,7 @@ def agentCheckPatchesInstall(agentCheckModule) -> None:
                 self.report.add(
                     "REQ-002",
                     agentCheckModule.Severity.FAILURE,
-                    f"Status mismatch for {featureName}: folderIndex index states '{rowMatch.group(1).strip()}' but record states '{featureStatus}'",
+                    f"Status mismatch for {featureName}: requirements index states '{rowMatch.group(1).strip()}' but record states '{featureStatus}'",
                     featurePath,
                 )
 

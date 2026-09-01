@@ -10,7 +10,7 @@ Active
 
 ## Requirement
 
-[004 — Requirement, prompt and folder-index layout](requirements/features/004-requirementDocumentationLayout.md)
+[004 — Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md)
 
 Supporting completed work:
 
@@ -20,19 +20,21 @@ Supporting completed work:
 ## Objective
 
 Finish OMP 0.6 scaffold alignment by reserving `README.md` for the repository
-root, standardising directory indexes as `folderIndex.md`, keeping requirement
-specifications/prompts as flat numbered files, and safely cleaning legacy
-OMP-generated layouts.
+root, naming directory indexes as `<folderName>Index.md`, keeping requirement
+specifications/prompts as flat numbered files, and safely cleaning legacy or
+mistaken OMP-generated layouts.
 
 ## Scope
 
 - Update managed repository and requirements guidance to reserve `README.md`
   for repository root only.
-- Standardise OMP-managed directory indexes as `folderIndex.md` when an index is
-  genuinely needed.
-- Migrate the requirements and ADR indexes from nested `README.md` files to
-  `folderIndex.md`.
-- Update generated links, scaffold templates and checks that refer to the old
+- Derive OMP-managed directory index names from the containing folder when an
+  index is genuinely needed.
+- Use `project/requirements/requirementsIndex.md` and
+  `project/adr/adrIndex.md` as the canonical project-management indexes.
+- Make `manageProject --update` migrate recognised OMP-owned nested `README.md`
+  and mistaken `folderIndex.md` forms to those canonical names.
+- Update generated links, scaffold guidance and checks that refer to the wrong
   index paths.
 - Keep requirement specifications at
   `project/requirements/features/<nnn>-<requirementName>.md`.
@@ -46,7 +48,8 @@ OMP-generated layouts.
 ## Explicit Exclusions
 
 - Do not rename arbitrary user-owned or third-party README files.
-- Do not create `folderIndex.md` in every directory merely for consistency.
+- Do not create an index in every directory merely for consistency.
+- Do not use the literal filename `folderIndex.md` as the canonical convention.
 - Do not flatten genuine multi-file directories.
 - Do not delete files or directories unless OMP can establish safe ownership
   and migration conditions.
@@ -54,8 +57,9 @@ OMP-generated layouts.
 ## Verification
 
 - [ ] Managed guidance reserves `README.md` for repository root
-- [ ] Managed guidance defines `folderIndex.md` for directory indexes
+- [ ] Managed guidance defines `<folderName>Index.md` for directory indexes
 - [ ] Requirements and ADR index migration tests
+- [ ] `README.md` and mistaken `folderIndex.md` cleanup through manageProject
 - [ ] Generated-link and agent-check path updates
 - [ ] Requirement/prompt flat-file guidance and cleanup tests
 - [ ] Dry-run migration tests
@@ -71,6 +75,5 @@ OMP-generated layouts.
 
 ## Next
 
-Update the managed guides and scaffold/check implementations for the root-only
-README and `folderIndex.md` convention, then implement requirement 004's
-ownership-safe cleanup migrations.
+Finish scaffold/test alignment for `requirementsIndex.md` and `adrIndex.md`,
+then run the full requirement 004 validation gate.

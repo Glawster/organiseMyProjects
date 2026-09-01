@@ -1,5 +1,6 @@
 """Release-marker and managed-block helpers for OMP-owned files."""
 
+import re
 from pathlib import Path
 
 from organiseMyProjects.version import VERSION
@@ -36,6 +37,8 @@ POLICY_MANAGED_BLOCK_MERGE = "managed-block-merge"
 POLICY_PROJECT_OWNED_MISSING_ONLY = "project-owned-missing-only"
 
 _PYTHON_LIKE_SUFFIXES = {".py", ".sh"}
+_ASSIGNMENT_RE = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_.-]*)\s*=")
+_JSON_PROPERTY_RE = re.compile(r'^\s*"([^"]+)"\s*:')
 
 
 def managedContentBody(content: str) -> tuple[str, int]:
@@ -89,13 +92,120 @@ def managedBlockRender(inner: str, commentPrefix: str) -> str:
     )
 
 
+def _managedAssignmentDuplicatesRemove(
+    existing: str,
+    blockInner: str,
+    beginLine: str,
+    endLine: str,
+) -> str:
+    """Remove unmanaged scalar assignments now owned by the managed block."""
+    managedKeys = {
+        match.group(1)
+        for line in blockInner.splitlines()
+        if (match := _ASSIGNMENT_RE.match(line)) is not None
+    }
+    if not managedKeys:
+        return existing
+
+    kept = []
+    insideManagedBlock = False
+    for line in existing.splitlines(keepends=True):
+        stripped = line.strip()
+        if stripped == beginLine:
+            insideManagedBlock = True
+            kept.append(line)
+            continue
+        if stripped == endLine:
+            insideManagedBlock = False
+            kept.append(line)
+            continue
+
+        match = _ASSIGNMENT_RE.match(line)
+        if not insideManagedBlock and match is not None and match.group(1) in managedKeys:
+            continue
+        kept.append(line)
+
+    return "".join(kept)
+
+
+def _managedJsonDuplicatesRemove(
+    existing: str,
+    blockInner: str,
+    beginLine: str,
+    endLine: str,
+) -> str:
+    """Remove unmanaged JSON properties now owned by the managed block."""
+    managedKeys = {
+        match.group(1)
+        for line in blockInner.splitlines()
+        if (match := _JSON_PROPERTY_RE.match(line)) is not None
+    }
+    if not managedKeys:
+        return existing
+
+    kept = []
+    insideManagedBlock = False
+    skippingProperty = False
+    propertyIndent = 0
+
+    for line in existing.splitlines(keepends=True):
+        stripped = line.strip()
+        if stripped == beginLine:
+            insideManagedBlock = True
+            skippingProperty = False
+            kept.append(line)
+            continue
+        if stripped == endLine:
+            insideManagedBlock = False
+            kept.append(line)
+            continue
+
+        match = _JSON_PROPERTY_RE.match(line)
+        indent = len(line) - len(line.lstrip())
+
+        if skippingProperty:
+            if match is not None and indent <= propertyIndent:
+                skippingProperty = False
+            elif stripped == "}" and indent <= propertyIndent:
+                skippingProperty = False
+            else:
+                continue
+
+        if (
+            not insideManagedBlock
+            and match is not None
+            and match.group(1) in managedKeys
+        ):
+            propertyIndent = indent
+            skippingProperty = True
+            continue
+
+        kept.append(line)
+
+    return "".join(kept)
+
+
 def managedBlockMergeText(
     existing: str, blockInner: str, commentPrefix: str, *, jsonStyle: bool = False
 ) -> str:
-    """Replace or insert a managed block in existing file text."""
+    """Replace or insert a managed block and adopt matching settings."""
     block = managedBlockRender(blockInner, commentPrefix)
     beginLine = f"{commentPrefix} {MANAGED_BLOCK_BEGIN}"
     endLine = f"{commentPrefix} {MANAGED_BLOCK_END}"
+    if jsonStyle:
+        existing = _managedJsonDuplicatesRemove(
+            existing,
+            blockInner,
+            beginLine,
+            endLine,
+        )
+    else:
+        existing = _managedAssignmentDuplicatesRemove(
+            existing,
+            blockInner,
+            beginLine,
+            endLine,
+        )
     beginIndex = existing.find(beginLine)
     endIndex = existing.find(endLine)
     if beginIndex != -1 and endIndex != -1 and endIndex > beginIndex:

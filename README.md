@@ -7,8 +7,9 @@ and agent guidance.
 ## Documentation
 
 The root `README.md` is the repository documentation entry point. OMP 0.6
-reserves `README.md` for the repository root; directory indexes use
-`folderIndex.md` only where an index is actually needed.
+reserves `README.md` for the repository root. When a directory genuinely needs
+an index, its filename is derived from the folder name as
+`<folderName>Index.md`.
 
 The living guides are:
 
@@ -23,8 +24,8 @@ The living guides are:
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Repository Agent Notes](.github/additional-instructions.md)
-- [Architecture Decisions](project/adr/folderIndex.md)
-- [Requirements](project/requirements/folderIndex.md)
+- [Architecture Decisions](project/adr/adrIndex.md)
+- [Requirements](project/requirements/requirementsIndex.md)
 
 ## OMP 0.6 development direction
 
@@ -42,9 +43,9 @@ footballVision/
 ├── documentation/
 ├── project/
 │   ├── adr/
-│   │   └── folderIndex.md
+│   │   └── adrIndex.md
 │   ├── requirements/
-│   │   └── folderIndex.md
+│   │   └── requirementsIndex.md
 │   └── reviews/
 ├── footballVision/
 │   ├── __init__.py
@@ -139,11 +140,18 @@ changes. Existing project-owned application code, dependencies and application
 layout are preserved unless a specific deterministic migration proves a change
 safe.
 
-Requirement 004 cleanup includes recognised migrations from nested
-`README.md`, `requirementsIndex.md` and `adrIndex.md` index forms to
-`folderIndex.md`, plus safe flattening of provable per-requirement and
-per-prompt directory mistakes. Arbitrary nested README files are not renamed or
-deleted merely because of their filename.
+Requirement 004 cleanup includes recognised migration of OMP-owned nested
+`README.md` indexes and the mistaken `folderIndex.md` form to the canonical
+folder-derived names, including:
+
+```text
+project/requirements/requirementsIndex.md
+project/adr/adrIndex.md
+```
+
+It also safely flattens provable per-requirement and per-prompt directory
+mistakes. Arbitrary nested README files are not renamed or deleted merely
+because of their filename.
 
 For 0.6, recognised managed path relocations also include the guides moved from
 `.github/` to `documentation/`. A relocation may remove the obsolete path only
@@ -173,7 +181,8 @@ manageProject --check
 ```
 
 The check operation is read-only and validates the applicable OMP repository,
-documentation and agent conventions, including the one-root-README rule.
+documentation and agent conventions, including the one-root-README rule and
+canonical named directory indexes.
 
 ### Run Python and GUI naming checks
 
@@ -239,14 +248,14 @@ reruns, generated package importability and packaging/environment metadata.
 - Classes use PascalCase.
 - Constants use UPPER_CASE_WITH_UNDERSCORES.
 - `README.md` is reserved for repository root.
-- Use `folderIndex.md` for a directory index only when the directory needs one.
+- Use `<folderName>Index.md` when a directory genuinely needs an index.
 - Use the OMP logging utilities from `organiseMyProjects.logUtils` rather
   than ad-hoc output where application logging is required.
 - Use Black, Ruff, pytest and the OMP linter before release.
 - Requirements live under `project/requirements/features/`.
-- The requirements index is `project/requirements/folderIndex.md`.
+- The requirements index is `project/requirements/requirementsIndex.md`.
 - Architecture decisions live under `project/adr/` and their index is
-  `project/adr/folderIndex.md`.
+  `project/adr/adrIndex.md`.
 - Transient implementation status belongs only in
   `project/currentIncrement.md`.
 

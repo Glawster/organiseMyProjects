@@ -27,6 +27,7 @@ Usage:
 from . import agentCheck, logUtils, manageProject, runLinter
 from .guiNamingLinter import lintFile, lintGuiNaming
 from .requirementLayout import agentCheckPatchesInstall, manageProjectPatchesInstall
+from .requirementsPromptIndex import promptIndexPatchesInstall
 from .version import VERSION as __version__
 
 # OMP 0.6 requirement 004 changes directory-index and requirement/prompt layout
@@ -35,6 +36,7 @@ from .version import VERSION as __version__
 # receive the same deterministic migration behaviour.
 manageProjectPatchesInstall(manageProject)
 agentCheckPatchesInstall(agentCheck)
+promptIndexPatchesInstall(manageProject, agentCheck)
 
 __all__ = [
     "__version__",

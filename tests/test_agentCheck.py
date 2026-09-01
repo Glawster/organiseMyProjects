@@ -71,7 +71,7 @@ Testing context.
 """,
         encoding="utf-8",
     )
-    reqIndex = repo / "project" / "requirements" / "folderIndex.md"
+    reqIndex = repo / "project" / "requirements" / "requirementsIndex.md"
     reqIndex.write_text(
         """# Requirements
 
@@ -217,7 +217,7 @@ class TestAgentCheckValidator:
         assert any(f.ruleId == "TST-002" for f in report.failures)
 
     def testLegacyPromptInfixFails(self, validRepo: Path):
-        reqIndex = validRepo / "project" / "requirements" / "folderIndex.md"
+        reqIndex = validRepo / "project" / "requirements" / "requirementsIndex.md"
         content = reqIndex.read_text(encoding="utf-8")
         reqIndex.write_text(
             content.replace("001-testFeature.md", "001-testFeature.prompt.md"),
@@ -271,7 +271,7 @@ class TestAgentCheckValidator:
         content = reqFile.read_text(encoding="utf-8")
         reqFile.write_text(content.replace("InProgress", "Completed"), encoding="utf-8")
 
-        reqIndex = validRepo / "project" / "requirements" / "folderIndex.md"
+        reqIndex = validRepo / "project" / "requirements" / "requirementsIndex.md"
         indexContent = reqIndex.read_text(encoding="utf-8")
         reqIndex.write_text(
             indexContent.replace("InProgress", "Completed"), encoding="utf-8"
@@ -282,7 +282,7 @@ class TestAgentCheckValidator:
         assert any(f.ruleId == "INC-002" for f in report.failures)
 
     def testRequirementsStatusMismatchFails(self, validRepo: Path):
-        reqIndex = validRepo / "project" / "requirements" / "folderIndex.md"
+        reqIndex = validRepo / "project" / "requirements" / "requirementsIndex.md"
         indexContent = reqIndex.read_text(encoding="utf-8")
         reqIndex.write_text(
             indexContent.replace("InProgress", "ToDo"), encoding="utf-8"

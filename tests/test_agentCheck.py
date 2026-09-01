@@ -21,7 +21,6 @@ def validRepo(tmp_path: Path) -> Path:
     repo = tmp_path / "myValidProject"
     createProject(repo, dryRun=False)
 
-    # Populate current increment and requirement with valid non-placeholder data
     reqFile = repo / "project" / "requirements" / "features" / "001-testFeature.md"
     reqFile.write_text(
         """# 001: Test feature
@@ -72,8 +71,8 @@ Testing context.
 """,
         encoding="utf-8",
     )
-    reqReadme = repo / "project" / "requirements" / "README.md"
-    reqReadme.write_text(
+    reqIndex = repo / "project" / "requirements" / "folderIndex.md"
+    reqIndex.write_text(
         """# Requirements
 
 Next available number: 002
@@ -122,7 +121,7 @@ Deliver test feature.
 
 ## Relevant Files & Components
 
-- Implementation: `src/`
+- Implementation: `myValidProject/`
 - Tests: `tests/`
 - Documentation: `documentation/`
 
@@ -171,15 +170,13 @@ class TestAgentCheckValidator:
     """Unit tests for the validator rule engine."""
 
     def testValidRepoPasses(self, validRepo: Path):
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert report.isSuccess
         assert len(report.failures) == 0
 
     def testMissingAgentsMdFails(self, validRepo: Path):
         (validRepo / "AGENTS.md").unlink()
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert not report.isSuccess
         assert any(f.ruleId == "ENT-001" for f in report.failures)
 
@@ -220,9 +217,9 @@ class TestAgentCheckValidator:
         assert any(f.ruleId == "TST-002" for f in report.failures)
 
     def testLegacyPromptInfixFails(self, validRepo: Path):
-        reqReadme = validRepo / "project" / "requirements" / "README.md"
-        content = reqReadme.read_text(encoding="utf-8")
-        reqReadme.write_text(
+        reqIndex = validRepo / "project" / "requirements" / "folderIndex.md"
+        content = reqIndex.read_text(encoding="utf-8")
+        reqIndex.write_text(
             content.replace("001-testFeature.md", "001-testFeature.prompt.md"),
             encoding="utf-8",
         )
@@ -233,10 +230,18 @@ class TestAgentCheckValidator:
 
     def testMissingReadmeFails(self, validRepo: Path):
         (validRepo / "README.md").unlink()
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert not report.isSuccess
         assert any(f.ruleId == "DOC-001" for f in report.failures)
+
+    def testNestedReadmeFails(self, validRepo: Path):
+        nestedReadme = validRepo / "documentation" / "topic" / "README.md"
+        nestedReadme.parent.mkdir(parents=True)
+        nestedReadme.write_text("# Topic\n", encoding="utf-8")
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        assert any(f.ruleId == "DOC-005" for f in report.failures)
 
     def testDeadMarkdownLinkFails(self, validRepo: Path):
         docFile = validRepo / "documentation" / "architecture.md"
@@ -244,8 +249,7 @@ class TestAgentCheckValidator:
             "# Architecture\n\nSee [non-existent](nonExistent.md)",
             encoding="utf-8",
         )
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert not report.isSuccess
         assert any(f.ruleId == "DOC-002" for f in report.failures)
 
@@ -256,8 +260,7 @@ class TestAgentCheckValidator:
             content.replace("001-testFeature.md", "999-nonExistent.md"),
             encoding="utf-8",
         )
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert not report.isSuccess
         assert any(f.ruleId == "INC-002" for f in report.failures)
 
@@ -268,25 +271,24 @@ class TestAgentCheckValidator:
         content = reqFile.read_text(encoding="utf-8")
         reqFile.write_text(content.replace("InProgress", "Completed"), encoding="utf-8")
 
-        # Also update README table so REQ-002 doesn't trigger
-        reqReadme = validRepo / "project" / "requirements" / "README.md"
-        rContent = reqReadme.read_text(encoding="utf-8")
-        reqReadme.write_text(
-            rContent.replace("InProgress", "Completed"), encoding="utf-8"
+        reqIndex = validRepo / "project" / "requirements" / "folderIndex.md"
+        indexContent = reqIndex.read_text(encoding="utf-8")
+        reqIndex.write_text(
+            indexContent.replace("InProgress", "Completed"), encoding="utf-8"
         )
 
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert not report.isSuccess
         assert any(f.ruleId == "INC-002" for f in report.failures)
 
     def testRequirementsStatusMismatchFails(self, validRepo: Path):
-        reqReadme = validRepo / "project" / "requirements" / "README.md"
-        rContent = reqReadme.read_text(encoding="utf-8")
-        reqReadme.write_text(rContent.replace("InProgress", "ToDo"), encoding="utf-8")
+        reqIndex = validRepo / "project" / "requirements" / "folderIndex.md"
+        indexContent = reqIndex.read_text(encoding="utf-8")
+        reqIndex.write_text(
+            indexContent.replace("InProgress", "ToDo"), encoding="utf-8"
+        )
 
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert not report.isSuccess
         assert any(f.ruleId == "REQ-002" for f in report.failures)
 
@@ -300,8 +302,7 @@ class TestAgentCheckValidator:
             encoding="utf-8",
         )
 
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert not report.isSuccess
         assert any(f.ruleId == "REQ-003" for f in report.failures)
 
@@ -319,12 +320,10 @@ Active
 """,
             encoding="utf-8",
         )
-        validator = AgentCheckValidator(validRepo)
-        report = validator.runAll()
+        report = AgentCheckValidator(validRepo).runAll()
         assert any(f.ruleId == "INC-004" for f in report.warnings)
 
     def testCliStrictExecution(self, validRepo: Path, monkeypatch):
-        # In strict mode, warning makes it fail
         incFile = validRepo / "project" / "currentIncrement.md"
         incFile.write_text(
             """# Current Development Increment
@@ -339,10 +338,7 @@ Active
         )
 
         monkeypatch.setattr(sys, "argv", ["agentCheck", str(validRepo), "--strict"])
-        exitCode = main()
-        assert exitCode == 1
+        assert main() == 1
 
-        # Non-strict mode with warnings returns 0
         monkeypatch.setattr(sys, "argv", ["agentCheck", str(validRepo)])
-        exitCode = main()
-        assert exitCode == 0
+        assert main() == 0

@@ -11,7 +11,7 @@ Main components:
 - manageProject: Project scaffolding tool (package utility)
 - guiNamingLinter: Naming convention checker (package utility)
 - runLinter: Linter CLI interface (template + package utility)
-- logUtils: Logging utility (package utility only)
+- logUtils: Logging utility (package utility)
 
 Template files (copied to new projects):
 - globalVars.py, baseFrame.py, frameTemplate.py, statusFrame.py
@@ -20,13 +20,21 @@ Template files (copied to new projects):
 
 Usage:
     from organiseMyProjects import manageProject, runLinter
-    from organiseMyProjects.logUtils import getLogger, thisApplication
+    from organiseMyProjects.logUtils import getLogger, setApplication
 """
 
 # Expose main functionality for programmatic use
 from . import agentCheck, logUtils, manageProject, runLinter
 from .guiNamingLinter import lintFile, lintGuiNaming
+from .requirementLayout import agentCheckPatchesInstall, manageProjectPatchesInstall
 from .version import VERSION as __version__
+
+# OMP 0.6 requirement 004 changes directory-index and requirement/prompt layout
+# while preserving the established project-management implementation. Install
+# the compatibility hooks once at package import so CLI and programmatic callers
+# receive the same deterministic migration behaviour.
+manageProjectPatchesInstall(manageProject)
+agentCheckPatchesInstall(agentCheck)
 
 __all__ = [
     "__version__",

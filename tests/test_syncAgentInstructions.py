@@ -15,6 +15,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import syncAgentInstructions as sci
+from organiseMyProjects.managedContent import SYNC_COMMENT
 
 
 def testMainInitialisesSharedLoggingContext(monkeypatch):
@@ -68,7 +69,15 @@ class TestBuildTargetContent:
     def testPrependsSyncComment(self):
         """Sync comment should be prepended to source content."""
         result = sci.buildTargetContent("# Title\n\nBody text.\n")
-        assert result.startswith(sci.SYNC_COMMENT)
+        assert result.startswith(SYNC_COMMENT)
+
+    def testPythonTargetUsesHashComment(self):
+        """Python runtime modules must not receive an HTML sync comment."""
+        result = sci.buildTargetContent(
+            'VERSION = "0.6"\n', targetPath="tests/runLinter.py"
+        )
+        assert result.startswith("# synced from Glawster/organiseMyProjects")
+        assert "<!--" not in result
 
     def testSourceContentPreserved(self):
         """Original source content should appear after the sync comment."""
@@ -139,6 +148,12 @@ class TestSyncSpecs:
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
         releaseSpec = specsByTarget["documentation/howToRelease.md"]
         assert releaseSpec["sourceFile"].name == "howToRelease.md"
+
+    def testIncludesTestingProcess(self):
+        """The shared testing process should be synced as documentation."""
+        specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
+        guideSpec = specsByTarget["documentation/testingProcess.md"]
+        assert guideSpec["sourceFile"].name == "testingProcess.md"
 
 
 class TestGetRemoteFile:

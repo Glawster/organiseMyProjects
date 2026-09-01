@@ -1,368 +1,290 @@
 # organiseMyProjects
 
-A Python toolkit to scaffold new projects with predefined structure, logging,
-GUI naming conventions, and enforceable coding standards.
+A Python toolkit for creating, maintaining and validating Glawster projects with
+a consistent repository structure, packaging model, logging, coding standards
+and agent guidance.
 
 ## Documentation
 
-The README is the canonical entry point for repo documentation. The living
-guides are:
+The root `README.md` is the repository documentation entry point. OMP 0.6
+reserves `README.md` for the repository root; directory indexes use
+`folderIndex.md` only where an index is actually needed.
+
+The living guides are:
 
 - [Developer Guide](documentation/developer.md)
 - [Git Guide](documentation/git.md)
 - [Release Guide](documentation/howToRelease.md)
 - [Release Notes](documentation/releaseNotes.md)
-- [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
-- [GUI Naming Linter Help](organiseMyProjects/HELP.md)
-- [Master Agent Instructions](.github/agent-instructions.md)
-- [Copilot Compatibility Instructions](.github/copilot-instructions.md)
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
 - [Testing Process](documentation/testingProcess.md)
+- [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
+- [GUI Naming Linter Help](organiseMyProjects/HELP.md)
+- [Master Agent Instructions](.github/agent-instructions.md)
 - [Repository Agent Notes](.github/additional-instructions.md)
+- [Architecture Decisions](project/adr/folderIndex.md)
+- [Requirements](project/requirements/folderIndex.md)
+
+## OMP 0.6 development direction
+
+OMP 0.6 makes the generated scaffold conform to the repository standards that
+OMP distributes.
+
+New Python projects use a root-level Python package named after the project.
+OMP 0.6 does not use a generic `src/` directory for newly scaffolded projects.
+For example:
+
+```text
+footballVision/
+├── .github/
+├── .vscode/
+├── documentation/
+├── project/
+│   ├── adr/
+│   │   └── folderIndex.md
+│   ├── requirements/
+│   │   └── folderIndex.md
+│   └── reviews/
+├── footballVision/
+│   ├── __init__.py
+│   └── ...
+├── tests/
+├── pyproject.toml
+├── footballVisionEnvironment.yml
+├── README.md
+└── .gitignore
+```
+
+Every newly created Python project is an importable package. A root-level
+`main.py` is not part of the standard 0.6 scaffold. Libraries need no executable
+entry point; CLI and application entry points are declared according to project
+role and point into the project package.
+
+`pyproject.toml` is the authoritative packaged-Python metadata and dependency
+definition. New projects use a project-specific camelCase Conda environment
+file and an editable-install development workflow.
+
+OMP 0.6 also extends deterministic migrations to cover OMP-managed files and
+project scaffold indexes that move to new canonical paths. Obsolete legacy
+copies are removed only when OMP can establish a deterministic, no-loss
+migration; ambiguous or user-owned files are preserved.
+
+Requirements are flat numbered specifications, for example
+`project/requirements/features/003-viewManagement.md`. A single prompt uses the
+same filename under `project/requirements/prompt/`; multiple prompts use the
+existing `003a-`, `003b-` suffix convention.
+
+See
+[requirement 003](project/requirements/features/003-omp06ManagedMigrationAndScaffold.md)
+and
+[requirement 004](project/requirements/features/004-requirementDocumentationLayout.md)
+for the governing 0.6 behaviour.
 
 ## Features
 
-- 📁 Preview or create a full Python project scaffold using `createProject`
-- 🔄 Update an existing scaffold with `createProject <name> --update` or run
-  `createProject --update` inside the project directory
-- 🧪 Automatically include logging setup, dev tools, and layout
-- 🧼 Run a custom GUI naming linter with `runLinter` (default scans the current
-  project)
-- 🧰 Includes pre-commit support and code style guidelines
-- 🤖 Includes AI coding agent instructions for consistent development guidelines
+- Preview or create a standard Python project scaffold.
+- Update OMP-owned managed files without taking ownership of project code.
+- Migrate recognised legacy OMP structures through deterministic, safe rules.
+- Validate repository and agent readiness with a read-only check.
+- Synchronise shared OMP managed guidance.
+- Run OMP Python naming and markup checks.
+- Provide pre-commit and coding-standard guidance.
 
 ## Installation
 
+OMP itself is a packaged Python project. From its Conda environment, install it
+in editable mode for development:
+
 ```bash
-pip install .
+pip install -e .
 ```
 
 ## Usage
 
 ### Create a new project
 
-```bash
-# preview (safe default)
-createProject myNewProject
+Creation is preview-only unless `--confirm` is supplied:
 
-# create the project
+```bash
+createProject myNewProject
 createProject myNewProject --confirm
 ```
 
-Optional UI scaffolds can be installed at creation time:
+OMP 0.6 creation is governed by the standard package layout above. Optional UI
+or Qt scaffolds, where supported, belong within the project package rather than
+creating a second application-code ownership model.
 
 ```bash
-# add the tkinter starter package
 createProject myNewProject --ui --confirm
-
-# add the Qt/PySide6 starter package
 createProject myNewProject -qt --confirm
-
-# install both UI scaffolds
-createProject myNewProject --ui -qt --confirm
-```
-
-Creates:
-
-```text
-myNewProject/
-├── AGENTS.md                   # Agent discovery and instruction entry point
-├── .github/
-│   ├── agent-instructions.md    # Canonical AI coding agent guidelines
-│   └── copilot-instructions.md  # Generated GitHub Copilot compatibility copy
-├── documentation/
-│   ├── architecture.md         # Project architecture
-│   ├── howToRelease.md          # Release process
-│   ├── repositoryLayout.md      # Project file and directory placement rules
-│   ├── requirementsManagement.md # Shared requirements workflow
-│   └── testingProcess.md        # Shared testing process
-├── project/
-│   ├── currentIncrement.md      # Authoritative transient implementation status
-│   ├── project.yaml             # Project purpose and scope
-│   ├── roadmap.md               # Durable sequencing and priorities
-│   ├── adr/                     # Architecture decision records
-│   └── requirements/            # Requirements, prompts and templates
-├── src/
-│   ├── __init__.py
-│   └── globalVars.py              # Project constants template
-├── ui/
-│   ├── __init__.py
-│   ├── mainMenu.py               # Main application entry point
-│   ├── baseFrame.py              # Base GUI framework
-│   ├── frameTemplate.py          # Template for new frames
-│   ├── statusFrame.py            # Status display utilities
-│   └── styleUtils.py             # GUI styling utilities
-├── tests/
-│   └── runLinter.py              # Linter entry point
-├── main.py                       # Application main entry point
-├── requirements.txt              # Production dependencies
-├── dev-requirements.txt          # Development dependencies
-├── .gitignore                    # Git ignore patterns
-├── .pre-commit-config.yaml       # Pre-commit hooks configuration
-└── README.md                     # Project documentation
 ```
 
 ### Update an existing project
 
-Previewing is the default. Add `--confirm` to apply a creation, update or
-migration. Refreshing a project scaffold replaces managed files only when their
-substantive content changes. A release-marker-only difference does not rewrite
-the file. Managed
-instructional/config files such as `pytest.ini`, `.pre-commit-config.yaml`,
-`.vscode/settings.json`, `tests/runLinter.py`, and Agent instructions are
-refreshed in place. Existing project-owned application code, dependencies,
-source layout and UI/Qt modules are preserved, and update does not infer or add
-a new application or UI role. Provide the project name or run inside the target
-directory:
+Previewing is the default. Add `--confirm` to apply the update:
 
 ```bash
 # from anywhere
+createProject myExistingProject --update
 createProject myExistingProject --update --confirm
 
-# or from within the project directory
+# or from the project directory
+createProject --update
 createProject --update --confirm
-
 ```
 
-`createProject --update` no longer creates dated backup copies. If you want to
-undo scaffold refresh changes, inspect the changed files in VS Code's Source
-Control/Changed Files view and revert the files you do not want before
-committing.
+Updates refresh OMP-owned managed files only when their substantive content
+changes. Existing project-owned application code, dependencies and application
+layout are preserved unless a specific deterministic migration proves a change
+safe.
+
+Requirement 004 cleanup includes recognised migrations from nested
+`README.md`, `requirementsIndex.md` and `adrIndex.md` index forms to
+`folderIndex.md`, plus safe flattening of provable per-requirement and
+per-prompt directory mistakes. Arbitrary nested README files are not renamed or
+deleted merely because of their filename.
+
+For 0.6, recognised managed path relocations also include the guides moved from
+`.github/` to `documentation/`. A relocation may remove the obsolete path only
+when OMP ownership is established.
 
 When the target is the canonical `organiseMyProjects` source repository,
-`manageProject --update` is deliberately a no-op. OMP owns the templates and
-tool configuration, so applying its downstream scaffold back onto itself could
-overwrite canonical files or copy package tools into `tests/`.
+`manageProject --update` avoids applying downstream scaffold copies over their
+canonical sources.
 
-### Run the Python and GUI naming linter
+### Migrate an existing project
+
+Migration adds missing OMP project-management/context structures without
+blindly reorganising project-owned application code:
 
 ```bash
-# lint the whole project from its root
-runLinter
-
-# or specify a file or directory
-runLinter <file_or_dir>
+createProject --migrate
+createProject --migrate --confirm
 ```
 
-Checks Python naming, module-level function spacing, logging message style and
-framework-specific widget conventions. Test code is checked contextually:
-pytest fixtures, dunder methods, required framework overrides and private test
-helpers retain the names required by their contracts.
+Existing projects that use `src/` are not automatically moved into the 0.6
+root-package structure merely because OMP has adopted a new creation standard.
 
-Without markup flags, `runLinter` performs Python naming and GUI checks only.
-
-### Run markup lint checks and fixes
+### Check repository readiness
 
 ```bash
-# check markdown files without modifying them
+manageProject --check
+```
+
+The check operation is read-only and validates the applicable OMP repository,
+documentation and agent conventions, including the one-root-README rule.
+
+### Run Python and GUI naming checks
+
+```bash
+runLinter
+runLinter <file-or-directory>
+```
+
+### Run markup checks and fixes
+
+```bash
 runLinter --markup
-
-# check markdown files and apply auto-fixes where possible
 runLinter --markup --fix
-
-# run markup lint directly (fix mode by default)
 fixMarkup
-
-# run markup lint in check-only mode
 fixMarkup --check
 ```
 
-Markup linting uses `markdownlint-cli@0.31.1` via `npx`, ignores `MD013`
-(line-length), and ignores `build` and `.pytest_cache` by default.
+## Python packaging and environment policy
 
-When either markup flag is used, `runLinter` runs markup linting only.
-The legacy `--fix-markup` flag is still accepted for compatibility.
+OMP projects target Python 3.10 or later unless a project records a stricter
+runtime requirement.
 
-### Launch the generated application
+For newly scaffolded projects:
 
-After creating a project, install its dependencies and run the starter script:
+- prefer Conda for Python environment management;
+- use `<projectName>Environment.yml` with the project name in camelCase;
+- declare packaged dependencies in `pyproject.toml`;
+- install the package in editable mode for development;
+- document Conda setup before alternative `venv` instructions;
+- do not auto-install dependencies at runtime;
+- validate required external tools explicitly and fail fast when missing.
 
-```bash
-cd myNewProject
-pip install -r requirements.txt
-pip install -r dev-requirements.txt  # for development tools
-python main.py
-```
+A `requirements.txt` file may exist for a specific compatibility or deployment
+need, but it is not the primary dependency definition for new packaged OMP
+projects.
 
 ## Testing
 
-The project includes a comprehensive test suite using pytest for
-**development and validation of this project**. These tests are not part of the
-distributed package but are used to ensure the reliability of the project
-scaffolding and linting functionality.
+Run the OMP test suite with:
 
 ```bash
-# Run all tests
 pytest
+```
 
-# Run specific test file
+Useful focused commands include:
+
+```bash
 pytest tests/test_createProject.py
-
-# Run with verbose output
+pytest tests/test_requirementLayout.py
+pytest tests/test_integration.py
 pytest -v
-
-# Run with coverage (if pytest-cov is installed)
-pytest --cov=organiseMyProjects
-```
-
-### Test Structure
-
-- `tests/test_createProject.py` - Tests for project creation and updating
-- `tests/test_guiNamingLinter.py` - Tests for GUI naming convention linting
-- `tests/test_runLinter.py` - Tests for the linter CLI interface
-- `tests/test_integration.py` - End-to-end integration tests
-- `tests/test_logUtils.py` - Tests for logging utilities (including `drawBox`)
-- `tests/test_syncAgentInstructions.py` - Tests for Agent instructions sync
-- `tests/conftest.py` - Shared test fixtures and configuration
-
-**Note**: The `tests/` directory is for development and testing of this project
-itself. It is not included in the installed package, so end users won't get
-these test files when they install `organiseMyProjects`.
-
-## Development
-
-### Running Tests
-
-```bash
-# Install development dependencies
-pip install pytest black ruff
-
-# Run tests
-pytest
-
-# Run tests with coverage
-pytest --cov=organiseMyProjects --cov-report=html
-
-# Run static checks
 ruff check .
+black --check .
 ```
 
-### Code Quality
+OMP 0.6 scaffold and migration work must include regression tests for dry-run
+behaviour, confirmed updates, managed-file ownership protection, idempotent
+reruns, generated package importability and packaging/environment metadata.
 
-The project uses several tools to maintain code quality:
+## Development conventions
 
-- **Black**: Automatic code formatting
-- **pytest**: Comprehensive test suite
-- **Ruff**: Fast static analysis and linting
-- **pre-commit**: Git hooks for quality checks
-- **Custom GUI Linter**: Enforces GUI naming conventions
-- **Markdownlint CLI**: Markdown linting and automatic fixes via `fixMarkup`
+- Functions and variables use camelCase.
+- Classes use PascalCase.
+- Constants use UPPER_CASE_WITH_UNDERSCORES.
+- `README.md` is reserved for repository root.
+- Use `folderIndex.md` for a directory index only when the directory needs one.
+- Use the OMP logging utilities from `organiseMyProjects.logUtils` rather
+  than ad-hoc output where application logging is required.
+- Use Black, Ruff, pytest and the OMP linter before release.
+- Requirements live under `project/requirements/features/`.
+- The requirements index is `project/requirements/folderIndex.md`.
+- Architecture decisions live under `project/adr/` and their index is
+  `project/adr/folderIndex.md`.
+- Transient implementation status belongs only in
+  `project/currentIncrement.md`.
 
-### Pre-commit Hooks
+## Shared runtime infrastructure
 
-After creating a project, pre-commit hooks are automatically installed to:
+Runtime helpers such as logging live in the `organiseMyProjects` package.
+Applications import `from organiseMyProjects.logUtils import getLogger`.
 
-- Format code with Black
-- Run the custom GUI naming linter
-- Ensure code quality before commits
+## Sync agent instructions and managed guidance
 
-## Project Guidelines
+`organiseMyProjects` is the canonical source for shared agent guidance and
+managed documentation. `syncAgentInstructions.py` distributes those managed
+files to eligible repositories.
 
-### Naming Conventions
-
-- **Functions and Variables**: camelCase (e.g., `processFiles`, `userName`)
-- **Classes**: PascalCase (e.g., `MainFrame`, `ContactSheetFrame`)
-- **Constants**: UPPERCASE_WITH_UNDERSCORES (e.g., `WINDOW_WIDTH`,
-  `MAX_RETRIES`)
-- **GUI Components**: Prefixed naming (e.g., `btnSave`, `lblStatus`, `frmMain`)
-
-### GUI Component Prefixes
-
-- `btn` - Buttons (`btnSave`, `btnCancel`)
-- `lbl` - Labels (`lblStatus`, `lblInfo`)
-- `frm` - Frames (`frmMain`, `frmSettings`)
-- `entry` - Entry fields (`entryName`, `entryPassword`)
-- `txt` - Text widgets (`txtContent`, `txtNotes`)
-- `chk` - Checkboxes (`chkEnabled`, `chkVisible`)
-- `cmb` - Comboboxes (`cmbSource`, `cmbDestination`)
-- `hrz` - Horizontal widgets (`hrzSpacer`, `hrzLayout`)
-- `vrt` - Vertical widgets (`vrtSpacer`, `vrtLayout`)
-
-### Logging Standards
-
-- Use centralized logger from `logUtils.py`
-- All log messages in lowercase except ERROR messages
-- Log prefixes use four-character levels (`INFO`, `WARN`, `ERRO`, `CRIT`,
-  `DEBU`), and `manageProject` records the running OMP version at startup.
-- Format patterns:
-  - `"message..."` when starting a major step (`doing`)
-  - `"...message"` for an action or completed step (`action` / `done`)
-  - `"...key: value"` for reporting variables
-- With `dryRun=True`, `doing`, `action`, and `done` include the `[]` marker;
-  `info`, `value`, and `multiline` continue to report unmarked facts.
-- `doing`, `action`, and `done` accept an optional `dryRunMessage` used only in
-  dry-run mode, for example
-  `logger.done("project updated", "project update simulated")`.
-
-## Requirements
-
-- Python 3.10+
-- Development tools:
-  - `black`
-  - `pytest`
-  - `ruff`
-  - `pre-commit`
-
-## Package Structure
-
-The `organiseMyProjects` package includes:
-
-- `manageProject.py` - Main project scaffolding functionality
-- `guiNamingLinter.py` - GUI naming convention enforcement
-- `runLinter.py` - Command-line interface for the linter
-- `.github/agent-instructions.md` - Master AI coding agent development
-  guidelines
-- Template files for GUI components and utilities
-
-### Sync Agent Instructions to other repos
-
-`organiseMyProjects` is the single source of truth for
-`.github/agent-instructions.md`.
-`.github/copilot-instructions.md` is an identical compatibility copy for GitHub
-Copilot. Use `syncAgentInstructions.py` to push both instruction paths to all
-downstream Glawster repos. The same routine distributes the canonical
-repository layout to `documentation/repositoryLayout.md` and the requirements
-guide to `documentation/requirementsManagement.md`.
-
-Synced and scaffolded managed files include the release that last changed their
-substantive content. Marker-only version changes do not rewrite files, and
-duplicate legacy markers are collapsed to one. Release tags use `v` followed by
-`organiseMyProjects.version.VERSION`; release `0.5` is therefore tagged `v0.5`.
-
-Without `--repo`, every eligible repository is processed. `--repo` with no
-value opens a numbered selector; supplying a repository name avoids the prompt
-and is suitable for scripts.
+Examples:
 
 ```bash
-# Preview what would change (dry-run, default)
+# preview all eligible repositories
 python syncAgentInstructions.py
 
-# Choose one repository from a numbered list
+# choose one repository interactively
 python syncAgentInstructions.py --repo
 
-# Select one repository non-interactively
+# choose one repository explicitly
 python syncAgentInstructions.py --repo Glawster/myRepository
 
-# Actually push updates
+# apply changes
 GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm
-
-# Actually update one repository selected from the list
-GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --repo --confirm
-
-# Push updates, then create and merge conflict-free pull requests
-GITHUB_TOKEN=<your-pat> python syncAgentInstructions.py --confirm --merge
-
-# Pass the token directly and show extra detail
-python syncAgentInstructions.py --confirm --token <your-pat> --verbose
 ```
 
-Requires a GitHub Personal Access Token with `repo` scope. Supply it once via
-the `GITHUB_TOKEN` environment variable or the `--token` flag. The script saves
-it with user-only permissions in
-`~/.config/organiseMyProjects/syncAgentInstructions.json` and uses that value
-on future runs. An explicitly supplied token takes precedence over the stored
-value and refreshes it.
+Managed files contain deployment markers identifying their OMP source release.
+Marker-only version differences do not force a substantive rewrite.
+
+## Release process
+
+The maintained release procedure is in
+[documentation/howToRelease.md](documentation/howToRelease.md). Release notes
+are maintained in [documentation/releaseNotes.md](documentation/releaseNotes.md).
 
 ## License
 

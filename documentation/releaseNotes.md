@@ -1,5 +1,53 @@
 # Release notes
 
+## 0.6 — in development
+
+OMP 0.6 aligns generated project structure with the standards OMP distributes
+and makes established-project updates policy-driven.
+
+### Project scaffold
+
+- New OMP Python projects use a root-level Python package named after the
+  project rather than a generic `src/` directory.
+- A root-level `main.py` is no longer part of the standard scaffold; executable
+  entry points are role-dependent and live in or point into the project
+  package.
+- New projects are packaged through `pyproject.toml` and use a project-specific
+  camelCase Conda environment file with an editable-install development
+  workflow.
+- The generated project-management, documentation and test structure matches
+  `documentation/repositoryLayout.md`.
+
+### Managed-file migration
+
+- Deterministic migration covers managed path relocations as well as filename
+  renames.
+- The 0.5 to 0.6 migration covers the managed guides moved from `.github/` to
+  `documentation/`, including repository layout, requirements management and
+  release guidance.
+- Obsolete legacy copies may be removed only when OMP can establish that the
+  file is OMP-managed; ambiguous or user-owned files are preserved.
+- Dry-run output, explicit relocation logging and idempotent reruns are required
+  behaviours.
+
+### Project-role-aware updates
+
+- Every file `createProject` can deploy has exactly one ownership policy:
+  managed overwrite, managed-block merge, or project-owned missing-only.
+- Pytest, pre-commit, editor, environment and dependency files keep
+  project-owned content and merge only the marked `OMP-MANAGED` block.
+- Dry-run update output says `would create` or `would update` and ends with
+  an unambiguous simulation summary.
+
+### Adoption
+
+Existing project application layouts are not automatically reorganised merely
+to adopt 0.6. Ordinary update does not blindly move existing `src/` application
+code. Managed-file path cleanup is limited to files whose OMP ownership can be
+established safely.
+
+See requirement 003 for the governing 0.6 scaffold and migration behaviour.
+
 ## 0.5
 
 OMP 0.5 strengthens safe project updates, portable agent context and repository

@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+Completed
 
 ## Outcome
 
@@ -163,10 +163,9 @@ Use **Python package** for an importable directory containing `__init__.py` and
 ## Dependencies and decisions
 
 - Builds on the safe-update ownership principles from requirement 001.
-- Builds on the shared runtime `omp/` package introduced by requirement 002;
-  the project package and the synchronised `omp/` package remain separate
-  responsibilities.
+- Runtime logging continues to live in the `organiseMyProjects` package.
 - The no-`src/` root-package convention is an OMP 0.6 project-layout decision.
+- [ADR-003](../../adr/003-rootPackageScaffold.md) records that layout choice.
 
 ## Verification
 
@@ -181,13 +180,15 @@ Use **Python package** for an importable directory containing `__init__.py` and
 
 ## Traceability
 
-- Implementation: pending
-- Tests: pending
+- Implementation: `organiseMyProjects/manageProject.py`
+- Tests: `tests/test_omp06Scaffold.py`, `tests/test_createProject.py`
 - Documentation: this requirement plus OMP 0.6 documentation updates
 - Pull request: pending
-- Agent runs: None
+- Agent runs: v0.6 implementation
 
 ## Change history
 
 - 2026-08-31: created for OMP 0.6 from scaffold review and managed-file
   relocation backlog.
+- 2026-08-31: completed — root-package scaffold and managed-path relocation
+  delivered on `release/0.6`.

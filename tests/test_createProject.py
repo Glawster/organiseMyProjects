@@ -3,6 +3,8 @@ Tests for manageProject.py functionality.
 """
 
 import logging
+import os
+import subprocess
 import sys
 import types
 from pathlib import Path
@@ -11,17 +13,26 @@ from unittest.mock import patch
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.manageProject import (
+from organiseMyProjects.managedContent import (
     DEPLOYMENT_COMMENT,
-    DEV_REQUIREMENTS_CONTENT,
-    ENVIRONMENT_CONTENT,
+    POLICY_MANAGED_BLOCK_MERGE,
+    POLICY_MANAGED_OVERWRITE,
+    POLICY_PROJECT_OWNED_MISSING_ONLY,
+    PYTHON_DEPLOYMENT_COMMENT,
+)
+from organiseMyProjects.manageProject import (
+    FILE_OWNERSHIP,
     GITIGNORE_CONTENT,
     MAIN_PY_CONTENT,
+    MANAGED_BLOCK_TEMPLATES,
+    MANAGED_COPY_TEMPLATES,
     PRECOMMIT_CONTENT,
+    PROJECT_TEXT_TEMPLATES,
     PYTEST_INI_CONTENT,
-    PYTHON_DEPLOYMENT_COMMENT,
-    REQUIREMENTS_CONTENT,
+    QT_TEMPLATE_FILES,
+    UI_TEMPLATE_FILES,
     VSCODE_SETTINGS_CONTENT,
+    _environmentContentBuild,
     _projectIsCanonicalOmp,
     _projectRoleDetect,
     _pyprojectContentBuild,
@@ -64,13 +75,15 @@ class TestCreateProject:
 
         # Verify directory structure
         assert projectPath.exists()
-        assert (projectPath / "src").exists()
+        assert (projectPath / sample_project_name).exists()
         assert (projectPath / "tests").exists()
+        assert not (projectPath / "src").exists()
         assert not (projectPath / "logs").exists()
         assert (projectPath / ".github").exists()
 
         # Verify package init files
-        assert (projectPath / "src" / "__init__.py").exists()
+        assert (projectPath / sample_project_name / "__init__.py").exists()
+        assert not (projectPath / "main.py").exists()
         assert_no_gui_scaffolds(projectPath)
 
     def testCreateProjectCoreFiles(self, temp_dir, sample_project_name):
@@ -82,12 +95,13 @@ class TestCreateProject:
 
         # Verify core files exist
         assert (projectPath / ".gitignore").exists()
-        assert (projectPath / "requirements.txt").exists()
-        assert (projectPath / "dev-requirements.txt").exists()
-        assert (projectPath / "environment.yml").exists()
+        assert not (projectPath / "requirements.txt").exists()
+        assert not (projectPath / "dev-requirements.txt").exists()
+        assert not (projectPath / "environment.yml").exists()
+        assert (projectPath / f"{sample_project_name}Environment.yml").exists()
         assert (projectPath / "pyproject.toml").exists()
         assert (projectPath / "README.md").exists()
-        assert (projectPath / "main.py").exists()
+        assert not (projectPath / "main.py").exists()
         assert (projectPath / ".pre-commit-config.yaml").exists()
 
     def testCreateProjectFileContents(self, temp_dir, sample_project_name):
@@ -99,15 +113,16 @@ class TestCreateProject:
 
         # Verify file contents
         assert (projectPath / ".gitignore").read_text() == GITIGNORE_CONTENT
-        assert (projectPath / "requirements.txt").read_text() == REQUIREMENTS_CONTENT
         assert (
-            projectPath / "dev-requirements.txt"
-        ).read_text() == DEV_REQUIREMENTS_CONTENT
-        assert (projectPath / "environment.yml").read_text() == ENVIRONMENT_CONTENT
+            projectPath / f"{sample_project_name}Environment.yml"
+        ).read_text() == _environmentContentBuild(sample_project_name)
         assert (projectPath / "pyproject.toml").read_text() == _pyprojectContentBuild(
             sample_project_name
         )
-        assert (projectPath / "main.py").read_text() == MAIN_PY_CONTENT
+        assert (
+            f'packages = ["{sample_project_name}"]'
+            in (projectPath / "pyproject.toml").read_text()
+        )
         assert (
             projectPath / ".pre-commit-config.yaml"
         ).read_text() == PRECOMMIT_CONTENT
@@ -148,16 +163,17 @@ class TestCreateProject:
 
         # Verify template files are copied
         assert (
-            projectPath / "src" / "globalVars.py"
-        ).exists(), "globalVars.py should be copied to new projects"
+            projectPath / sample_project_name / "globalVars.py"
+        ).exists(), "globalVars.py should be copied into the project package"
         assert (projectPath / "tests" / "runLinter.py").exists()
         assert (projectPath / "tests" / "guiNamingLinter.py").exists()
         assert_no_gui_scaffolds(projectPath)
 
-        # Verify package utilities are NOT copied
+        assert not (projectPath / "src").exists()
+        assert not (projectPath / "omp").exists()
         assert not (
-            projectPath / "src" / "logUtils.py"
-        ).exists(), "logUtils.py should NOT be copied to new projects"
+            projectPath / sample_project_name / "logUtils.py"
+        ).exists(), "logUtils.py should NOT be copied into the project package"
         assert not (
             projectPath / "manageProject.py"
         ).exists(), "manageProject.py should NOT be copied to new projects"
@@ -169,12 +185,15 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath), includeUi=True)
 
-        assert (projectPath / "ui" / "__init__.py").exists()
-        assert (projectPath / "ui" / "styleUtils.py").exists()
-        assert (projectPath / "ui" / "mainMenu.py").exists()
-        assert (projectPath / "ui" / "baseFrame.py").exists()
-        assert (projectPath / "ui" / "frameTemplate.py").exists()
-        assert (projectPath / "ui" / "statusFrame.py").exists()
+        uiDir = projectPath / sample_project_name / "ui"
+        assert (uiDir / "__init__.py").exists()
+        assert (uiDir / "styleUtils.py").exists()
+        assert (uiDir / "mainMenu.py").exists()
+        assert (uiDir / "baseFrame.py").exists()
+        assert (uiDir / "frameTemplate.py").exists()
+        assert (uiDir / "statusFrame.py").exists()
+        assert (projectPath / sample_project_name / "__main__.py").exists()
+        assert not (projectPath / "ui").exists()
 
     def testCreateProjectQtTemplates(self, temp_dir, sample_project_name):
         """Test that Qt templates are copied only when requested."""
@@ -183,12 +202,15 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath), includeQt=True)
 
-        assert (projectPath / "qt" / "__init__.py").exists()
-        assert (projectPath / "qt" / "styleUtils.py").exists()
-        assert (projectPath / "qt" / "mainMenu.py").exists()
-        assert (projectPath / "qt" / "baseFrame.py").exists()
-        assert (projectPath / "qt" / "frameTemplate.py").exists()
-        assert (projectPath / "qt" / "statusFrame.py").exists()
+        qtDir = projectPath / sample_project_name / "qt"
+        assert (qtDir / "__init__.py").exists()
+        assert (qtDir / "styleUtils.py").exists()
+        assert (qtDir / "mainMenu.py").exists()
+        assert (qtDir / "baseFrame.py").exists()
+        assert (qtDir / "frameTemplate.py").exists()
+        assert (projectPath / sample_project_name / "__main__.py").exists()
+        assert not (projectPath / "qt").exists()
+        assert (qtDir / "statusFrame.py").exists()
 
     def testCreateProjectAlreadyExists(self, temp_dir, sample_project_name, caplog):
         """Test behavior when project directory already exists."""
@@ -308,7 +330,8 @@ class TestCreateProject:
         assert "## Handoff & Unresolved Context" not in incrementText
         assert (projectPath / "project" / "project.yaml").exists()
         assert (projectPath / "project" / "roadmap.md").exists()
-        assert (projectPath / "project" / "requirements" / "README.md").exists()
+        assert (projectPath / "project" / "requirements" / "folderIndex.md").exists()
+        assert not (projectPath / "project" / "requirements" / "README.md").exists()
         assert (
             projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).exists()
@@ -316,7 +339,8 @@ class TestCreateProject:
             projectPath / "project" / "requirements" / "templates" / "requirement.md"
         ).read_text()
         assert "## Traceability" not in requirementText
-        assert (projectPath / "project" / "adr" / "README.md").exists()
+        assert (projectPath / "project" / "adr" / "folderIndex.md").exists()
+        assert not (projectPath / "project" / "adr" / "README.md").exists()
         assert (projectPath / "project" / "adr" / "templates" / "adr.md").exists()
 
 
@@ -508,20 +532,23 @@ class TestUpdateProject:
     def testUpdateProjectPreservesExistingPytestIni(
         self, temp_dir, sample_project_name
     ):
-        """Project-owned pytest configuration is never overwritten."""
+        """Project-owned pytest configuration is preserved except the managed block."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
-        (projectPath / "pytest.ini").write_text("old content")
+        (projectPath / "pytest.ini").write_text("[pytest]\ntestpaths = custom\n")
 
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        assert (projectPath / "pytest.ini").read_text() == "old content"
+        text = (projectPath / "pytest.ini").read_text()
+        assert "testpaths = custom" in text
+        assert "python_files = test_[a-z]*.py" in text
+        assert "OMP-MANAGED-BEGIN" in text
 
     def testUpdateProjectPreservesExistingVscodeSettings(
         self, temp_dir, sample_project_name
     ):
-        """Project-owned editor configuration is never overwritten."""
+        """Project-owned editor configuration is preserved except the managed block."""
         projectPath = temp_dir / sample_project_name
         projectPath.mkdir()
         (projectPath / ".vscode").mkdir()
@@ -530,9 +557,10 @@ class TestUpdateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        assert (
-            projectPath / ".vscode" / "settings.json"
-        ).read_text() == '{"old": true}'
+        text = (projectPath / ".vscode" / "settings.json").read_text()
+        assert '"old": true' in text
+        assert "python.testing.pytestEnabled" in text
+        assert "OMP-MANAGED-BEGIN" in text
 
     def testUpdateProjectPreservesExistingUiTemplates(
         self, temp_dir, sample_project_name
@@ -811,6 +839,9 @@ class TestDryRun:
             updateProject(str(projectPath), dryRun=True)
 
         assert "updating project" in caplog.text
+        assert "would create" in caplog.text
+        assert "update simulation complete: no changes were applied" in caplog.text
+        assert "created " not in caplog.text.replace("would create", "")
 
     def testCopyIfNewerDryRunNoWrite(self, temp_dir):
         """Test that _copy_if_newer in dry-run mode does not write the destination file."""
@@ -941,3 +972,141 @@ class TestCliFlags:
             "token123",
             "--verbose",
         ]
+
+
+class TestOwnershipPolicy:
+    """Every deployed file has exactly one ownership policy."""
+
+    def testEveryDeclaredPathHasAKnownPolicy(self):
+        allowed = {
+            POLICY_MANAGED_OVERWRITE,
+            POLICY_MANAGED_BLOCK_MERGE,
+            POLICY_PROJECT_OWNED_MISSING_ONLY,
+        }
+        assert FILE_OWNERSHIP
+        assert set(FILE_OWNERSHIP.values()) <= allowed
+
+    def testTemplateListsAreCoveredByOwnership(self):
+        declared = set(FILE_OWNERSHIP)
+        for _src, destRel in MANAGED_COPY_TEMPLATES:
+            assert destRel.as_posix() in declared
+        for destRel, _content, _block, _prefix in MANAGED_BLOCK_TEMPLATES:
+            assert destRel.as_posix() in declared
+        for destRel, _content in PROJECT_TEXT_TEMPLATES:
+            assert destRel.as_posix() in declared
+        for name in UI_TEMPLATE_FILES:
+            assert f"ui/{name}" in declared
+        for name in QT_TEMPLATE_FILES:
+            assert f"qt/{name}" in declared
+
+    def testGeneratedMainImportsOrganiseMyProjectsLogging(self):
+        assert (
+            "from organiseMyProjects.logUtils import getLogger, setApplication"
+            in MAIN_PY_CONTENT
+        )
+
+
+class TestPackagedCliUpdate:
+    """Established packaged CLIs keep their layout across confirmed updates."""
+
+    def _packagedCliFixture(self, temp_dir: Path) -> Path:
+        projectPath = temp_dir / "packagedCli"
+        package = projectPath / "packagedCli"
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("")
+        (package / "cli.py").write_text("def main():\n    return 0\n")
+        (projectPath / "pyproject.toml").write_text(
+            '[project]\nname = "packagedCli"\n\n'
+            '[project.scripts]\ntool = "packagedCli.cli:main"\n'
+        )
+        (projectPath / "pytest.ini").write_text(
+            "[pytest]\ntestpaths = tests\npython_files = test_*.py\n"
+        )
+        testsPath = projectPath / "tests"
+        testsPath.mkdir()
+        (testsPath / "test_cli.py").write_text("def test_ok():\n    assert True\n")
+        return projectPath
+
+    def testPackagedCliUpdateDoesNotAddApplicationScaffold(self, temp_dir):
+        projectPath = self._packagedCliFixture(temp_dir)
+        originalPyproject = (projectPath / "pyproject.toml").read_text()
+
+        updateProject(str(projectPath))
+        updateProject(str(projectPath))
+
+        assert not (projectPath / "main.py").exists()
+        assert not (projectPath / "src").exists()
+        assert_no_gui_scaffolds(projectPath)
+        assert (projectPath / "pyproject.toml").read_text() == originalPyproject
+        assert not (projectPath / "omp").exists()
+        assert (
+            "python_files = test_[a-z]*.py" in (projectPath / "pytest.ini").read_text()
+        )
+        assert "[project.scripts]" in originalPyproject
+
+    def testSecondUpdateIsIdempotentForManagedRuntime(self, temp_dir):
+        projectPath = self._packagedCliFixture(temp_dir)
+        updateProject(str(projectPath))
+        firstPytest = (projectPath / "pytest.ini").read_text()
+        firstAgent = (projectPath / ".github" / "agent-instructions.md").read_text()
+
+        updateProject(str(projectPath))
+
+        assert (projectPath / "pytest.ini").read_text() == firstPytest
+        assert (projectPath / ".github" / "agent-instructions.md").read_text() == (
+            firstAgent
+        )
+        assert not (projectPath / "omp").exists()
+
+
+class TestImportAndPytestEvidence:
+    """Production-path checks for import safety and generated pytest config."""
+
+    def testCommandModulesImportWithoutCreatingLogFiles(self, tmp_path):
+        home = tmp_path / "home"
+        home.mkdir()
+        env = os.environ.copy()
+        env["HOME"] = str(home)
+        env["PYTHONPATH"] = str(Path(__file__).parent.parent)
+        script = (
+            "from organiseMyProjects.manageProject import createProject\n"
+            "from organiseMyProjects import runLinter\n"
+            "from organiseMyProjects.guiNamingLinter import lintFile\n"
+            "print('imported')\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            check=True,
+            env=env,
+            capture_output=True,
+            text=True,
+            cwd=str(Path(__file__).parent.parent),
+        )
+        assert "imported" in result.stdout
+        stateDir = home / ".local" / "state"
+        logFiles = list(stateDir.rglob("*.log")) if stateDir.exists() else []
+        assert logFiles == []
+
+    def testGeneratedPytestIniIsLoadedByPytest(self, temp_dir, sample_project_name):
+        projectPath = temp_dir / sample_project_name
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        testsPath = projectPath / "tests"
+        (testsPath / "test_collected.py").write_text(
+            "def test_ok():\n    assert True\n"
+        )
+        (testsPath / "test_Skipped.py").write_text(
+            "def test_should_not_collect():\n    assert True\n"
+        )
+
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest", "--collect-only", "-q"],
+            cwd=projectPath,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "test_collected.py" in result.stdout
+        assert "test_Skipped.py" not in result.stdout
+        assert "test_should_not_collect" not in result.stdout

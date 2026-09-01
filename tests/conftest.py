@@ -8,6 +8,17 @@ from pathlib import Path
 
 import pytest
 
+import organiseMyProjects.manageProject as manageProjectModule
+from organiseMyProjects.logUtils import getLogger, setApplication
+
+
+@pytest.fixture(autouse=True)
+def configureOmpLogging(tmp_path_factory):
+    """Give manageProject a real logger without touching the user's log dir."""
+    logDir = tmp_path_factory.mktemp("omp-logs")
+    setApplication("testOmp", logDir=logDir)
+    manageProjectModule.logger = getLogger(includeConsole=False)
+
 
 @pytest.fixture
 def testFilePath(tmp_path):

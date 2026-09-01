@@ -120,12 +120,12 @@ organiseMyProjects/
 
 **[PACKAGE]** - Package utilities that remain in organiseMyProjects and are NOT copied to new projects:
 - `manageProject.py` - The scaffolding tool itself
-- `logUtils.py` - Package-level logging utility (accessible via `from organiseMyProjects.logUtils import getLogger, thisApplication`)
+- `logUtils.py` - Centralized logging utility
 - `HELP.md` - Documentation
 - `guiNamingLinter.py` - Naming linter used by this repo and by installed downstream projects
 
 **[TEMPLATE]** - Template files that are copied to new projects:
-- `globalVars.py` - Global constants (copied to src/)
+- `globalVars.py` - Global constants (copied into the project package)
 - `.github/agent-instructions.md` - Canonical development guidelines copied into generated projects
 - `.github/copilot-instructions.md` - Identical compatibility copy for GitHub Copilot
 - `documentation/repositoryLayout.md` - Managed project layout definition synced at the same path
@@ -182,7 +182,7 @@ organiseMyProjects/
 
 ### logUtils.py
 - **Purpose**: Package-level logging utility
-- **Type**: PACKAGE UTILITY (NOT copied to new projects, but accessible via package import)
+- **Type**: PACKAGE UTILITY (NOT copied to new projects; accessible via package import)
 - **Key Functions**:
   - `setApplication(name, logDir=None)` - Set the active application context and create the log directory (`~/.local/state/<name>/` by default)
   - `getApplication()` - Return the active application name (raises `RuntimeError` if not set)
@@ -213,12 +213,11 @@ The package contains two types of files:
 
 1. **Package Utilities** - Stay in the organiseMyProjects package:
    - `manageProject.py` - The tool that creates/updates projects
-   - `logUtils.py` - Package-level logging (not distributed to projects)
-   - `globalVars.py` - Package constants
-   
+   - `guiNamingLinter.py` - Naming checker
+   - `logUtils.py` - Package-level logging
+
 2. **Template Files** - Copied to new projects via `createProject`:
    - `.github/agent-instructions.md` - Master Agent guidelines copied to the generated project's `.github/` directory
-   - `guiNamingLinter.py` - Naming checker provided by the installed `organiseMyProjects` package
    - `runLinter.py` - Linter CLI for the project
    - GUI framework files: `baseFrame.py`, `frameTemplate.py`, `statusFrame.py`, `mainMenu.py`, `styleUtils.py`
 

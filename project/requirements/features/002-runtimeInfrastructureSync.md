@@ -1,8 +1,8 @@
-# Runtime Infrastructure Synchronisation
+# 002: Runtime infrastructure synchronisation
 
 ## Status
 
-Proposed
+ToDo
 
 ## Objective
 
@@ -195,3 +195,18 @@ approved runtime infrastructure.
 9. The repository standards document defines `omp` as a reserved package name.
 10. Future shared runtime modules can be added without changing consuming
 projects beyond synchronisation.
+
+## Dependencies and decisions
+
+- [ADR-002](../../adr/002-ompRuntimePackage.md) proposed a sibling `omp/`
+  package and was superseded: the canonical runtime package is
+  `organiseMyProjects`.
+
+## Verification
+
+- Planned tests or review evidence.
+
+## Change history
+
+- 2026-08-31: a sibling `omp/` package was reverted; runtime remains in
+  `organiseMyProjects`.

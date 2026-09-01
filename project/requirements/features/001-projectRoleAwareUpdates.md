@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+Completed
 
 ## Outcome
 
@@ -82,8 +82,8 @@ has a UI.
 
 - The managed standards in `documentation/repositoryLayout.md` and
   `documentation/requirementsManagement.md`.
-- An architecture decision may be needed to define role metadata and the
-  ownership-policy manifest; pending refinement.
+- [ADR-001](../../adr/001-fileOwnershipPolicies.md) defines the three file
+  ownership policies.
 
 ## Verification
 
@@ -97,13 +97,16 @@ has a UI.
 
 ## Traceability
 
-- Implementation: pending
-- Tests: pending
-- Documentation: pending
+- Implementation: `organiseMyProjects/manageProject.py`,
+  `organiseMyProjects/managedContent.py`
+- Tests: `tests/test_createProject.py`, `tests/test_integration.py`
+- Documentation: `README.md`, `documentation/developer.md`, ADR-001
 - Pull request: pending
-- Agent runs: None
+- Agent runs: v0.6 implementation
 
 ## Change history
 
 - 2026-08-04: created — captured the upstream `createProject` follow-up
   requested for `organiseMyProjects`.
+- 2026-08-31: completed — ownership policies, dry-run wording, import-safe
+  logging and packaged-CLI update coverage delivered in OMP 0.6.

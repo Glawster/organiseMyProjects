@@ -1523,7 +1523,7 @@ def main(argv: list[str] | None = None):
     parsedArgv = _entryCommandInject(commandArgvExpand(rawArgv))
     parser = _parserBuild()
     args = parser.parse_args(parsedArgv)
-    dryRun = not getattr(args, "confirm", False)
+    dryRun = args.command != "check" and not getattr(args, "confirm", False)
     projectPath = _projectPathResolve(args, parser)
 
     logger = getLogger(
@@ -1531,7 +1531,8 @@ def main(argv: list[str] | None = None):
         dryRun=dryRun,
     )
     logger.value("OMP version", VERSION)
-    logger.doing(thisApplication)
+    if args.command != "check":
+        logger.doing(thisApplication)
 
     if args.command == "check":
         from organiseMyProjects.agentCheck import checkProject

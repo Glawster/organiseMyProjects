@@ -2,15 +2,11 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import pytest
 
-from organiseMyProjects.agentCheck import (
-    AgentCheckValidator,
-    checkProject,
-    main,
-)
+from organiseMyProjects.agentCheck import AgentCheckValidator, main
 from organiseMyProjects.manageProject import createProject
 from organiseMyProjects.version import VERSION
 
@@ -158,12 +154,24 @@ pytest
     return repo
 
 
-def testCheckProjectLogsOmpVersion(validRepo: Path):
-    """The manageProject check path records the running OMP release."""
-    with patch("organiseMyProjects.agentCheck.getLogger") as getLogger:
-        assert checkProject(validRepo) == 0
+def testCheckCommandLogsOmpVersionOnce(validRepo: Path, monkeypatch):
+    """The manageProject check command records the running OMP release once."""
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["manageProject", "check", "--project", str(validRepo)],
+    )
+    with patch("organiseMyProjects.manageProject.getLogger") as getLogger:
+        from organiseMyProjects.manageProject import main as manageProjectMain
 
-    getLogger.return_value.value.assert_any_call("OMP version", VERSION)
+        assert manageProjectMain() == 0
+
+    versionCalls = [
+        item
+        for item in getLogger.return_value.value.call_args_list
+        if item == call("OMP version", VERSION)
+    ]
+    assert versionCalls == [call("OMP version", VERSION)]
 
 
 class TestAgentCheckValidator:

@@ -568,6 +568,50 @@ class TestUpdateProject:
         assert "python.testing.pytestEnabled" in text
         assert "OMP-MANAGED-BEGIN" in text
 
+    def testUpdateProjectAdoptsExistingPreCommitHook(
+        self, temp_dir, sample_project_name
+    ):
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        (projectPath / ".pre-commit-config.yaml").write_text(
+            "repos:\n"
+            "  - repo: https://github.com/psf/black\n"
+            "    rev: 25.1.0\n"
+            "    hooks:\n"
+            "      - id: black\n"
+            "  - repo: local\n"
+            "    hooks:\n"
+            "      - id: gui-naming-linter\n"
+            "        entry: runLinter\n"
+        )
+
+        updateProject(str(projectPath))
+
+        text = (projectPath / ".pre-commit-config.yaml").read_text()
+        assert text.count("id: gui-naming-linter") == 1
+        assert text.count("repo: local") == 1
+        assert "OMP-MANAGED-BEGIN" in text
+        assert "id: black" in text
+
+    def testUpdateProjectAdoptsExistingDevRequirements(
+        self, temp_dir, sample_project_name
+    ):
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        (projectPath / "dev-requirements.txt").write_text(
+            "black\npytest\npre-commit\nruff\nmypy\n"
+        )
+
+        updateProject(str(projectPath))
+
+        text = (projectPath / "dev-requirements.txt").read_text()
+        assert text.count("black") == 1
+        assert text.count("pytest") == 1
+        assert text.count("pre-commit") == 1
+        assert text.count("ruff") == 1
+        assert "mypy" in text
+        assert "OMP-MANAGED-BEGIN" in text
+
     def testUpdateProjectPreservesExistingUiTemplates(
         self, temp_dir, sample_project_name
     ):
@@ -875,7 +919,10 @@ class TestCliFlags:
         """Test that manageProject records the running OMP release."""
         with patch("organiseMyProjects.manageProject.getLogger") as getLogger:
             with patch("organiseMyProjects.manageProject.createProject"):
-                with patch("sys.argv", ["manageProject.py", "demo"]):
+                with patch(
+                    "sys.argv",
+                    ["manageProject.py", "create", "--project", "demo"],
+                ):
                     createProjectMain()
 
         getLogger.return_value.value.assert_called_once_with("OMP version", VERSION)
@@ -884,7 +931,15 @@ class TestCliFlags:
         with patch("organiseMyProjects.manageProject.createProject") as mockCreate:
             with patch(
                 "sys.argv",
-                ["manageProject.py", "demo", "--ui", "-qt", "--confirm"],
+                [
+                    "manageProject.py",
+                    "create",
+                    "--project",
+                    "demo",
+                    "--ui",
+                    "-qt",
+                    "--confirm",
+                ],
             ):
                 createProjectMain()
 
@@ -899,7 +954,7 @@ class TestCliFlags:
         with patch("organiseMyProjects.manageProject.updateProject") as mockUpdate:
             with patch(
                 "sys.argv",
-                ["manageProject.py", "--update", "-qt", "--confirm"],
+                ["manageProject.py", "update", "-qt", "--confirm"],
             ):
                 createProjectMain()
 
@@ -910,11 +965,58 @@ class TestCliFlags:
             includeQt=True,
         )
 
+    def testMainTreatsUpdateWordAsUpdateCommand(self):
+        with patch("organiseMyProjects.manageProject.updateProject") as mockUpdate:
+            with patch("organiseMyProjects.manageProject.createProject") as mockCreate:
+                with patch(
+                    "sys.argv",
+                    ["manageProject.py", "update", "--confirm"],
+                ):
+                    createProjectMain()
+
+        mockCreate.assert_not_called()
+        mockUpdate.assert_called_once_with(
+            Path.cwd(),
+            dryRun=False,
+            includeUi=False,
+            includeQt=False,
+        )
+
+    def testMainTreatsCreateWordAsCreateCommand(self):
+        with patch("organiseMyProjects.manageProject.createProject") as mockCreate:
+            with patch(
+                "sys.argv",
+                ["manageProject.py", "create", "--project", "demo", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockCreate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=False,
+            includeQt=False,
+        )
+
     def testMainPassesLegacyProjectFlagToCreateProject(self):
         with patch("organiseMyProjects.manageProject.createProject") as mockCreate:
             with patch(
                 "sys.argv",
-                ["manageProject.py", "--project", "demo", "--confirm"],
+                ["manageProject.py", "create", "--project", "demo", "--confirm"],
+            ):
+                createProjectMain()
+
+        mockCreate.assert_called_once_with(
+            "demo",
+            dryRun=False,
+            includeUi=False,
+            includeQt=False,
+        )
+
+    def testCreateProjectEntryPointInjectsCreateCommand(self):
+        with patch("organiseMyProjects.manageProject.createProject") as mockCreate:
+            with patch(
+                "sys.argv",
+                ["createProject", "demo", "--confirm"],
             ):
                 createProjectMain()
 
@@ -929,7 +1031,7 @@ class TestCliFlags:
         with patch("organiseMyProjects.manageProject.updateProject") as mockUpdate:
             with patch(
                 "sys.argv",
-                ["manageProject.py", "--update", "--project", "demo", "--confirm"],
+                ["manageProject.py", "update", "--project", "demo", "--confirm"],
             ):
                 createProjectMain()
 
@@ -956,7 +1058,7 @@ class TestCliFlags:
                 "sys.argv",
                 [
                     "manageProject.py",
-                    "--sync",
+                    "sync",
                     "--confirm",
                     "--merge",
                     "--repo",

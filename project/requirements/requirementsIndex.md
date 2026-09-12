@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 007
+Next available number: 008
 
 ## Requirement index
 
@@ -12,3 +12,4 @@ Next available number: 007
 | 004 | [Requirement, prompt and directory-index layout](features/004-requirementDocumentationLayout.md) | Reserve `README.md` for repository root, use folder-derived `<folderName>Index.md` names for directory indexes, keep requirements/prompts as flat numbered files, and safely clean legacy generated layouts. | InProgress | [Prompt](prompt/004-requirementDocumentationLayout.md) | Pending |
 | 005 | [runLinter source directory discovery](features/005-runLinterSourceDiscovery.md) | Discover default lint targets from packaging metadata and root-level packages. | Completed | [Prompt](prompt/005-runLinterSourceDiscovery.md) | Not required |
 | 006 | [GUI naming method and constant rules](features/006-guiNamingMethodAndConstantRules.md) | Allow action-only class methods and `_UPPER_CASE` private constants. | Completed | [Prompt](prompt/006-guiNamingMethodAndConstantRules.md) | Not required |
+| 007 | [Linter whitelist and digit-aware naming](features/007-linterWhitelistAndDigitNames.md) | OMP 0.8: allow approved proper names/acronyms in logging case checks and digits within valid domainAction names without weakening the underlying rules. | ToDo | [Prompt](prompt/007-linterWhitelistAndDigitNames.md) | Not required |

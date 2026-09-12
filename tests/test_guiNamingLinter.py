@@ -47,7 +47,7 @@ class TestGuiNamingVisitor:
         # Test button naming pattern
         assert NAMING_RULES["Button"] == r"^btn[A-Z]\w+"
         assert NAMING_RULES["Handler"] == r"^on[A-Z]\w+"
-        assert NAMING_RULES["Constant"] == r"^[A-Z_]+$"
+        assert NAMING_RULES["Constant"] == r"^_?[A-Z][A-Z0-9_]*$"
         assert NAMING_RULES["Class"] == r"^_?[A-Z][a-zA-Z0-9]*$"
 
     def testWidgetClassesDefinition(self):
@@ -207,6 +207,7 @@ class TestNamingPatterns:
             ("cmbSelection", "Combobox"),
             ("onSaveClick", "Handler"),
             ("CONSTANT_VALUE", "Constant"),
+            ("_PRIVATE_CONSTANT", "Constant"),
             ("MyClass", "Class"),
         ],
     )
@@ -341,6 +342,98 @@ class TestSpecialCases:
         )
 
         assert fileCheck(str(sourceFile)) == []
+
+    def testClassMethodsAllowActionOnlyNames(self, temp_dir):
+        sourceFile = temp_dir / "project.py"
+        sourceFile.write_text(
+            "class Project:\n"
+            "    def update(self):\n"
+            "        return None\n\n"
+            "    @classmethod\n"
+            "    def load(cls):\n"
+            "        return cls()\n\n"
+            "    @staticmethod\n"
+            "    def save():\n"
+            "        return None\n\n"
+            "    def projectUpdate(self):\n"
+            "        return None\n"
+        )
+
+        violations = fileCheck(str(sourceFile))
+        names = {item[0] for item in violations}
+        assert names.isdisjoint({"update", "load", "save", "projectUpdate"})
+
+    def testClassMethodsRejectSnakeCase(self, temp_dir):
+        sourceFile = temp_dir / "project.py"
+        sourceFile.write_text(
+            "class Project:\n" "    def project_update(self):\n" "        return None\n"
+        )
+
+        violations = fileCheck(str(sourceFile))
+        assert any(
+            item[0] == "project_update" and "Method name" in item[1]
+            for item in violations
+        )
+
+    def testModuleLevelFunctionsStillRequireDomainAction(self, temp_dir):
+        sourceFile = temp_dir / "project.py"
+        sourceFile.write_text("def update():\n    return None\n")
+
+        violations = fileCheck(str(sourceFile))
+        assert any(
+            item[0] == "update" and "Function name (domainAction)" in item[1]
+            for item in violations
+        )
+
+        sourceFile.write_text("def projectUpdate():\n    return None\n")
+        assert not any(
+            item[0] == "projectUpdate" and "domainAction" in item[1]
+            for item in fileCheck(str(sourceFile))
+        )
+
+    def testNestedLocalFunctionsDoNotRequireDomainAction(self, temp_dir):
+        sourceFile = temp_dir / "test_media.py"
+        sourceFile.write_text(
+            "def testDownloadGeneratedMediaRejectsExpiredSession():\n"
+            "    def fail():\n"
+            "        raise RuntimeError('expired')\n"
+            "    fail()\n\n\n"
+            "def testDownloadGeneratedMediaRejectsEmptyOwnedLibrary():\n"
+            "    def empty():\n"
+            "        return []\n"
+            "    return empty()\n\n\n"
+            "def mp4WithCreation():\n"
+            "    def box():\n"
+            "        return b''\n"
+            "    return box()\n\n\n"
+            "class Catalogue:\n"
+            "    def catalogueRefresh(self):\n"
+            "        def boom():\n"
+            "            raise RuntimeError('known')\n"
+            "        boom()\n"
+        )
+
+        violations = fileCheck(str(sourceFile))
+        names = {item[0] for item in violations}
+        assert names.isdisjoint({"fail", "empty", "box", "boom"})
+
+    def testModuleLevelShortNamesStillRequireDomainAction(self, temp_dir):
+        sourceFile = temp_dir / "helpers.py"
+        sourceFile.write_text("def fail():\n    raise RuntimeError('expired')\n")
+
+        violations = fileCheck(str(sourceFile))
+        assert any(
+            item[0] == "fail" and "Function name (domainAction)" in item[1]
+            for item in violations
+        )
+
+    def testPrivateConstantsAreAllowed(self, temp_dir):
+        sourceFile = temp_dir / "settings.py"
+        sourceFile.write_text("_MAX_RETRIES = 3\nWINDOW_WIDTH = 800\n")
+
+        violations = fileCheck(str(sourceFile))
+        names = {item[0] for item in violations}
+        assert names.isdisjoint({"_MAX_RETRIES", "WINDOW_WIDTH"})
 
 
 class TestFrameworkDetection:

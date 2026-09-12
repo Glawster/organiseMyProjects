@@ -39,6 +39,10 @@ POLICY_PROJECT_OWNED_MISSING_ONLY = "project-owned-missing-only"
 _PYTHON_LIKE_SUFFIXES = {".py", ".sh"}
 _ASSIGNMENT_RE = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_.-]*)\s*=")
 _JSON_PROPERTY_RE = re.compile(r'^\s*"([^"]+)"\s*:')
+_HOOK_ID_RE = re.compile(r"(?m)^\s*- id:\s*(\S+)\s*$")
+_YAML_ITEM_START_RE = re.compile(r"^(\s*)- ")
+_YAML_PACKAGE_RE = re.compile(r"^\s*-\s+([A-Za-z0-9_.-]+)(?:\s*$|[<>=!~[])")
+_REQUIREMENT_NAME_RE = re.compile(r"^([A-Za-z0-9_.-]+)")
 
 
 def managedContentBody(content: str) -> tuple[str, int]:
@@ -82,13 +86,22 @@ def commentPrefixFor(path: Path) -> str:
     return "#"
 
 
+def _contentIndent(text: str) -> str:
+    """Return leading whitespace from the first non-empty line."""
+    for line in text.splitlines():
+        if line.strip():
+            return line[: len(line) - len(line.lstrip())]
+    return ""
+
+
 def managedBlockRender(inner: str, commentPrefix: str) -> str:
     """Return a managed block including begin and end markers."""
     innerText = inner.rstrip("\n")
+    indent = _contentIndent(innerText)
     return (
-        f"{commentPrefix} {MANAGED_BLOCK_BEGIN}\n"
+        f"{indent}{commentPrefix} {MANAGED_BLOCK_BEGIN}\n"
         f"{innerText}\n"
-        f"{commentPrefix} {MANAGED_BLOCK_END}\n"
+        f"{indent}{commentPrefix} {MANAGED_BLOCK_END}\n"
     )
 
 
@@ -121,7 +134,11 @@ def _managedAssignmentDuplicatesRemove(
             continue
 
         match = _ASSIGNMENT_RE.match(line)
-        if not insideManagedBlock and match is not None and match.group(1) in managedKeys:
+        if (
+            not insideManagedBlock
+            and match is not None
+            and match.group(1) in managedKeys
+        ):
             continue
         kept.append(line)
 
@@ -185,6 +202,135 @@ def _managedJsonDuplicatesRemove(
     return "".join(kept)
 
 
+def _requirementName(line: str) -> str | None:
+    """Return the distribution name from a requirements line, if any."""
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#") or stripped.startswith("-"):
+        return None
+    if re.match(r"^[A-Za-z_][A-Za-z0-9_.-]*\s+=", stripped):
+        return None
+    if re.match(r"^[A-Za-z0-9_.-]+\s*:", stripped):
+        return None
+    match = _REQUIREMENT_NAME_RE.match(stripped)
+    if match is None:
+        return None
+    return match.group(1).lower()
+
+
+def _managedRequirementDuplicatesRemove(
+    existing: str,
+    blockInner: str,
+    beginLine: str,
+    endLine: str,
+) -> str:
+    """Remove unmanaged requirement lines now owned by the managed block."""
+    managedNames = {
+        name
+        for line in blockInner.splitlines()
+        if (name := _requirementName(line)) is not None
+    }
+    if not managedNames:
+        return existing
+
+    kept = []
+    insideManagedBlock = False
+    for line in existing.splitlines(keepends=True):
+        stripped = line.strip()
+        if stripped == beginLine:
+            insideManagedBlock = True
+            kept.append(line)
+            continue
+        if stripped == endLine:
+            insideManagedBlock = False
+            kept.append(line)
+            continue
+        name = _requirementName(line)
+        if not insideManagedBlock and name is not None and name in managedNames:
+            continue
+        kept.append(line)
+    return "".join(kept)
+
+
+def _yamlItemEndIndex(lines: list[str], start: int, indent: int) -> int:
+    """Return the exclusive end index of a YAML sequence item."""
+    index = start + 1
+    while index < len(lines):
+        raw = lines[index]
+        if raw.strip() == "":
+            index += 1
+            continue
+        currentIndent = len(raw) - len(raw.lstrip())
+        if currentIndent <= indent:
+            break
+        index += 1
+    return index
+
+
+def _managedYamlDuplicatesRemove(
+    existing: str,
+    blockInner: str,
+    beginLine: str,
+    endLine: str,
+) -> str:
+    """Remove unmanaged YAML items now owned by the managed block."""
+    managedHookIds = {match.group(1) for match in _HOOK_ID_RE.finditer(blockInner)}
+    managedPackages = {
+        match.group(1).lower()
+        for line in blockInner.splitlines()
+        if (match := _YAML_PACKAGE_RE.match(line)) is not None
+    }
+    if not managedHookIds and not managedPackages:
+        return existing
+
+    managedIndent = None
+    for managedLine in blockInner.splitlines():
+        startMatch = _YAML_ITEM_START_RE.match(managedLine)
+        if startMatch is not None:
+            managedIndent = len(startMatch.group(1))
+            break
+
+    lines = existing.splitlines(keepends=True)
+    kept: list[str] = []
+    insideManagedBlock = False
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        stripped = line.strip()
+        if stripped == beginLine:
+            insideManagedBlock = True
+            kept.append(line)
+            index += 1
+            continue
+        if stripped == endLine:
+            insideManagedBlock = False
+            kept.append(line)
+            index += 1
+            continue
+
+        startMatch = _YAML_ITEM_START_RE.match(line)
+        if (
+            startMatch is not None
+            and not insideManagedBlock
+            and (managedIndent is None or len(startMatch.group(1)) == managedIndent)
+        ):
+            indent = len(startMatch.group(1))
+            end = _yamlItemEndIndex(lines, index, indent)
+            itemText = "".join(lines[index:end])
+            hookIds = {match.group(1) for match in _HOOK_ID_RE.finditer(itemText)}
+            packageMatch = _YAML_PACKAGE_RE.match(line)
+            packageName = (
+                packageMatch.group(1).lower() if packageMatch is not None else None
+            )
+            if hookIds & managedHookIds or (
+                packageName is not None and packageName in managedPackages
+            ):
+                index = end
+                continue
+        kept.append(line)
+        index += 1
+    return "".join(kept)
+
+
 def managedBlockMergeText(
     existing: str, blockInner: str, commentPrefix: str, *, jsonStyle: bool = False
 ) -> str:
@@ -206,14 +352,30 @@ def managedBlockMergeText(
             beginLine,
             endLine,
         )
-    beginIndex = existing.find(beginLine)
-    endIndex = existing.find(endLine)
-    if beginIndex != -1 and endIndex != -1 and endIndex > beginIndex:
-        newlineIndex = existing.find("\n", endIndex)
-        if newlineIndex == -1:
-            endIndex = len(existing)
-        else:
-            endIndex = newlineIndex + 1
+        existing = _managedRequirementDuplicatesRemove(
+            existing,
+            blockInner,
+            beginLine,
+            endLine,
+        )
+        existing = _managedYamlDuplicatesRemove(
+            existing,
+            blockInner,
+            beginLine,
+            endLine,
+        )
+    lines = existing.splitlines(keepends=True)
+    beginIndex = None
+    endIndex = None
+    offset = 0
+    for line in lines:
+        stripped = line.strip()
+        if beginIndex is None and stripped == beginLine:
+            beginIndex = offset
+        if stripped == endLine:
+            endIndex = offset + len(line)
+        offset += len(line)
+    if beginIndex is not None and endIndex is not None and endIndex > beginIndex:
         return existing[:beginIndex] + block + existing[endIndex:]
 
     if jsonStyle:

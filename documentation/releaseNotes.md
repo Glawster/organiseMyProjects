@@ -1,5 +1,39 @@
 # Release notes
 
+## 0.7 — in development
+
+OMP 0.7 improves default `runLinter` discovery for root-package repositories
+and relaxes class-method and private-constant naming.
+
+### Linter discovery
+
+- With no CLI targets, `runLinter` inspects `pyproject.toml` packaging
+  configuration, then a package directory matching the repository name, then
+  `src/`, `ui/`, `qt/` and `tests/`.
+- It does not lint the whole repository merely because `src/` is absent.
+- `.` is used only when no plausible source directory exists.
+- Duplicate discoveries are collapsed. Explicit targets still override
+  discovery.
+
+### Commands
+
+- `manageProject` uses commands: `create`, `update`, `check`, `migrate` and
+  `sync`.
+- `manageProject update -y` updates the current project; it does not create a
+  directory named `update`.
+- `create` requires `--project PROJECTNAME`.
+- `update`, `check` and `migrate` default to the current directory; pass
+  `--project PROJECTNAME` to target another directory.
+- Legacy flags such as `--update` and `--check` still map to those commands.
+
+### Naming
+
+- Class methods may use action-only names such as `Project.update()`.
+- Module-level functions still require `domainAction`.
+- Nested or local helpers may use ordinary descriptive names and are not
+  required to use `domainAction`.
+- Private constants such as `_MAX_RETRIES` are accepted.
+
 ## 0.6 — in development
 
 OMP 0.6 aligns generated project structure with the standards OMP distributes

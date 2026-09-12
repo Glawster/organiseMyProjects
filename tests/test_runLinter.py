@@ -11,7 +11,7 @@ import pytest
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.runLinter import _lintTarget, main
+from organiseMyProjects.runLinter import _lintTarget, lintTargetsDiscover, main
 
 
 class TestRunLinter:
@@ -258,6 +258,84 @@ class TestRunLinter:
                 main()
 
         assert exc.value.code == 2
+
+
+class TestLintTargetsDiscover:
+    """Unit tests for default source-directory discovery."""
+
+    def testConventionalSrcLayout(self, tempDir):
+        (tempDir / "src").mkdir()
+        (tempDir / "src" / "app.py").write_text("value = 1\n")
+
+        assert lintTargetsDiscover(tempDir) == ["src"]
+
+    def testRootLevelPackageMatchingRepositoryName(self, tempDir):
+        packageDir = tempDir / tempDir.name
+        packageDir.mkdir()
+        (packageDir / "__init__.py").write_text("")
+
+        assert tempDir.name in lintTargetsDiscover(tempDir)
+        assert "." not in lintTargetsDiscover(tempDir)
+
+    def testPyprojectPackagesFindWhere(self, tempDir):
+        (tempDir / "lib").mkdir()
+        (tempDir / "lib" / "pkg.py").write_text("value = 1\n")
+        (tempDir / "pyproject.toml").write_text(
+            '[tool.setuptools.packages.find]\nwhere = ["lib"]\n'
+        )
+
+        assert lintTargetsDiscover(tempDir) == ["lib"]
+
+    def testPyprojectExplicitPackageList(self, tempDir):
+        (tempDir / "footballVision").mkdir()
+        (tempDir / "footballVision" / "__init__.py").write_text("")
+        (tempDir / "pyproject.toml").write_text(
+            "[project]\n"
+            'name = "footballVision"\n\n'
+            "[tool.setuptools]\n"
+            'packages = ["footballVision"]\n'
+        )
+
+        assert lintTargetsDiscover(tempDir) == ["footballVision"]
+
+    def testSourcePackagePlusTests(self, tempDir):
+        (tempDir / "src").mkdir()
+        (tempDir / "tests").mkdir()
+
+        assert lintTargetsDiscover(tempDir) == ["src", "tests"]
+
+    def testConfiguredSourcePathThatDoesNotExist(self, tempDir):
+        (tempDir / "tests").mkdir()
+        (tempDir / "pyproject.toml").write_text(
+            '[tool.setuptools.packages.find]\nwhere = ["missingSrc"]\n'
+        )
+
+        assert lintTargetsDiscover(tempDir) == ["tests"]
+
+    def testDuplicateDiscoveriesAreCollapsed(self, tempDir):
+        (tempDir / "src").mkdir()
+        (tempDir / "pyproject.toml").write_text(
+            '[tool.setuptools.packages.find]\nwhere = ["src"]\n'
+        )
+
+        assert lintTargetsDiscover(tempDir) == ["src"]
+
+    def testFallbackToCurrentDirectory(self, tempDir):
+        (tempDir / "README.md").write_text("docs only\n")
+
+        assert lintTargetsDiscover(tempDir) == ["."]
+
+    def testExplicitTargetsBypassDiscovery(self, testFilePath):
+        testArgs = ["runLinter.py", str(testFilePath)]
+
+        with patch("sys.argv", testArgs):
+            with patch(
+                "organiseMyProjects.runLinter.lintTargetsDiscover"
+            ) as mockDiscover:
+                with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
+                    main()
+                    mockDiscover.assert_not_called()
+                    mockLintFile.assert_called_once_with(str(testFilePath))
 
 
 class TestIntegration:

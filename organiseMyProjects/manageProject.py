@@ -179,7 +179,7 @@ dependencies:
   - pip:
       - -e .[dev]
 """
-ENVIRONMENT_MANAGED_BLOCK = "- python>=3.10"
+ENVIRONMENT_MANAGED_BLOCK = "  - python>=3.10"
 
 
 def _packageNameFor(projectName: str | Path) -> str:
@@ -1267,126 +1267,264 @@ def updateProject(
         logger.info("update simulation complete: no changes were applied")
 
 
-def main():
+COMMANDS = ("check", "create", "migrate", "sync", "update")
+LEGACY_FLAG_COMMANDS = {
+    "--check": "check",
+    "--create": "create",
+    "-u": "update",
+    "--update": "update",
+    "--migrate": "migrate",
+    "--sync": "sync",
+}
+
+
+class _ManageProjectParser(argparse.ArgumentParser):
+    """Parser that reports unknown command words instead of project names."""
+
+    def error(self, message: str) -> None:
+        if "invalid choice:" in message:
+            message = message.replace("invalid choice:", "Unknown command:", 1)
+        super().error(message)
+
+
+def commandArgvExpand(argv: list[str]) -> list[str]:
+    """Normalise argv so the first token is a subcommand.
+
+    ``manageProject update -y`` is the update command. Legacy flags such as
+    ``--update`` are rewritten to that command. A directory that happens to
+    share a command name can still be passed as ``./update`` or
+    ``--project update``.
+    """
+    if not argv:
+        return argv
+    first = argv[0]
+    if first in COMMANDS:
+        return argv
+    if first in LEGACY_FLAG_COMMANDS:
+        return [LEGACY_FLAG_COMMANDS[first], *argv[1:]]
+    return argv
+
+
+def _entryCommandInject(argv: list[str]) -> list[str]:
+    """Infer create/update from the createProject and updateProject scripts."""
+    prog = Path(sys.argv[0]).stem
+    if prog == "createProject":
+        defaultCommand = "create"
+    elif prog == "updateProject":
+        defaultCommand = "update"
+    else:
+        return argv
+    if not argv or argv[0] not in COMMANDS:
+        argv = [defaultCommand, *argv]
+    return _createProjectNameToFlag(argv)
+
+
+def _createProjectNameToFlag(argv: list[str]) -> list[str]:
+    """Rewrite ``create <name>`` to ``create --project <name>``."""
+    if not argv or argv[0] != "create":
+        return argv
+    valueFlags = {"-p", "--project"}
+    skipValue = False
+    for index, token in enumerate(argv[1:], start=1):
+        if skipValue:
+            skipValue = False
+            continue
+        if token in valueFlags:
+            skipValue = True
+            continue
+        if token.startswith("-"):
+            continue
+        return argv[:index] + ["--project", token] + argv[index + 1 :]
+    return argv
+
+
+def _projectOptionAdd(
+    parser: argparse.ArgumentParser,
+    dest: str = "projectOption",
+    helpText: str = "Project directory name",
+) -> None:
+    """Add the first-class --project PROJECTNAME option."""
+    parser.add_argument(
+        "-p",
+        "--project",
+        dest=dest,
+        metavar="PROJECTNAME",
+        default=None,
+        help=helpText,
+    )
+
+
+def _parserBuild() -> argparse.ArgumentParser:
+    parser = _ManageProjectParser(
+        prog="manageProject",
+        description=(
+            "Create, update, check or sync project scaffolding. "
+            "Use commands: create, update, check, migrate, sync. "
+            "create requires --project PROJECTNAME. "
+            "update, check and migrate default to the current directory."
+        ),
+    )
+    _projectOptionAdd(parser, dest="projectFlag")
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True,
+        metavar="command",
+    )
+
+    confirmHelp = "execute changes (default is dry-run)"
+
+    createParser = subparsers.add_parser(
+        "create",
+        help="create a new project scaffold",
+    )
+    _projectOptionAdd(
+        createParser,
+        helpText="Project directory to create (required)",
+    )
+    createParser.add_argument(
+        "--ui",
+        action="store_true",
+        help="install tkinter UI templates in the project package",
+    )
+    createParser.add_argument(
+        "-qt",
+        "--qt",
+        action="store_true",
+        help="install Qt UI templates in the project package",
+    )
+    createParser.add_argument(
+        "-y",
+        "--confirm",
+        dest="confirm",
+        action="store_true",
+        help=confirmHelp,
+    )
+
+    updateParser = subparsers.add_parser(
+        "update",
+        help="refresh managed files in the current project",
+    )
+    _projectOptionAdd(
+        updateParser,
+        helpText="Project directory (default: current directory)",
+    )
+    updateParser.add_argument(
+        "--ui",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    updateParser.add_argument(
+        "-qt",
+        "--qt",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    updateParser.add_argument(
+        "-y",
+        "--confirm",
+        dest="confirm",
+        action="store_true",
+        help=confirmHelp,
+    )
+
+    migrateParser = subparsers.add_parser(
+        "migrate",
+        help="add missing project-management structures in the current project",
+    )
+    _projectOptionAdd(
+        migrateParser,
+        helpText="Project directory (default: current directory)",
+    )
+    migrateParser.add_argument(
+        "-y",
+        "--confirm",
+        dest="confirm",
+        action="store_true",
+        help=confirmHelp,
+    )
+
+    syncParser = subparsers.add_parser(
+        "sync",
+        help="sync shared instruction files to downstream repositories",
+    )
+    syncParser.add_argument(
+        "-y",
+        "--confirm",
+        dest="confirm",
+        action="store_true",
+        help=confirmHelp,
+    )
+    syncParser.add_argument(
+        "--merge",
+        action="store_true",
+        help="create and merge conflict-free sync pull requests",
+    )
+    syncParser.add_argument(
+        "--repo",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="OWNER/REPO",
+        help="sync one repository; omit value to choose from a numbered list",
+    )
+    syncParser.add_argument(
+        "--token",
+        default=None,
+        help="GitHub PAT (overrides GITHUB_TOKEN)",
+    )
+    syncParser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="show detailed output for each repository",
+    )
+
+    checkParser = subparsers.add_parser(
+        "check",
+        help="validate the current project's agent-readiness",
+    )
+    _projectOptionAdd(
+        checkParser,
+        helpText="Project directory (default: current directory)",
+    )
+    checkParser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat warnings as failures",
+    )
+    checkParser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Show detailed validation output",
+    )
+    return parser
+
+
+def _projectPathResolve(args, parser: argparse.ArgumentParser):
+    projectOption = getattr(args, "projectOption", None)
+    projectFlag = getattr(args, "projectFlag", None)
+    named = [value for value in (projectOption, projectFlag) if value is not None]
+    if len(set(named)) > 1:
+        parser.error("Use --project only once.")
+    projectNamed = named[0] if named else None
+    if args.command == "create" and projectNamed is None:
+        parser.error("create requires --project PROJECTNAME")
+    return projectNamed
+
+
+def main(argv: list[str] | None = None):
 
     global logger
 
     thisApplication = Path(__file__).stem
     setApplication(thisApplication)
 
-    parser = argparse.ArgumentParser(
-        description=(
-            "Create, update, or sync project scaffolding/instructions. "
-            "Pass the project positionally (preferred) or with --project for "
-            "compatibility."
-        )
-    )
-    parser.add_argument(
-        "--create",
-        action="store_true",
-        help="explicitly run create mode",
-    )
-    parser.add_argument(
-        "project",
-        nargs="?",
-        default=None,
-        help="Project directory name (preferred form; omit with --update to use CWD)",
-    )
-    parser.add_argument(
-        "-p",
-        "--project",
-        dest="projectOption",
-        default=None,
-        help=(
-            "Legacy named flag for the project directory name "
-            "(use the positional argument instead; retained for compatibility)"
-        ),
-    )
-    parser.add_argument(
-        "-u",
-        "--update",
-        action="store_true",
-        help="Refresh an existing project instead of creating a new one",
-    )
-    parser.add_argument(
-        "--migrate",
-        action="store_true",
-        help=(
-            "adopt missing OMP project-management/context structures without "
-            "creating application scaffolding or overwriting project-owned files"
-        ),
-    )
-    parser.add_argument(
-        "--sync",
-        action="store_true",
-        help="sync shared instruction files to downstream repositories",
-    )
-    parser.add_argument(
-        "--ui",
-        action="store_true",
-        help="install tkinter UI templates in a ui package",
-    )
-    parser.add_argument(
-        "-qt",
-        "--qt",
-        action="store_true",
-        help="install Qt UI templates in a qt package",
-    )
-    parser.add_argument(
-        "-y",
-        "--confirm",
-        dest="confirm",
-        action="store_true",
-        help="execute changes (default is dry-run)",
-    )
-    parser.add_argument(
-        "--merge",
-        action="store_true",
-        help="with --sync: create and merge conflict-free sync pull requests",
-    )
-    parser.add_argument(
-        "--repo",
-        nargs="?",
-        const="",
-        default=None,
-        metavar="OWNER/REPO",
-        help=(
-            "with --sync: sync one repository; omit value to choose from a "
-            "numbered list"
-        ),
-    )
-    parser.add_argument(
-        "--token",
-        default=None,
-        help="with --sync: GitHub PAT (overrides GITHUB_TOKEN)",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="with --sync: show detailed output for each repository",
-    )
-
-    args = parser.parse_args()
-    dryRun = not args.confirm
-
-    if args.project is not None and args.projectOption is not None:
-        parser.error(
-            "Use either the positional project argument or the --project flag, not both."
-        )
-    modeCount = sum(
-        [bool(args.create), bool(args.update), bool(args.migrate), bool(args.sync)]
-    )
-    if modeCount > 1:
-        parser.error(
-            "Use only one mode at a time: --create, --update, --migrate, or --sync."
-        )
-
-    if args.sync and (args.ui or args.qt):
-        parser.error("--sync does not support --ui or --qt.")
-    if args.migrate and (args.ui or args.qt):
-        parser.error("--migrate does not support --ui or --qt.")
-
-    projectPath = args.project if args.project is not None else args.projectOption
+    rawArgv = list(sys.argv[1:] if argv is None else argv)
+    parsedArgv = _entryCommandInject(commandArgvExpand(rawArgv))
+    parser = _parserBuild()
+    args = parser.parse_args(parsedArgv)
+    dryRun = not getattr(args, "confirm", False)
+    projectPath = _projectPathResolve(args, parser)
 
     logger = getLogger(
         includeConsole=True,
@@ -1395,8 +1533,17 @@ def main():
     logger.value("OMP version", VERSION)
     logger.doing(thisApplication)
 
-    if args.sync:
-        # Delegate sync workflow to the existing sync utility.
+    if args.command == "check":
+        from organiseMyProjects.agentCheck import checkProject
+
+        targetPath = Path(projectPath) if projectPath is not None else Path.cwd()
+        return checkProject(
+            targetPath,
+            strict=bool(getattr(args, "strict", False)),
+            verbose=bool(getattr(args, "verbose", False)),
+        )
+
+    if args.command == "sync":
         syncAgentInstructions = _loadSyncModule()
 
         syncArgv = ["syncAgentInstructions.py"]
@@ -1421,31 +1568,27 @@ def main():
             sys.argv = originalArgv
         return
 
-    if args.migrate:
-        project_path = projectPath or Path.cwd()
-        migrateProject(project_path, dryRun=dryRun)
-    elif args.update:
-        project_path = projectPath or Path.cwd()
+    if args.command == "migrate":
+        migrateProject(projectPath or Path.cwd(), dryRun=dryRun)
+        return
+
+    if args.command == "update":
         updateProject(
-            project_path,
+            projectPath or Path.cwd(),
             dryRun=dryRun,
-            includeUi=args.ui,
-            includeQt=args.qt,
+            includeUi=bool(getattr(args, "ui", False)),
+            includeQt=bool(getattr(args, "qt", False)),
         )
-    else:
-        if args.create is False and projectPath is None:
-            parser.error(
-                "Provide a project for create mode, or use "
-                "--update/--migrate/--sync explicitly."
-            )
-        if projectPath is None:
-            parser.error("the following arguments are required: project")
-        createProject(
-            projectPath,
-            dryRun=dryRun,
-            includeUi=args.ui,
-            includeQt=args.qt,
-        )
+        return
+
+    if projectPath is None:
+        parser.error("the following arguments are required: project")
+    createProject(
+        projectPath,
+        dryRun=dryRun,
+        includeUi=bool(getattr(args, "ui", False)),
+        includeQt=bool(getattr(args, "qt", False)),
+    )
 
 
 if __name__ == "__main__":

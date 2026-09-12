@@ -112,3 +112,67 @@ def testManagedJsonBlockRemovesDuplicatesOutsideExistingBlock():
     assert merged.count('"python.testing.pytestArgs"') == 1
     assert '["old"]' not in merged
     assert '"editor.wordWrap": "on"' in merged
+
+
+def testManagedBlockAdoptsExistingPreCommitHook():
+    existing = """default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+
+  - repo: local
+    hooks:
+      - id: gui-naming-linter
+        name: GUI Naming Linter
+        entry: runLinter
+        language: python
+        types: [python]
+"""
+    block = """  - repo: local
+    hooks:
+      - id: gui-naming-linter
+        name: GUI Naming Linter
+        entry: runLinter
+        language: python
+        types: [python]"""
+
+    merged = managedBlockMergeText(existing, block, "#")
+
+    assert merged.count("id: gui-naming-linter") == 1
+    assert merged.count("repo: local") == 1
+    assert "OMP-MANAGED-BEGIN" in merged
+    assert "id: black" in merged
+    assert "https://github.com/psf/black" in merged
+    assert "hooks:" in merged
+    assert merged.count("hooks:") == 2
+
+
+def testManagedBlockAdoptsExistingDevRequirements():
+    existing = "black\npytest\npre-commit\nruff\nmypy\n"
+    block = "black\npytest\npre-commit\nruff"
+
+    merged = managedBlockMergeText(existing, block, "#")
+
+    assert merged.count("black") == 1
+    assert merged.count("pytest") == 1
+    assert merged.count("pre-commit") == 1
+    assert merged.count("ruff") == 1
+    assert "mypy" in merged
+    assert "OMP-MANAGED-BEGIN" in merged
+
+
+def testManagedBlockAdoptsVersionedDevRequirements():
+    existing = "black==25.1.0\npytest>=8\nmypy\n"
+    block = "black\npytest\npre-commit\nruff"
+
+    merged = managedBlockMergeText(existing, block, "#")
+
+    assert "black==25.1.0" not in merged
+    assert "pytest>=8" not in merged
+    assert merged.count("black") == 1
+    assert merged.count("pytest") == 1
+    assert "mypy" in merged

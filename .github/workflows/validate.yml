@@ -36,4 +36,4 @@ jobs:
         run: runLinter .
 
       - name: Validate agent readiness
-        run: manageProject --check
+        run: manageProject check

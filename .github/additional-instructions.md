@@ -141,6 +141,7 @@ organiseMyProjects/
 
 ### manageProject.py
 - **Purpose**: Creates and updates Python project scaffolds
+- **Commands**: `create`, `update`, `check`, `migrate`, `sync`
 - **Key Functions**:
   - `createProject(projectName)` - Creates a new project structure
   - `updateProject(projectName)` - Updates existing project with latest templates
@@ -173,8 +174,11 @@ organiseMyProjects/
 - **Type**: TEMPLATE + PACKAGE (copied to new projects' tests/ directory AND accessible via package import)
 - **Behavior**:
   - With targets: Lints specified files/directories
-  - Without targets: Searches for src/, ui/, tests/ directories
-  - Falls back to current directory if no project dirs found
+  - Without targets: Discovers package/source directories from pyproject.toml,
+    a root-level package matching the repository name, then src/, ui/, tests/
+  - Falls back to the current directory only when no plausible source directory
+    is found
+  - Explicit command-line targets override automatic discovery
   - Auto-detects framework per file
 - **Usage**: 
   - In new projects: `python tests/runLinter.py [target]`

@@ -108,6 +108,8 @@ pip install -e .
 Creation is preview-only unless `--confirm` is supplied:
 
 ```bash
+manageProject create --project myNewProject
+manageProject create --project myNewProject --confirm
 createProject myNewProject
 createProject myNewProject --confirm
 ```
@@ -117,8 +119,8 @@ or Qt scaffolds, where supported, belong within the project package rather than
 creating a second application-code ownership model.
 
 ```bash
-createProject myNewProject --ui --confirm
-createProject myNewProject -qt --confirm
+manageProject create --project myNewProject --ui --confirm
+manageProject create --project myNewProject -qt --confirm
 ```
 
 ### Update an existing project
@@ -126,13 +128,12 @@ createProject myNewProject -qt --confirm
 Previewing is the default. Add `--confirm` to apply the update:
 
 ```bash
-# from anywhere
-createProject myExistingProject --update
-createProject myExistingProject --update --confirm
+# current directory
+manageProject update
+manageProject update -y
 
-# or from the project directory
-createProject --update
-createProject --update --confirm
+# another directory
+manageProject update --project myExistingProject --confirm
 ```
 
 Updates refresh OMP-owned managed files only when their substantive content
@@ -158,7 +159,7 @@ For 0.6, recognised managed path relocations also include the guides moved from
 when OMP ownership is established.
 
 When the target is the canonical `organiseMyProjects` source repository,
-`manageProject --update` avoids applying downstream scaffold copies over their
+`manageProject update` avoids applying downstream scaffold copies over their
 canonical sources.
 
 ### Migrate an existing project
@@ -167,8 +168,8 @@ Migration adds missing OMP project-management/context structures without
 blindly reorganising project-owned application code:
 
 ```bash
-createProject --migrate
-createProject --migrate --confirm
+manageProject migrate
+manageProject migrate --confirm
 ```
 
 Existing projects that use `src/` are not automatically moved into the 0.6
@@ -177,7 +178,8 @@ root-package structure merely because OMP has adopted a new creation standard.
 ### Check repository readiness
 
 ```bash
-manageProject --check
+manageProject check
+manageProject check --project myExistingProject
 ```
 
 The check operation is read-only and validates the applicable OMP repository,
@@ -185,6 +187,10 @@ documentation and agent conventions, including the one-root-README rule and
 canonical named directory indexes.
 
 ### Run Python and GUI naming checks
+
+With no arguments, `runLinter` discovers the project package from
+`pyproject.toml`, a root-level package matching the repository name, and
+auxiliary `src/`, `ui/`, `qt/` and `tests/` directories.
 
 ```bash
 runLinter

@@ -53,6 +53,7 @@ readable:
 
 - **UPPERCASE_WITH_UNDERSCORES** for constants (e.g., `WINDOW_WIDTH`,
   `MAX_RETRIES`, `DEFAULT_TIMEOUT`)
+- Private constants may add a leading underscore (e.g., `_MAX_RETRIES`)
 
 ### Logging Standards
 
@@ -89,7 +90,12 @@ def anotherCorrectlySpacedFunction():
 
 ### Context-aware Python naming
 
-- Production functions use the OMP `domainAction` convention.
+- Production module-level functions use the OMP `domainAction` convention.
+- Class methods may use an action-only name because the class supplies the
+  domain (`Project.update()` is valid). Module-level functions still require
+  `domainAction` (`projectUpdate()`).
+- Nested or local helpers may use ordinary descriptive names (`fail`,
+  `empty`, `box`) and are not required to use `domainAction`.
 - Test functions continue to use the OMP test-function convention.
 - Dunder methods are exempt because Python owns their names.
 - Required framework overrides such as `emit` and `process` are exempt.
@@ -119,7 +125,8 @@ def anotherCorrectlySpacedFunction():
 
 ### Constant Validation
 
-- Verifies that constants use UPPER_CASE_WITH_UNDERSCORES format
+- Verifies that constants use UPPER_CASE_WITH_UNDERSCORES format, including
+  optional private forms such as `_MAX_RETRIES`
 - Distinguishes between constants and regular variables
 
 ## Usage
@@ -129,7 +136,7 @@ def anotherCorrectlySpacedFunction():
 Run the linter from the command line:
 
 ```bash
-# Lint current project (searches for src/, ui/, tests/ directories)
+# Lint current project (discovers package/src/ui/tests from the project)
 runLinter
 
 # Lint specific file
@@ -252,9 +259,13 @@ To add new rules or modify existing ones, edit
 
 ### Function Naming Tips
 
-1. **Use verbs**: `processData()`, `validateInput()`, `displayResults()`
-2. **Be specific**: `saveUserPreferences()` is better than `save()`
-3. **Event handlers**: Always start with `on` - `onButtonClick()`,
+1. **Module-level functions** use `domainAction`: `projectUpdate()`,
+   `videoImport()`, `configLoad()`.
+2. **Class methods** may be action-only when the class is the domain:
+   `Project.update()`, `Config.load()`.
+3. **Nested/local helpers** may use ordinary descriptive names: `fail()`,
+   `empty()`, `box()`.
+4. **Event handlers**: Always start with `on` - `onButtonClick()`,
    `onWindowClose()`
 
 ### Code Organization Tips

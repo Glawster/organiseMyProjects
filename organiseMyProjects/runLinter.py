@@ -9,6 +9,7 @@ from pathlib import Path
 
 from organiseMyProjects.fixMarkup import markupFix
 from organiseMyProjects.guiNamingLinter import fileCheck
+from organiseMyProjects.version import VERSION
 
 AUXILIARY_SOURCE_DIRS = ("ui", "qt", "tests")
 SKIP_PACKAGE_DIR_NAMES = frozenset(
@@ -310,6 +311,7 @@ def _lintTarget(target: str) -> None:
 
 
 def main() -> None:
+    print(f"organiseMyProjects runLinter {VERSION}")
 
     parser = argparse.ArgumentParser(
         description="Run GUI naming linting and optional markup linting"

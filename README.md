@@ -125,6 +125,19 @@ manageProject create --project myNewProject -qt --confirm
 
 ### Update an existing project
 
+For an existing repository, including a freshly initialised Git repository, use
+`manageProject update -y` to complete the OMP scaffold. Update creates missing
+`README.md`, `.github/additional-instructions.md` and
+`project/currentIncrement.md` files, preserving existing content. The starter
+README is language-neutral and the initial increment is idle. Project-specific
+instructions are owned by the project, not a managed copy of OMP's own instructions.
+`create` remains the command for a new project directory.
+
+A successful `manageProject update` followed immediately by `manageProject check`
+must not report deficiencies that `update` itself is responsible for correcting.
+Authors still supply actual setup and test commands; update explicitly reports
+this responsibility. Until documented, `check` may report `DOC-003`.
+
 Previewing is the default. Add `--confirm` to apply the update:
 
 ```bash

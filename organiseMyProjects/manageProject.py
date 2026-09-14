@@ -329,6 +329,51 @@ Idle
 history when a new increment starts; Git retains delivery history. -->
 """
 
+ADDITIONAL_INSTRUCTIONS_CONTENT = """# Project-specific instructions
+
+## Project context
+
+Record the project's purpose, conventions and layout exceptions here.
+
+## Verification
+
+Document the actual build and test commands for this repository here.
+"""
+
+
+def _onboardingReadmeBuild(basePath: Path) -> str:
+    """Build a language-neutral introduction using only deployed guide links."""
+    links = [
+        f"- [{path.stem}]({path.as_posix()})"
+        for source, path in MANAGED_COPY_TEMPLATES
+        if path.parts[0] == "documentation" and source.exists()
+    ]
+    return (
+        f"# {basePath.resolve().name}\n\n"
+        "Add a description of this project and its setup instructions.\n\n"
+        "## Documentation\n\n"
+        + "\n".join(links)
+        + "\n- [Project instructions](.github/additional-instructions.md)\n"
+        "- [Current increment](project/currentIncrement.md)\n"
+    )
+
+
+def _onboardingScaffoldEnsure(basePath: Path, dryRun: bool) -> None:
+    """Seed required project-owned context without replacing local content."""
+    for relative, content in (
+        (".github/additional-instructions.md", ADDITIONAL_INSTRUCTIONS_CONTENT),
+        ("README.md", _onboardingReadmeBuild(basePath)),
+        ("project/currentIncrement.md", CURRENT_INCREMENT_CONTENT),
+    ):
+        ownershipPolicy(relative)
+        _createTextFileIfMissing(basePath / relative, content, dryRun)
+    logger.info(
+        "project action required: document your actual setup and test commands in "
+        "README.md or .github/additional-instructions.md if not already documented; "
+        "update preserves this project-owned content"
+    )
+
+
 PROJECT_YAML_CONTENT = """name: "project"
 description: "Project description"
 version: "0.1.0"
@@ -616,6 +661,7 @@ FILE_OWNERSHIP = {
     "requirements.txt": POLICY_MANAGED_BLOCK_MERGE,
     "dev-requirements.txt": POLICY_MANAGED_BLOCK_MERGE,
     ".gitignore": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    ".github/additional-instructions.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "README.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "main.py": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "pyproject.toml": POLICY_PROJECT_OWNED_MISSING_ONLY,
@@ -955,6 +1001,8 @@ def createProject(
         (basePath / ".vscode").mkdir(exist_ok=True)
         (basePath / ".vscode" / "settings.json").write_text(VSCODE_SETTINGS_CONTENT)
 
+    _onboardingScaffoldEnsure(basePath, dryRun)
+
     # Initialize git and install pre-commit
     logger.action("initializing git repository")
     if not dryRun:
@@ -1261,6 +1309,8 @@ def updateProject(
     # names. Existing destinations are never overwritten.
     _migrateManagedNames(basePath, dryRun)
     _managedPathRelocate(basePath, dryRun)
+
+    _onboardingScaffoldEnsure(basePath, dryRun)
 
     logger.done("project updated")
     if dryRun:

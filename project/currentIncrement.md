@@ -2,7 +2,7 @@
 
 ## Increment
 
-0.7 — Linter source discovery and naming refinements
+0.8 — Existing project scaffold consistency
 
 ## Status
 
@@ -10,33 +10,28 @@ InReview
 
 ## Requirement
 
-- `project/requirements/features/005-runLinterSourceDiscovery.md`
-- `project/requirements/features/006-guiNamingMethodAndConstantRules.md`
+`project/requirements/features/008-existingProjectScaffoldConsistency.md`
 
 ## Objective
 
-Make `runLinter` find Python packages in root-package repositories, and allow
-class methods and private constants to follow the 0.7 naming rules.
+Complete required OMP context when onboarding an existing repository with update,
+without overwriting project-owned content.
 
 ## Scope
 
-- Discover default lint targets from packaging metadata, a root-level package
-  matching the repository name, and auxiliary `src/`, `ui/`, `qt/` and `tests/`
-  directories.
-- Keep explicit CLI targets unchanged.
-- Allow action-only class method names while keeping module-level
-  `domainAction`.
-- Allow `_UPPER_CASE` private constants.
+- Missing-only README, project-specific instructions and idle increment scaffold.
+- Language-neutral onboarding documentation and explicit author responsibility
+  for actual setup and test commands.
+- Regression coverage for fresh and partial repositories, preservation and dry-run.
 
 ## Verification
 
-- [x] Discovery unit tests for src, root package, pyproject, tests, missing
-      configured paths, duplicates, fallback and explicit targets
-- [x] Class method action-only and module-level domainAction tests
-- [x] Private constant tests
-- [x] Full test suite
-- [x] Black and Ruff
+- [x] Nine scaffold regression cases pass.
+- [x] Full suite: 356 passed; eight runLinter failures reproduce on untouched HEAD.
+- [x] Changed Python files pass Black and Ruff; manageProject passes OMP linter.
+- [x] Source distribution and wheel build successfully.
 
 ## Next
 
-Review the `release/0.7` diff and run release-branch CI.
+Review the scaffold changes. Resolve the pre-existing runLinter test failures
+before release validation can pass in full.

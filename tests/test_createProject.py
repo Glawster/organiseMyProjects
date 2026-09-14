@@ -1109,9 +1109,11 @@ class TestOwnershipPolicy:
 
     def testGeneratedMainImportsOrganiseMyProjectsLogging(self):
         assert (
-            "from organiseMyProjects.logUtils import getLogger, setApplication"
+            "from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication"
             in MAIN_PY_CONTENT
         )
+        assert 'runStart()\n    logger.doing("main")\n    line()' in MAIN_PY_CONTENT
+        assert 'line()\n    logger.done("main")' in MAIN_PY_CONTENT
 
 
 class TestPackagedCliUpdate:

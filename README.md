@@ -282,6 +282,14 @@ reruns, generated package importability and packaging/environment metadata.
 
 Runtime helpers such as logging live in the `organiseMyProjects` package.
 Applications import `from organiseMyProjects.logUtils import getLogger`.
+Call `logUtils.runStart()` once after `setApplication()` and before the header
+to mark a new run with a blank line, `>` plus 80 hyphens plus `<`, and another
+blank line. Bash scripts can call `runStart` and `line` from `logUtils.sh`.
+For a plain console separator, call `logUtils.line()` after
+`from organiseMyProjects import logUtils`. It prints 80 hyphens and a newline
+directly to standard output and appends it to today's application log file,
+without using logging or adding prefixes. Call `setApplication()` first. Use the separator after the complete command
+header and before any final summary.
 
 ## Sync agent instructions and managed guidance
 

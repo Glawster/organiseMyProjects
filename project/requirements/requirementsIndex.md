@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 009
+Next available number: 010
 
 ## Requirement index
 
@@ -14,3 +14,4 @@ Next available number: 009
 | 006 | [GUI naming method and constant rules](features/006-guiNamingMethodAndConstantRules.md) | Allow action-only class methods and `_UPPER_CASE` private constants. | Completed | [Prompt](prompt/006-guiNamingMethodAndConstantRules.md) | Not required |
 | 007 | [Linter whitelist and digit-aware naming](features/007-linterWhitelistAndDigitNames.md) | OMP 0.8: allow approved proper names/acronyms in logging case checks and digits within valid domainAction names without weakening the underlying rules. | ToDo | [Prompt](prompt/007-linterWhitelistAndDigitNames.md) | Not required |
 | 008 | [Existing project scaffold consistency](features/008-existingProjectScaffoldConsistency.md) | Complete required context during existing-repository onboarding. | Completed | [Prompt](prompt/008-existingProjectScaffoldConsistency.md) | [ADR-001](../adr/001-fileOwnershipPolicies.md) |
+| 009 | [Log section linting](features/009-logSectionLinting.md) | Detect missing run and section markers in Python entry points. | Completed | [Prompt](prompt/009-logSectionLinting.md) | Not required |

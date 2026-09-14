@@ -69,3 +69,83 @@ log_done "processed"
     )
 
     assert messages == ["processing...", "...copy file", "...processed"]
+
+
+def testRunStartWritesPlainMarkerWithoutLogging(tmp_path):
+    """The Bash run marker matches Python, preserves history and bypasses _log."""
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            "\n".join(
+                [
+                    "set -euo pipefail",
+                    'source "$1"',
+                    'setApplication runTest "$2" > /dev/null',
+                    'printf "previous run\\n" > "$logFile"',
+                    "_log() { return 97; }",
+                    "_log_to_file() { return 98; }",
+                    "runStart",
+                    "runStart",
+                ]
+            ),
+            "bash",
+            str(LOG_UTILS),
+            str(tmp_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    expected = ("\n>" + "-" * 80 + "<\n\n") * 2
+    assert result.stdout == expected
+    assert result.stderr == ""
+    assert next(tmp_path.glob("*.log")).read_text() == "previous run\n" + expected
+
+
+def testRunStartRequiresApplicationContext():
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            'source "$1"; thisApplication=""; runStart',
+            "bash",
+            str(LOG_UTILS),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert result.stdout == ""
+    assert "Call setApplication first" in result.stderr
+
+
+def testLineWritesPlainSeparatorWithoutLogging(tmp_path):
+    result = subprocess.run(
+        [
+            "bash",
+            "-c",
+            "\n".join(
+                [
+                    "set -euo pipefail",
+                    'source "$1"',
+                    'setApplication lineTest "$2" > /dev/null',
+                    'printf "previous entry\\n" > "$logFile"',
+                    "_log() { return 97; }",
+                    "_log_to_file() { return 98; }",
+                    "line",
+                    "line",
+                ]
+            ),
+            "bash",
+            str(LOG_UTILS),
+            str(tmp_path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    expected = ("-" * 80 + "\n") * 2
+    assert result.stdout == expected
+    assert result.stderr == ""
+    assert next(tmp_path.glob("*.log")).read_text() == "previous entry\n" + expected

@@ -12,7 +12,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.version import VERSION
 
 
@@ -274,7 +274,12 @@ class AgentCheckValidator:
             self.report.add(
                 "DOC-003",
                 Severity.WARNING,
-                "No discoverable test command (e.g. `pytest`) found in README.md, developer.md, or additional-instructions.md",
+                "No discoverable test command (e.g. `pytest`) found in README.md, "
+                "documentation/developer.md, or .github/additional-instructions.md. "
+                "This is expected for a new repository with no tests configured yet; "
+                "document the actual test command when tests are added. "
+                "Detection currently recognises only pytest and python -m unittest, "
+                "so non-Python test commands may also trigger this warning.",
             )
 
     def _validateMarkdownFile(self, mdPath: Path) -> None:
@@ -586,8 +591,10 @@ def checkProject(
     setApplication(thisApplication)
     logger = getLogger(includeConsole=True)
 
+    runStart()
     logger.value("OMP version", VERSION)
     logger.doing(f"checking project at {resolvedPath}")
+    line()
     validator = AgentCheckValidator(resolvedPath, verbose=verbose)
     report = validator.runAll()
 
@@ -608,6 +615,7 @@ def checkProject(
         elif verbose:
             logger.info(msg)
 
+    line()
     logger.value("failures", failureCount)
     logger.value("warnings", warningCount)
 

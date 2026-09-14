@@ -9,6 +9,7 @@ from pathlib import Path
 
 from organiseMyProjects.fixMarkup import markupFix
 from organiseMyProjects.guiNamingLinter import fileCheck
+from organiseMyProjects.logUtils import line, runStart, setApplication
 from organiseMyProjects.version import VERSION
 
 AUXILIARY_SOURCE_DIRS = ("ui", "qt", "tests")
@@ -273,11 +274,7 @@ def _violationAllowed(name: str, ruleType: str) -> bool:
 
 def _violationsFiltered(path: str) -> list[tuple[str, str, int]]:
     """Return linter findings excluding acknowledged compatibility cases."""
-    return [
-        item
-        for item in fileCheck(path)
-        if not _violationAllowed(item[0], item[1])
-    ]
+    return [item for item in fileCheck(path) if not _violationAllowed(item[0], item[1])]
 
 
 def _violationsReport(label: str, violations: list[tuple[str, str, int]]) -> None:
@@ -294,11 +291,13 @@ def _violationsReport(label: str, violations: list[tuple[str, str, int]]) -> Non
 def _lintTarget(target: str) -> None:
     """Lint a single file or directory with the project compatibility overlay."""
     print(f"Linting: {target}")
+    line()
     if not os.path.isdir(target):
         _violationsReport(target, _violationsFiltered(target))
         return
 
-    print(f"\nChecking GUI naming in: {target}\n" + "-" * 50)
+    print(f"\nChecking GUI naming in: {target}")
+    line()
     for root, directories, files in os.walk(target):
         directories[:] = [
             item for item in directories if item not in IGNORED_DIRECTORIES
@@ -311,7 +310,6 @@ def _lintTarget(target: str) -> None:
 
 
 def main() -> None:
-    print(f"organiseMyProjects runLinter {VERSION}")
 
     parser = argparse.ArgumentParser(
         description="Run GUI naming linting and optional markup linting"
@@ -347,6 +345,11 @@ def main() -> None:
         parser.error("--fix requires --markup")
     if args.strict and not args.markup:
         parser.error("--strict requires --markup")
+
+    setApplication("runLinter")
+    runStart()
+    print(f"organiseMyProjects runLinter {VERSION}")
+    line()
 
     # Markup mode is intentionally isolated so markdown checks can be run
     # without triggering Python GUI naming lint.

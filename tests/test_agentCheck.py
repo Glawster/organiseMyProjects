@@ -342,3 +342,24 @@ Active
 
         monkeypatch.setattr(sys, "argv", ["agentCheck", str(validRepo)])
         assert main() == 0
+
+
+def testCheckCommandSeparatesHeaderAndSummary(validRepo, monkeypatch, capsys, caplog):
+    import logging
+
+    from organiseMyProjects import manageProject
+
+    monkeypatch.setattr(Path, "home", lambda: validRepo)
+    with caplog.at_level(logging.INFO):
+        assert manageProject.main(["check", "--project", str(validRepo)]) == 0
+    marker = "\n>" + "-" * 80 + "<\n\n"
+    assert capsys.readouterr().out == marker + ("-" * 80 + "\n") * 2
+    assert sum("OMP version" in record.getMessage() for record in caplog.records) == 1
+    logFile = next((validRepo / ".local/state/manageProject").glob("*.log"))
+    assert logFile.read_text().startswith(marker)
+    assert logFile.read_text().count(marker) == 1
+    lines = logFile.read_text().splitlines()
+    header = next(i for i, text in enumerate(lines) if "checking project at" in text)
+    summary = next(i for i, text in enumerate(lines) if "...failures:" in text)
+    assert lines[header + 1] == "-" * 80
+    assert lines[summary - 1] == "-" * 80

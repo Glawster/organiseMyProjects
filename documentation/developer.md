@@ -107,6 +107,37 @@ startup so saved logs identify the implementation that produced them.
 - `drawBox(message, border_char, corner_char, side_char, padding, logger)` -
     Print or log a text message surrounded by a Unicode box
 
+**Section separators:**
+
+Call `logUtils.runStart()` once after `setApplication()` and before the first
+application header. It writes a blank line, `>` followed by 80 hyphens and `<`,
+then another blank line, directly to stdout and today's application log file.
+Subcommands must not repeat a marker already emitted by their dispatcher.
+The Bash equivalent is `runStart` from `logUtils.sh`, called after
+`setApplication` and before the script header. Sourcing the helper does not emit
+a marker. Bash `line` provides the same 80-hyphen section separator as
+Python `logUtils.line()`, also writing directly to stdout and the log file.
+
+Call `logUtils.line()` after the full command header and before any final
+summary (counts and completion status). The helper writes 80 hyphens and a
+newline directly to stdout and today's application log file without using
+logging or adding prefixes. Initialise `setApplication()` in the entry point;
+helper functions reuse that context. Do not construct separator strings locally.
+
+
+`runLinter` checks conventional Python entry points (`main()`, functions calling
+`setApplication()`, and inline `__main__` guards) that emit `logger.*` headers:
+
+- `LOG-SEC-001`: missing `runStart()` before the first header log call.
+- `LOG-SEC-002`: missing `line()` immediately after the contiguous header logs.
+- `LOG-SEC-003`: missing `line()` before summary logs ending with `logger.done()`.
+
+Direct calls and `logUtils.runStart()` / `logUtils.line()` are recognised.
+Comments and strings do not count. Tests, ordinary helpers and dispatchers with
+no header output are excluded. These are static convention checks: arbitrary
+logger aliases, print-only headers, output delegated to helper functions, and
+Bash scripts are not analysed for section placement.
+
 **Dry-run progress logging:**
 
 `getLogger(..., dryRun=True)` marks the full progress sequence while preserving

@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.managedContent import (
     POLICY_MANAGED_BLOCK_MERGE,
     POLICY_MANAGED_OVERWRITE,
@@ -68,7 +68,7 @@ REQUIREMENTS_MANAGED_BLOCK = (
 DEV_REQUIREMENTS_MANAGED_BLOCK = "black\npytest\npre-commit\nruff"
 PACKAGE_MAIN_CONTENT = """from pathlib import Path
 
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 
 thisApplication = Path(__file__).resolve().parent.name
 setApplication(thisApplication)
@@ -108,13 +108,16 @@ def main():
         dryRun=dryRun,
     )
 
+    runStart()
     logger.doing("main")
+    line()
     if tkinterMainMenu is not None:
         tkinterMainMenu()
     elif qtMainMenu is not None:
         qtMainMenu()
     else:
         logger.info("no ui scaffold installed")
+    line()
     logger.done("main")
 
 
@@ -1576,13 +1579,6 @@ def main(argv: list[str] | None = None):
     dryRun = not getattr(args, "confirm", False)
     projectPath = _projectPathResolve(args, parser)
 
-    logger = getLogger(
-        includeConsole=True,
-        dryRun=dryRun,
-    )
-    logger.value("OMP version", VERSION)
-    logger.doing(thisApplication)
-
     if args.command == "check":
         from organiseMyProjects.agentCheck import checkProject
 
@@ -1592,6 +1588,15 @@ def main(argv: list[str] | None = None):
             strict=bool(getattr(args, "strict", False)),
             verbose=bool(getattr(args, "verbose", False)),
         )
+
+    logger = getLogger(
+        includeConsole=True,
+        dryRun=dryRun,
+    )
+    runStart()
+    logger.value("OMP version", VERSION)
+    logger.doing(thisApplication)
+    line()
 
     if args.command == "sync":
         syncAgentInstructions = _loadSyncModule()

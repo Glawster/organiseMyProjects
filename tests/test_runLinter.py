@@ -18,29 +18,29 @@ class TestRunLinter:
     """Test cases for runLinter functionality."""
 
     def testLintTargetFile(self, mockPythonFile, capsys):
-        """Test linting a single file."""
-        with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
-            _lintTarget(str(mockPythonFile))
-            mockLintFile.assert_called_once_with(str(mockPythonFile))
-
-        captured = capsys.readouterr()
-        assert f"Linting: {mockPythonFile}" in captured.out
+        """The file header is separated from real lint results."""
+        _lintTarget(str(mockPythonFile))
+        output = capsys.readouterr().out.splitlines()
+        assert output[0] == f"Linting: {mockPythonFile}"
+        assert output[1] == "-" * 80
+        assert len(output) > 2
 
     def testLintTargetDirectory(self, tempDir, capsys):
-        """Test linting a directory."""
-        with patch("organiseMyProjects.runLinter.lintGuiNaming") as mockLintGui:
-            _lintTarget(str(tempDir))
-            mockLintGui.assert_called_once_with(str(tempDir))
-
-        captured = capsys.readouterr()
-        assert f"Linting: {tempDir}" in captured.out
+        """Directory results follow the shared separator."""
+        (tempDir / "example.py").write_text("VALUE = 1\n")
+        _lintTarget(str(tempDir))
+        output = capsys.readouterr().out
+        assert f"Checking GUI naming in: {tempDir}\n" + "-" * 80 in output
+        assert output.rstrip().endswith("example.py: OK")
 
     def testMainWithTargets(self, testFilePath):
         """Test main function with specific targets."""
         testArgs = ["runLinter.py", str(testFilePath)]
 
         with patch("sys.argv", testArgs):
-            with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
+            with patch(
+                "organiseMyProjects.runLinter._violationsFiltered"
+            ) as mockLintFile:
                 main()
                 mockLintFile.assert_called_once_with(str(testFilePath))
 
@@ -108,7 +108,7 @@ class TestRunLinter:
             assert os.path.isdir("tests"), "tests directory should exist"
 
             with patch("sys.argv", testArgs):
-                with patch("organiseMyProjects.runLinter.lintGuiNaming") as mockLintGui:
+                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
                     main()
 
                     # Debug output for troubleshooting
@@ -144,7 +144,7 @@ class TestRunLinter:
             assert not os.path.isdir("tests"), "tests directory should not exist"
 
             with patch("sys.argv", testArgs):
-                with patch("organiseMyProjects.runLinter.lintGuiNaming") as mockLintGui:
+                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
                     main()
 
                     # Should lint current directory since no project dirs found
@@ -166,8 +166,10 @@ class TestRunLinter:
             with patch(
                 "organiseMyProjects.runLinter.markupFix", return_value=0
             ) as mockMarkupFix:
-                with patch("organiseMyProjects.runLinter.lintGuiNaming") as mockLintGui:
-                    with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
+                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
+                    with patch(
+                        "organiseMyProjects.runLinter._violationsFiltered"
+                    ) as mockLintFile:
                         main()
 
         mockMarkupFix.assert_called_once_with(targets=None, fix=False, strict=False)
@@ -182,8 +184,10 @@ class TestRunLinter:
             with patch(
                 "organiseMyProjects.runLinter.markupFix", return_value=0
             ) as mockMarkupFix:
-                with patch("organiseMyProjects.runLinter.lintGuiNaming") as mockLintGui:
-                    with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
+                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
+                    with patch(
+                        "organiseMyProjects.runLinter._violationsFiltered"
+                    ) as mockLintFile:
                         main()
 
         mockMarkupFix.assert_called_once_with(targets=None, fix=True, strict=False)
@@ -332,7 +336,9 @@ class TestLintTargetsDiscover:
             with patch(
                 "organiseMyProjects.runLinter.lintTargetsDiscover"
             ) as mockDiscover:
-                with patch("organiseMyProjects.runLinter.lintFile") as mockLintFile:
+                with patch(
+                    "organiseMyProjects.runLinter._violationsFiltered"
+                ) as mockLintFile:
                     main()
                     mockDiscover.assert_not_called()
                     mockLintFile.assert_called_once_with(str(testFilePath))
@@ -393,19 +399,23 @@ class TestGUI:
         uiDir.mkdir()
 
         # Create Python files in subdirectories
-        (srcDir / "utils.py").write_text("""
+        (srcDir / "utils.py").write_text(
+            """
 def good_function():
     pass
-""")
+"""
+        )
 
-        (uiDir / "main_frame.py").write_text("""
+        (uiDir / "main_frame.py").write_text(
+            """
 import tkinter as tk
 
 class MainFrame:
     def __init__(self):
         self.btnClose = tk.Button()  # Good naming
         self.bad_button = tk.Button()  # Bad naming
-""")
+"""
+        )
 
         # Run linter on directory
         testArgs = ["runLinter.py", str(tempDir)]
@@ -417,3 +427,22 @@ class MainFrame:
 
         # Verify output contains information about the directory scan
         assert f"Linting: {tempDir}" in captured.out
+
+
+def testCommandHeaderSeparator(tmp_path, monkeypatch, capsys):
+    from organiseMyProjects import logUtils
+    from organiseMyProjects.version import VERSION
+
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    target = tmp_path / "example.py"
+    target.write_text("VALUE = 1\n")
+    monkeypatch.setattr(sys, "argv", ["runLinter", str(target)])
+    main()
+
+    output = capsys.readouterr().out.splitlines()
+    assert output[:3] == ["", ">" + "-" * 80 + "<", ""]
+    assert output[3:5] == [f"organiseMyProjects runLinter {VERSION}", "-" * 80]
+    assert output.count(">" + "-" * 80 + "<") == 1
+    logs = list(logUtils.getApplicationLogDir().glob("*.log"))
+    assert len(logs) == 1
+    assert "-" * 80 + "\n" in logs[0].read_text()

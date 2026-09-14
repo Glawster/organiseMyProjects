@@ -13,6 +13,8 @@
 # Compatibility wrapper:
 #   log_init "myScript"                # calls setApplication "myScript"
 #
+# Run boundary: runStart emits a plain marker before the application header.
+#
 # Semantic log functions (mirror Python logUtils conventions):
 #   log_doing "scanning files"           →  [] scanning files...  (dry-run)
 #   log_done  "scan complete"            →  ...[] scan complete   (dry-run)
@@ -96,6 +98,38 @@ setApplication() {
 
   logFile="$logDir/${thisApplication}-$(_current_date).log"
   _log "logging to: $logFile"
+}
+
+# line
+#   Writes 80 hyphens and a newline directly to stdout and the application log.
+#   Use after the complete header and before any final summary.
+line() {
+  _require_application || return 1
+  local separator
+  printf -v separator '%80s' ''
+  separator="${separator// /-}"
+  _plain_output_write "$separator"$'\n'
+}
+
+# runStart
+#   Prints a blank line, > followed by 80 hyphens and <, then a blank line.
+#   Appends the same marker directly to today's application log, without _log.
+#   Call once after setApplication and before the application header.
+runStart() {
+  _require_application || return 1
+  local separator
+  printf -v separator '%80s' ''
+  separator="${separator// /-}"
+
+  _plain_output_write $'\n>'"$separator"$'<\n\n'
+}
+
+# Append unformatted text and print it without invoking logging helpers.
+_plain_output_write() {
+  _require_application || return 1
+  local outputLogFile="$applicationLogDir/${thisApplication}-$(_current_date).log"
+  printf '%s' "$1" >> "$outputLogFile" || return 1
+  printf '%s' "$1"
 }
 
 # getApplication

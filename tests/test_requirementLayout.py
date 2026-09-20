@@ -270,7 +270,7 @@ def test_generatedCacheReadmeIsIgnoredByDocumentationCheck(tmp_path):
 
     failures = [
         item
-        for item in validator.report.items
-        if getattr(item, "code", None) == "DOC-005"
+        for item in validator.report.findings
+        if getattr(item, "ruleId", None) == "DOC-005"
     ]
     assert failures == []

@@ -48,6 +48,19 @@ _REFERENCE_REPLACEMENTS = (
 _REQUIREMENT_DIR_RE = re.compile(r"^(\d{3})-([A-Za-z][A-Za-z0-9_-]*)$")
 _PROMPT_DIR_RE = re.compile(r"^(\d{3}[a-z]?)-([A-Za-z][A-Za-z0-9_-]*)$")
 
+_IGNORED_GENERATED_DIRECTORIES = frozenset(
+    {
+        ".git",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".venv",
+        "__pycache__",
+        "build",
+        "dist",
+        "output",
+    }
+)
+
 
 def _loggerAction(logger, message: str) -> None:
     if logger is not None:
@@ -88,9 +101,14 @@ def _indexRecognised(path: Path, markers: tuple[str, ...]) -> bool:
     return False
 
 
+def _pathGenerated(path: Path) -> bool:
+    """Return whether a path is inside generated or transient project state."""
+    return any(part in _IGNORED_GENERATED_DIRECTORIES for part in path.parts)
+
+
 def _referencePathsIterate(basePath: Path):
     for path in basePath.rglob("*.md"):
-        if ".git" in path.parts:
+        if _pathGenerated(path):
             continue
         yield path
 
@@ -341,7 +359,7 @@ def agentCheckPatchesInstall(agentCheckModule) -> None:
     def _checkDocumentation(self):
         originalDocumentation(self)
         for readme in self.rootPath.rglob("README.md"):
-            if readme == self.rootPath / "README.md" or ".git" in readme.parts:
+            if readme == self.rootPath / "README.md" or _pathGenerated(readme):
                 continue
             self.report.add(
                 "DOC-005",

@@ -27,6 +27,7 @@ Read `documentation/requirementsManagement.md`.
 Read `documentation/repositoryLayout.md` before adding or moving repository content.
 Read `documentation/testingProcess.md` before planning or reviewing tests.
 Read `documentation/howToRelease.md` before planning or reviewing releases.
+Read `documentation/agentImplementationWorkflow.md` before implementing or modifying agent logic.
 
 Project-specific details belong in:
 

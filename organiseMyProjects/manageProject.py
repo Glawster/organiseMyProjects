@@ -507,6 +507,7 @@ The importable Python package is `{packageName}/`. Install the project with
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
 - [Testing Process](documentation/testingProcess.md)
+- [Agent Workflow](documentation/agentImplementationWorkflow.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 """
 
@@ -588,6 +589,10 @@ MANAGED_COPY_TEMPLATES = [
         TEMPLATE_DIR.parent / "documentation" / "howToRelease.md",
         Path("documentation") / "howToRelease.md",
     ),
+    (
+        TEMPLATE_DIR.parent / "documentation" / "agentImplementationWorkflow.md",
+        Path("documentation") / "agentImplementationWorkflow.md",
+    ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
@@ -654,6 +659,7 @@ FILE_OWNERSHIP = {
     "documentation/repositoryLayout.md": POLICY_MANAGED_OVERWRITE,
     "documentation/requirementsManagement.md": POLICY_MANAGED_OVERWRITE,
     "documentation/testingProcess.md": POLICY_MANAGED_OVERWRITE,
+    "documentation/agentImplementationWorkflow.md": POLICY_MANAGED_OVERWRITE,
     "documentation/howToRelease.md": POLICY_MANAGED_OVERWRITE,
     "tests/runLinter.py": POLICY_MANAGED_OVERWRITE,
     "tests/guiNamingLinter.py": POLICY_MANAGED_OVERWRITE,
@@ -964,6 +970,16 @@ def createProject(
         if not dryRun:
             (basePath / "documentation" / "testingProcess.md").write_text(
                 _managedContentBuild(srcTestingProcess.read_text())
+            )
+
+    srcAgentWorkflow = (
+        TEMPLATE_DIR.parent / "documentation" / "agentImplementationWorkflow.md"
+    )
+    if srcAgentWorkflow.exists():
+        logger.action("copying agent implementation workflow guide")
+        if not dryRun:
+            (basePath / "documentation" / "agentImplementationWorkflow.md").write_text(
+                _managedContentBuild(srcAgentWorkflow.read_text())
             )
 
     # Copy the release process guide

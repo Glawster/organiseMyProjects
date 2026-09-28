@@ -21,6 +21,8 @@ without overwriting project-owned content.
 
 ## Scope
 
+- Deploy the agent implementation workflow through creation, update and sync,
+  include it in source distributions, and expose it in documentation navigation.
 - Missing-only README, project-specific instructions and idle increment scaffold.
 - Language-neutral onboarding documentation and explicit author responsibility
   for actual setup and test commands.
@@ -38,9 +40,12 @@ without overwriting project-owned content.
 ## Verification
 
 - [x] Nine scaffold regression cases pass.
-- [x] Full suite: 388 passed, including updated tests for current linter routing.
+- [x] Full suite: 392 passed, including workflow creation, update, dry-run and sync coverage.
 - [x] Changed Python files pass Black and Ruff; manageProject passes OMP linter.
 - [x] Source distribution and wheel build successfully.
+
+- [x] Workflow changes pass Black, manageProject lint and `git diff --check`.
+- [x] Setuptools source archive includes the exact workflow guide content.
 
 ## Next
 

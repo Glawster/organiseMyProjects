@@ -20,6 +20,7 @@ The living guides are:
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
 - [Testing Process](documentation/testingProcess.md)
+- [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)

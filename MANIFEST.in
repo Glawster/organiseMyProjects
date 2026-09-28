@@ -5,6 +5,7 @@ include documentation/repositoryLayout.md
 include documentation/requirementsManagement.md
 include documentation/howToRelease.md
 include documentation/testingProcess.md
+include documentation/agentImplementationWorkflow.md
 include documentation/releaseNotes.md
 include pyproject.toml
 include environment.yml

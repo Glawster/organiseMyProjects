@@ -86,6 +86,13 @@ SYNC_SPECS = [
         "targetPath": "documentation/testingProcess.md",
         "commitMessage": "sync: update testing process guide",
     },
+    {
+        "sourceFile": Path(__file__).resolve().parent
+        / "documentation"
+        / "agentImplementationWorkflow.md",
+        "targetPath": "documentation/agentImplementationWorkflow.md",
+        "commitMessage": "sync: update agent implementation workflow guide",
+    },
 ]
 API_BASE = "https://api.github.com"
 REPO_OWNER = "Glawster"

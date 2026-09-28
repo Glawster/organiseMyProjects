@@ -284,6 +284,24 @@ class TestCreateProject:
             in (projectPath / ".github" / "agent-instructions.md").read_text()
         )
 
+    def testCreateProjectAgentImplementationWorkflow(
+        self, temp_dir, sample_project_name
+    ):
+        """New projects receive the managed workflow and discoverable pointers."""
+        projectPath = temp_dir / sample_project_name
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        relativePath = "documentation/agentImplementationWorkflow.md"
+        sourceFile = Path(__file__).parent.parent / relativePath
+        assert (projectPath / relativePath).read_text() == _build_managed_content(
+            sourceFile.read_text()
+        )
+        assert relativePath in (projectPath / "README.md").read_text()
+        assert (
+            relativePath in (projectPath / ".github/agent-instructions.md").read_text()
+        )
+
     def testCreateProjectTestingProcess(self, temp_dir, sample_project_name):
         """Test that new projects receive the authoritative testing process."""
         projectPath = temp_dir / sample_project_name
@@ -469,6 +487,31 @@ class TestUpdateProject:
         agentFile = projectPath / "AGENTS.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
         assert agentFile.read_text() == _build_managed_content(sourceFile.read_text())
+
+    def testUpdateProjectAgentImplementationWorkflow(
+        self, temp_dir, sample_project_name
+    ):
+        """Updates install and refresh the workflow while respecting dry-run."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        relativePath = "documentation/agentImplementationWorkflow.md"
+        guideFile = projectPath / relativePath
+        sourceFile = Path(__file__).parent.parent / relativePath
+        expected = _build_managed_content(sourceFile.read_text())
+
+        updateProject(str(projectPath), dryRun=True)
+        assert not guideFile.exists()
+        updateProject(str(projectPath))
+        assert guideFile.read_text() == expected
+
+        guideFile.write_text(_build_managed_content("# Outdated workflow\n"))
+        outdated = guideFile.read_text()
+        updateProject(str(projectPath), dryRun=True)
+        assert guideFile.read_text() == outdated
+        updateProject(str(projectPath))
+        assert guideFile.read_text() == expected
+        updateProject(str(projectPath))
+        assert guideFile.read_text() == expected
 
     def testUpdateProjectAddsRepositoryLayout(self, temp_dir, sample_project_name):
         """Test that updateProject adds the managed repository layout."""

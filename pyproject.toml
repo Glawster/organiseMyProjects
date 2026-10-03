@@ -64,3 +64,6 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
 ]
+
+[tool.setuptools.package-data]
+organiseMyProjects = ["*.css"]

@@ -1,0 +1,173 @@
+/* Shared OMP Textual theme.
+   Canonical application style for Glawster TUI projects.
+   Clann Eolas intentionally uses its own stylesheet.
+
+   Palette derived from FMSAT:
+   canvas:         #f7f7f5
+   surface:        #101f2e
+   accentStrong:   #239b78
+   accent:         #31b98f
+   accentHover:    #56d6b0
+   textPrimary:    #f5f8fb
+   textSecondary:  #d9e5ef
+   textMuted:      #8fa3b8
+   border:         #263b4e
+   borderStrong:   #30465a
+   successSurface: #163b38
+   successText:    #75e0bf
+   warningSurface: #40351c
+   warningText:    #f0c76a
+   errorSurface:   #442329
+   errorText:      #ff9da7
+*/
+
+Screen {
+    background: #101f2e;
+    color: #f5f8fb;
+}
+
+Header,
+Footer {
+    background: #101f2e;
+    color: #d9e5ef;
+}
+
+TabbedContent {
+    background: #101f2e;
+}
+
+Tabs {
+    background: #101f2e;
+    color: #8fa3b8;
+}
+
+Tab {
+    background: #101f2e;
+    color: #8fa3b8;
+}
+
+Tab:hover {
+    color: #56d6b0;
+}
+
+Tab.-active {
+    color: #239b78;
+    text-style: bold;
+}
+
+TabPane {
+    background: #101f2e;
+    color: #f5f8fb;
+    padding: 1;
+}
+
+Static,
+Label {
+    background: #101f2e;
+    color: #d9e5ef;
+}
+
+DataTable {
+    background: #101f2e;
+    color: #f5f8fb;
+    border: solid #30465a;
+}
+
+DataTable > .datatable--header {
+    background: #101f2e;
+    color: #d9e5ef;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: #163b38;
+    color: #75e0bf;
+}
+
+DataTable > .datatable--hover {
+    background: #243545;
+    color: #f5f8fb;
+}
+
+DataTable:focus {
+    border: solid #56d6b0;
+}
+
+VerticalScroll,
+HorizontalScroll,
+ScrollableContainer {
+    background: #101f2e;
+}
+
+Input,
+TextArea,
+Select {
+    background: #101f2e;
+    color: #f5f8fb;
+    border: solid #30465a;
+}
+
+Input:focus,
+TextArea:focus,
+Select:focus {
+    border: solid #56d6b0;
+}
+
+Button {
+    background: #31b98f;
+    color: #061510;
+    border: solid #31b98f;
+    text-style: bold;
+}
+
+Button:hover,
+Button:focus {
+    background: #56d6b0;
+    color: #061510;
+    border: solid #56d6b0;
+}
+
+Button.-primary {
+    background: #31b98f;
+    color: #061510;
+}
+
+Button.-success {
+    background: #163b38;
+    color: #75e0bf;
+    border: solid #28675e;
+}
+
+Button.-warning {
+    background: #40351c;
+    color: #f0c76a;
+    border: solid #735f2d;
+}
+
+Button.-error {
+    background: #442329;
+    color: #ff9da7;
+    border: solid #7b3943;
+}
+
+.warning {
+    background: #40351c;
+    color: #f0c76a;
+    border: solid #735f2d;
+}
+
+.error {
+    background: #442329;
+    color: #ff9da7;
+    border: solid #7b3943;
+}
+
+.success {
+    background: #163b38;
+    color: #75e0bf;
+    border: solid #28675e;
+}
+
+.muted {
+    color: #8fa3b8;
+}

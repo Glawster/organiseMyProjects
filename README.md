@@ -265,6 +265,20 @@ reruns, generated package importability and packaging/environment metadata.
 - Transient implementation status belongs only in
   `project/currentIncrement.md`.
 
+## Shared application stylesheet
+
+OMP packages a shared Textual stylesheet at
+`organiseMyProjects/myStyles.css`. This is the default visual theme for
+Glawster TUI applications so individual repositories do not need to maintain
+their own copies.
+
+Clann Eolas is the deliberate exception and keeps its own application
+stylesheet.
+
+A Textual application can resolve the packaged file with
+`importlib.resources` and assign it to `CSS_PATH` or load its contents
+directly.
+
 ## Shared runtime infrastructure
 
 Runtime helpers such as logging live in the `organiseMyProjects` package.

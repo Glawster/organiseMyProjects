@@ -1,5 +1,25 @@
 # Release notes
 
+## 0.8 — in development
+
+OMP 0.8 adds a shared interaction standard for list- and table-driven application editing.
+
+### List editing interaction
+
+- List and table views are the primary representation of structured data; large permanent edit forms should be avoided where a compact contextual editor is sufficient.
+- Common list actions use consistent single-key bindings where practical: `a` add, `e` edit, `d` delete/remove, `Enter` select/confirm, `Esc` cancel/back and `Space` toggle.
+- Known values should be selected from dropdowns, lists or cycle controls rather than retyped.
+- Add workflows should reuse the current row or panel context and pre-fill safe suggestions.
+- Edit workflows should operate on the selected row and expose only fields relevant to that item.
+- Existing values that may also be extended should provide an `Add...` choice rather than forcing free-text entry for every operation.
+- Destructive actions require appropriate confirmation.
+- Context-sensitive fields should remain hidden unless they are needed.
+- Tables should scroll internally, preserve cursor visibility and deliberately constrain or truncate long columns so text does not bleed into adjacent controls.
+- Peer action buttons should use consistent sizing and alignment.
+- Active keyboard bindings must remain discoverable through the footer, help or equivalent UI.
+
+The governing guide is `documentation/listEditingInteraction.md`.
+
 ## 0.7 — in development
 
 OMP 0.7 improves default `runLinter` discovery for root-package repositories

@@ -10,5 +10,6 @@ include documentation/releaseNotes.md
 include pyproject.toml
 include environment.yml
 include organiseMyProjects/logUtils.sh
+include organiseMyProjects/myStyles.css
 recursive-include organiseMyProjects/ui *.py
 recursive-include organiseMyProjects/qt *.py

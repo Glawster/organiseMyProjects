@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 010
+Next available number: 011
 
 ## Requirement index
 
@@ -15,3 +15,4 @@ Next available number: 010
 | 007 | [Linter whitelist and digit-aware naming](features/007-linterWhitelistAndDigitNames.md) | OMP 0.8: allow approved proper names/acronyms in logging case checks and digits within valid domainAction names without weakening the underlying rules. | ToDo | [Prompt](prompt/007-linterWhitelistAndDigitNames.md) | Not required |
 | 008 | [Existing project scaffold consistency](features/008-existingProjectScaffoldConsistency.md) | Complete required context during existing-repository onboarding. | Completed | [Prompt](prompt/008-existingProjectScaffoldConsistency.md) | [ADR-001](../adr/001-fileOwnershipPolicies.md) |
 | 009 | [Log section linting](features/009-logSectionLinting.md) | Detect missing run and section markers in Python entry points. | Completed | [Prompt](prompt/009-logSectionLinting.md) | Not required |
+| 010 | [List editing interaction standard and enforcement](features/010-listEditingInteractionStandard.md) | OMP 0.8: standardise list/table editing, deploy the guide through manageProject, make agents read it, validate managed copies and add only reliable static UI checks. | ToDo | [Prompt](prompt/010-listEditingInteractionStandard.md) | Not required unless implementation introduces a new ownership model |

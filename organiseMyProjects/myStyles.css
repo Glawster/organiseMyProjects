@@ -10,8 +10,8 @@
    surface:           #101f2e  primary panels, cards and containers
    surfaceRaised:     #243545  nested panels, list items and validation rows
    accentStrong:      #239b78  active tabs, headings and strong emphasis
-   accent:            #31b98f  primary actions and highlights
-   accentHover:       #56d6b0  hover/focus state; deliberately lighter
+   accent:            #128a99  primary actions and highlights
+   accentHover:       #14b8a6  hover/focus state; deliberately lighter
    onAccent:          #061510  text/icons displayed on accent colours
    textPrimary:       #f5f8fb  primary text on dark surfaces
    textSecondary:     #d9e5ef  secondary text on dark surfaces
@@ -55,7 +55,7 @@ Tab {
 }
 
 Tab:hover {
-    color: #56d6b0;
+    color: #14b8a6;
 }
 
 Tab.-active {
@@ -123,7 +123,7 @@ DataTable > .datatable--hover {
 }
 
 DataTable:focus {
-    border: solid #56d6b0;
+    border: solid #14b8a6;
 }
 
 VerticalScroll,
@@ -143,27 +143,27 @@ Select {
 Input:focus,
 TextArea:focus,
 Select:focus {
-    border: solid #56d6b0;
+    border: solid #14b8a6;
 }
 
 /* Primary actions use the darker accent; hover/focus deliberately moves to
    the lighter accent colour. */
 Button {
-    background: #31b98f;
+    background: #128a99;
     color: #061510;
-    border: solid #31b98f;
+    border: solid #128a99;
     text-style: bold;
 }
 
 Button:hover,
 Button:focus {
-    background: #56d6b0;
+    background: #14b8a6;
     color: #061510;
-    border: solid #56d6b0;
+    border: solid #14b8a6;
 }
 
 Button.-primary {
-    background: #31b98f;
+    background: #128a99;
     color: #061510;
 }
 

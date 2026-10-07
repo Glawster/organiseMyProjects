@@ -99,6 +99,15 @@ Label {
     color: #8fa3b8;
 }
 
+/* Scroll areas stay clear of the canvas. DataTable is itself a
+   ScrollableContainer, so its dark surface has to follow this rule or the
+   transparent background wins and the light table text disappears. */
+VerticalScroll,
+HorizontalScroll,
+ScrollableContainer {
+    background: transparent;
+}
+
 /* Tables and entry controls are dark working surfaces on the light canvas. */
 DataTable {
     background: #101f2e;
@@ -124,12 +133,6 @@ DataTable > .datatable--hover {
 
 DataTable:focus {
     border: solid #14b8a6;
-}
-
-VerticalScroll,
-HorizontalScroll,
-ScrollableContainer {
-    background: transparent;
 }
 
 Input,

@@ -23,6 +23,7 @@ The living guides are:
 - [Agent Sessions](documentation/agentSessions.md)
 - [Shared TUI Styling](documentation/tuiStyling.md)
 - [Testing Process](documentation/testingProcess.md)
+- [List Editing Interaction Standard](documentation/listEditingInteraction.md)
 - [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
 - [Linter Guide](documentation/linter.md)

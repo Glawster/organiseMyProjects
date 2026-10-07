@@ -10,8 +10,8 @@
    surface:           #101f2e  primary panels, cards and containers
    surfaceRaised:     #243545  nested panels, list items and validation rows
    accentStrong:      #239b78  active tabs, headings and strong emphasis
-   accent:            #128a99  primary actions and highlights
-   accentHover:       #14b8a6  hover/focus state; deliberately lighter
+   accent:            #31b98f  primary actions and highlights
+   accentHover:       #56d6b0  hover/focus state; deliberately lighter
    onAccent:          #061510  text/icons displayed on accent colours
    textPrimary:       #f5f8fb  primary text on dark surfaces
    textSecondary:     #d9e5ef  secondary text on dark surfaces
@@ -149,21 +149,21 @@ Select:focus {
 /* Primary actions use the darker accent; hover/focus deliberately moves to
    the lighter accent colour. */
 Button {
-    background: #128a99;
+    background: #31b98f;
     color: #061510;
-    border: solid #128a99;
+    border: solid #31b98f;
     text-style: bold;
 }
 
 Button:hover,
 Button:focus {
-    background: #14b8a6;
+    background: #56d6b0;
     color: #061510;
-    border: solid #14b8a6;
+    border: solid #56d6b0;
 }
 
 Button.-primary {
-    background: #128a99;
+    background: #31b98f;
     color: #061510;
 }
 

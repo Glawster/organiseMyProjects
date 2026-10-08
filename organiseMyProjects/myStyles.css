@@ -42,6 +42,19 @@ Footer {
     color: #101f2e;
 }
 
+/* Quit and Palette use the same ink as the canvas headings. */
+FooterKey,
+FooterKey .footer-key--key,
+FooterKey .footer-key--description {
+    color: #101f2e;
+    background: transparent;
+}
+
+FooterKey:hover {
+    color: #101f2e;
+    background: #f7f7f5;
+}
+
 TabbedContent,
 Tabs,
 TabPane {
@@ -138,9 +151,11 @@ DataTable:focus {
 Input,
 TextArea,
 Select {
+    height: 3;
     background: #101f2e;
     color: #f5f8fb;
     border: solid #30465a;
+    content-align: left middle;
 }
 
 Input:focus,
@@ -149,13 +164,38 @@ Select:focus {
     border: solid #14b8a6;
 }
 
+/* The current value and arrow are Static children. The canvas Static colour
+   would hide them on this dark surface. */
+SelectCurrent {
+    background: #101f2e;
+    color: #f5f8fb;
+    /* The Select border is the outline. The inner border would draw a second box. */
+    border: none;
+}
+
+SelectCurrent #label {
+    color: #8fa3b8;
+    background: transparent;
+}
+
+SelectCurrent.-has-value #label {
+    color: #f5f8fb;
+}
+
+SelectCurrent .arrow {
+    color: #8fa3b8;
+    background: transparent;
+}
+
 /* Primary actions use the darker accent; hover/focus deliberately moves to
    the lighter accent colour. */
 Button {
+    height: 3;
     background: #31b98f;
     color: #061510;
     border: solid #31b98f;
     text-style: bold;
+    content-align: center middle;
 }
 
 Button:hover,
@@ -168,6 +208,10 @@ Button:focus {
 Button.-primary {
     background: #31b98f;
     color: #061510;
+}
+
+.heading {
+    text-style: bold;
 }
 
 Button.-success,

@@ -105,6 +105,33 @@ class TestLinter08Naming:
             "X.ai",
         }
 
+    def testSpellingCheckIgnoresFunctionDocstrings(self, temp_dir):
+        source = temp_dir / "senderAddress.py"
+        source.write_text(
+            "def senderRelayDecode(address: str) -> str:\n"
+            "    \"\"\"Decode Apple's observable Hide My Email relay sender convention.\n\n"
+            "    Example:\n"
+            "      bmwuk_at_service_bmw_com_x...@icloud.com\n"
+            "      -> bmwuk@service.bmw.com\n\n"
+            "    Only the constrained @icloud.com relay form is rewritten.\n"
+            "    \"\"\"\n"
+            "    return address\n",
+            encoding="utf-8",
+        )
+
+        assert not any(item[1] == "Spelling (iCloud)" for item in fileCheck(str(source)))
+
+    def testSpellingCheckStillChecksNonDocstringExpressions(self, temp_dir):
+        source = temp_dir / "spelling.py"
+        source.write_text(
+            "def spellingCheck():\n"
+            "    \"\"\"Valid iCloud docstring.\"\"\"\n"
+            "    'icloud'\n",
+            encoding="utf-8",
+        )
+
+        assert any(item[1] == "Spelling (iCloud)" for item in fileCheck(str(source)))
+
 
 class TestCentralisedLinter:
     def testCreateDoesNotCopyLinterImplementations(self, temp_dir):

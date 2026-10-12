@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo — planned for OMP 0.8.
+Completed — implemented for OMP 0.8.
 
 ## Outcome
 
@@ -74,16 +74,20 @@ logging and domainAction conventions.
 
 ## Verification
 
-- `pytest tests/test_guiNamingLinter.py`
 - `pytest`
-- `runLinter`
-- `git diff --check`
+- `black --check --diff .`
+- `ruff check .`
+- `runLinter .`
+- `manageProject check`
 
 ## Change history
 
-- 2026-09-12: created for the OMP 0.8 backlog after organiseMyVideo linting
-  exposed false positives for proper names/acronyms and digit-containing
-  domainAction names.
+- 2026-10-12: implemented for OMP 0.8 with exact logging-token handling,
+  digit-aware domainAction naming, Textual `action_*`/`on_*` framework
+  exemptions, distributed linter guidance, and regression tests.
 - 2026-10-12: extended after `runLinter` on mailAgent reported Textual
   `action_*` and `on_*` methods as invalid names; require documented,
   centrally maintained framework-hook exemptions and regression tests.
+- 2026-09-12: created for the OMP 0.8 backlog after organiseMyVideo linting
+  exposed false positives for proper names/acronyms and digit-containing
+  domainAction names.

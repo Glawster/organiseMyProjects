@@ -186,7 +186,9 @@ class TestFrame:
         # The installed package is the linter source of truth.
         for moduleName in obsoleteCopiedModules:
             modulePath = projectPath / moduleName
-            assert not modulePath.exists(), f"Obsolete module {moduleName} should not exist"
+            assert (
+                not modulePath.exists()
+            ), f"Obsolete module {moduleName} should not exist"
 
 
 class TestErrorHandling:

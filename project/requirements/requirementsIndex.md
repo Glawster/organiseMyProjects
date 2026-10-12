@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 010
+Next available number: 011
 
 ## Requirement index
 
@@ -12,6 +12,7 @@ Next available number: 010
 | 004 | [Requirement, prompt and directory-index layout](features/004-requirementDocumentationLayout.md) | Reserve `README.md` for repository root, use folder-derived `<folderName>Index.md` names for directory indexes, keep requirements/prompts as flat numbered files, and safely clean legacy generated layouts. | InProgress | [Prompt](prompt/004-requirementDocumentationLayout.md) | Pending |
 | 005 | [runLinter source directory discovery](features/005-runLinterSourceDiscovery.md) | Discover default lint targets from packaging metadata and root-level packages. | Completed | [Prompt](prompt/005-runLinterSourceDiscovery.md) | Not required |
 | 006 | [GUI naming method and constant rules](features/006-guiNamingMethodAndConstantRules.md) | Allow action-only class methods and `_UPPER_CASE` private constants. | Completed | [Prompt](prompt/006-guiNamingMethodAndConstantRules.md) | Not required |
-| 007 | [Linter whitelist and digit-aware naming](features/007-linterWhitelistAndDigitNames.md) | OMP 0.8: allow approved proper names/acronyms in logging case checks and digits within valid domainAction names without weakening the underlying rules. | ToDo | [Prompt](prompt/007-linterWhitelistAndDigitNames.md) | Not required |
+| 007 | [Linter whitelist and digit-aware naming](features/007-linterWhitelistAndDigitNames.md) | Allow approved proper names/acronyms in logging case checks, digits within valid domainAction names, and framework-mandated Textual hooks without weakening the underlying rules. | Completed | [Prompt](prompt/007-linterWhitelistAndDigitNames.md) | Not required |
 | 008 | [Existing project scaffold consistency](features/008-existingProjectScaffoldConsistency.md) | Complete required context during existing-repository onboarding. | Completed | [Prompt](prompt/008-existingProjectScaffoldConsistency.md) | [ADR-001](../adr/001-fileOwnershipPolicies.md) |
 | 009 | [Log section linting](features/009-logSectionLinting.md) | Detect missing run and section markers in Python entry points. | Completed | [Prompt](prompt/009-logSectionLinting.md) | Not required |
+| 010 | [Centralise linter implementation](features/010-centraliseLinterImplementation.md) | Make the installed OMP package authoritative for linting and remove recognised obsolete project-local linter copies during update. | Completed | Not required | Not required |

@@ -161,12 +161,13 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        # Verify template files are copied
+        # Verify project-owned templates are copied while linters stay packaged.
         assert (
             projectPath / sample_project_name / "globalVars.py"
         ).exists(), "globalVars.py should be copied into the project package"
-        assert (projectPath / "tests" / "runLinter.py").exists()
-        assert (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert not (projectPath / "tests" / "runLinter.py").exists()
+        assert not (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert (projectPath / "documentation" / "linter.md").exists()
         assert_no_gui_scaffolds(projectPath)
 
         assert not (projectPath / "src").exists()
@@ -418,11 +419,11 @@ class TestUpdateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        # Verify only managed metadata folders are created by default
+        # Verify only managed/context metadata is added; no test-code scaffold.
         assert (projectPath / ".github").exists()
         assert not (projectPath / "src").exists()
-        # Managed test helper files are still deployed under tests/
-        assert (projectPath / "tests").exists()
+        assert not (projectPath / "tests").exists()
+        assert (projectPath / "documentation" / "linter.md").exists()
         assert not (projectPath / "logs").exists()
         assert_no_gui_scaffolds(projectPath)
 

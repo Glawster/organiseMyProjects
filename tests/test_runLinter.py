@@ -399,23 +399,19 @@ class TestGUI:
         uiDir.mkdir()
 
         # Create Python files in subdirectories
-        (srcDir / "utils.py").write_text(
-            """
+        (srcDir / "utils.py").write_text("""
 def good_function():
     pass
-"""
-        )
+""")
 
-        (uiDir / "main_frame.py").write_text(
-            """
+        (uiDir / "main_frame.py").write_text("""
 import tkinter as tk
 
 class MainFrame:
     def __init__(self):
         self.btnClose = tk.Button()  # Good naming
         self.bad_button = tk.Button()  # Bad naming
-"""
-        )
+""")
 
         # Run linter on directory
         testArgs = ["runLinter.py", str(tempDir)]

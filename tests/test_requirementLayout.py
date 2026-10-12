@@ -209,7 +209,9 @@ def test_historicalMultiPromptDirectoryIsPreserved(tmp_path):
 
     assert refine.exists()
     assert review.exists()
-    assert not (tmp_path / "project/requirements/prompt/001-handbookFoundation.md").exists()
+    assert not (
+        tmp_path / "project/requirements/prompt/001-handbookFoundation.md"
+    ).exists()
 
 
 def test_promptDirectoryWithoutRequirementIsPreserved(tmp_path):

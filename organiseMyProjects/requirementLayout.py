@@ -36,7 +36,10 @@ _INDEX_MIGRATIONS = (
 
 _REFERENCE_REPLACEMENTS = (
     ("project/requirements/README.md", "project/requirements/requirementsIndex.md"),
-    ("project/requirements/folderIndex.md", "project/requirements/requirementsIndex.md"),
+    (
+        "project/requirements/folderIndex.md",
+        "project/requirements/requirementsIndex.md",
+    ),
     ("project/adr/README.md", "project/adr/adrIndex.md"),
     ("project/adr/folderIndex.md", "project/adr/adrIndex.md"),
     ("requirements/README.md", "requirements/requirementsIndex.md"),
@@ -89,14 +92,16 @@ def _indexRecognised(path: Path, markers: tuple[str, ...]) -> bool:
         return False
 
     if path.parent.name == "requirements":
-        return "## requirement index" in folded or re.search(
-            r"\]\(features/\d{3}-[^)]+\.md\)", text
-        ) is not None
+        return (
+            "## requirement index" in folded
+            or re.search(r"\]\(features/\d{3}-[^)]+\.md\)", text) is not None
+        )
 
     if path.parent.name == "adr":
-        return "## decision index" in folded or re.search(
-            r"\]\(\d{3}-[^)]+\.md\)", text
-        ) is not None
+        return (
+            "## decision index" in folded
+            or re.search(r"\]\(\d{3}-[^)]+\.md\)", text) is not None
+        )
 
     return False
 

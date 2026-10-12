@@ -34,7 +34,9 @@ _LOGGING_CASE_RULES = {"Logging (info)", "Logging (warning)", "Logging (error)"}
 
 def _frameworkDetect(original: Callable, fileContent: str) -> str | None:
     """Recognise Textual imports without changing Tkinter or Qt detection."""
-    if re.search(r"(?m)^\s*(?:from\s+textual(?:\.|\s)|import\s+textual\b)", fileContent):
+    if re.search(
+        r"(?m)^\s*(?:from\s+textual(?:\.|\s)|import\s+textual\b)", fileContent
+    ):
         return "textual"
     return original(fileContent)
 

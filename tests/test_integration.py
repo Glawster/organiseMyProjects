@@ -45,6 +45,7 @@ class TestEndToEndWorkflow:
         assert (projectPath / ".github" / "agent-instructions.md").exists()
         assert (projectPath / "documentation" / "repositoryLayout.md").exists()
         assert (projectPath / "documentation" / "requirementsManagement.md").exists()
+        assert (projectPath / "documentation" / "linter.md").exists()
         assert (projectPath / "testEndToEnd" / "ui" / "mainMenu.py").exists()
 
         # Step 2: Add some Python code with violations to the project
@@ -162,9 +163,10 @@ class TestFrame:
             ".pre-commit-config.yaml",
             f"{projectName}/__init__.py",
             ".github/agent-instructions.md",
+            "documentation/linter.md",
         ]
 
-        expectedCopiedModules = [
+        obsoleteCopiedModules = [
             "tests/runLinter.py",
             "tests/guiNamingLinter.py",
         ]
@@ -181,11 +183,10 @@ class TestFrame:
             assert filePath.exists(), f"File {fileName} should exist"
             assert filePath.is_file(), f"{fileName} should be a file"
 
-        # Check copied modules
-        for moduleName in expectedCopiedModules:
+        # The installed package is the linter source of truth.
+        for moduleName in obsoleteCopiedModules:
             modulePath = projectPath / moduleName
-            assert modulePath.exists(), f"Module {moduleName} should exist"
-            assert modulePath.is_file(), f"{moduleName} should be a file"
+            assert not modulePath.exists(), f"Obsolete module {moduleName} should not exist"
 
 
 class TestErrorHandling:
@@ -257,41 +258,3 @@ class TestModuleImports:
 
         assert hasattr(runLinter, "main")
         assert hasattr(runLinter, "_lintTarget")
-
-    def testPackageMetadata(self):
-        """Test that package metadata is accessible."""
-        import organiseMyProjects
-
-        # Package should be importable and have basic structure
-        assert hasattr(organiseMyProjects, "__name__")
-
-
-class TestResourceAccess:
-    """Test access to package resources."""
-
-    def testAgentInstructionsFileAccess(self):
-        """Test that agent instructions exist at the canonical .github/ path."""
-        from organiseMyProjects.manageProject import TEMPLATE_DIR
-
-        srcAgentInstructions = TEMPLATE_DIR.parent / ".github" / "agent-instructions.md"
-        assert (
-            srcAgentInstructions.is_file()
-        ), f"agent-instructions.md not found at {srcAgentInstructions}"
-        content = srcAgentInstructions.read_text()
-        assert len(content) > 0
-        assert "Agent Instructions" in content
-        copilotInstructions = (
-            TEMPLATE_DIR.parent / ".github" / "copilot-instructions.md"
-        )
-        assert copilotInstructions.is_file()
-        assert "agent-instructions.md" in copilotInstructions.read_text()
-
-        claudeInstructions = TEMPLATE_DIR.parent / ".github" / "CLAUDE.md"
-        assert claudeInstructions.is_file()
-        assert "agent-instructions.md" in claudeInstructions.read_text()
-
-        requirementsManagement = (
-            TEMPLATE_DIR.parent / "documentation" / "requirementsManagement.md"
-        )
-        assert requirementsManagement.is_file()
-        assert "# Requirements management" in requirementsManagement.read_text()

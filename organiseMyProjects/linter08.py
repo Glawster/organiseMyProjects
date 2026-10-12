@@ -106,6 +106,30 @@ def guiNamingPatchesInstall(guiNamingModule) -> None:
         self.violations[:] = [*prefix, *added]
 
     visitor.loggingCheckExpression = loggingCheckExpression
+
+    originalSpellingCheck: Callable = visitor.spellingCheckExpression
+
+    def spellingCheckExpression(self, node) -> None:
+        parent = getattr(node, "parent", None)
+        parentBody = getattr(parent, "body", None)
+        isDocstring = (
+            isinstance(
+                parent,
+                (
+                    guiNamingModule.ast.Module,
+                    guiNamingModule.ast.ClassDef,
+                    guiNamingModule.ast.FunctionDef,
+                    guiNamingModule.ast.AsyncFunctionDef,
+                ),
+            )
+            and bool(parentBody)
+            and parentBody[0] is node
+        )
+        if isDocstring:
+            return
+        originalSpellingCheck(self, node)
+
+    visitor.spellingCheckExpression = spellingCheckExpression
     visitor._requirement007Patched = True
 
 

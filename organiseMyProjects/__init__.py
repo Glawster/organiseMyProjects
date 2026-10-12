@@ -10,12 +10,12 @@ This package provides tools to create and manage Python projects with:
 Main components:
 - manageProject: Project scaffolding tool (package utility)
 - guiNamingLinter: Naming convention checker (package utility)
-- runLinter: Linter CLI interface (template + package utility)
+- runLinter: Linter CLI interface (package utility)
 - logUtils: Logging utility (package utility)
 
 Template files (copied to new projects):
 - globalVars.py, baseFrame.py, frameTemplate.py, statusFrame.py
-- mainMenu.py, styleUtils.py, runLinter.py
+- mainMenu.py, styleUtils.py
 - .github/agent-instructions.md (copied from this repo's .github/)
 
 Usage:
@@ -24,8 +24,10 @@ Usage:
 """
 
 # Expose main functionality for programmatic use
-from . import agentCheck, logUtils, manageProject, runLinter
+from . import agentCheck, guiNamingLinter, logUtils, manageProject, runLinter
 from .guiNamingLinter import lintFile, lintGuiNaming
+from .linter08 import guiNamingPatchesInstall, runLinterPatchesInstall
+from .linterCentralisation import manageProjectLinterPatchesInstall
 from .requirementLayout import agentCheckPatchesInstall, manageProjectPatchesInstall
 from .requirementsPromptIndex import promptIndexPatchesInstall
 from .version import VERSION as __version__
@@ -38,9 +40,17 @@ manageProjectPatchesInstall(manageProject)
 agentCheckPatchesInstall(agentCheck)
 promptIndexPatchesInstall(manageProject, agentCheck)
 
+# OMP 0.8 keeps the installed package as the linter source of truth, removes
+# recognised obsolete downstream copies, and applies exact framework/casing
+# exemptions without weakening the core naming rules.
+guiNamingPatchesInstall(guiNamingLinter)
+runLinterPatchesInstall(runLinter)
+manageProjectLinterPatchesInstall(manageProject)
+
 __all__ = [
     "__version__",
     "agentCheck",
+    "guiNamingLinter",
     "lintFile",
     "lintGuiNaming",
     "logUtils",

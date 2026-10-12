@@ -3,10 +3,10 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from organiseMyProjects import runLinter
 from organiseMyProjects.guiNamingLinter import fileCheck
 from organiseMyProjects.linter08 import LOGGING_CASE_WHITELIST
 from organiseMyProjects.manageProject import createProject, updateProject
-from organiseMyProjects import runLinter
 
 
 class TestLinter08Naming:
@@ -86,9 +86,12 @@ class TestLinter08Naming:
         )
 
         assert any(item[1] == "Logging (info)" for item in fileCheck(str(source)))
-        assert runLinter._violationAllowed(
-            "using UnexpectedBrand metadata", "Logging (info)"
-        ) is False
+        assert (
+            runLinter._violationAllowed(
+                "using UnexpectedBrand metadata", "Logging (info)"
+            )
+            is False
+        )
 
     def testLoggingWhitelistIsExplicit(self):
         assert LOGGING_CASE_WHITELIST == {

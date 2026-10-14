@@ -265,3 +265,13 @@ Button.-primary, Button.-success, Button.-warning, Button.-error {
 .button-group > Button:last-child {
     margin-right: 0;
 }
+
+/* Existing screens commonly use plain Horizontal rows. Give those controls
+   the same adjacent gap without requiring button-group adoption first. */
+Horizontal > Button {
+    margin-right: 1;
+}
+
+Horizontal > Button:last-child {
+    margin-right: 0;
+}

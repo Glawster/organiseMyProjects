@@ -19,7 +19,9 @@ and semantic variants retain this geometry. Standard actions use the shared gree
 accent and dark foreground; success, warning and error variants use the shared
 semantic palette.
 
-Use a `Horizontal` container with `classes="button-group"` for a logical group:
+Plain `Horizontal` button rows receive a one-column gap automatically, with no
+trailing gap after the final button. Use `classes="button-group"` to also apply
+equal widths and surrounding vertical spacing:
 
 ```python
 with Horizontal(classes="button-group"):

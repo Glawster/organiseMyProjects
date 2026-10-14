@@ -77,3 +77,33 @@ def testRenderedButtonGroup(size):
                 assert button.content_region.height == 1
 
     asyncio.run(verify())
+
+
+@pytest.mark.parametrize("size", [(80, 24), (40, 16)])
+def testPlainHorizontalButtonGaps(size):
+    from textual.app import App, ComposeResult
+    from textual.containers import Horizontal
+    from textual.widgets import Button
+
+    class ThemeApp(App):
+        CSS_PATH = THEME
+        CSS = "Horizontal > Button { width: 1fr; min-width: 0; }"
+
+        def compose(self) -> ComposeResult:
+            # Match existing execution screens that do not opt into a class.
+            with Horizontal():
+                yield Button("Refresh")
+                yield Button("Selected")
+                yield Button("All")
+
+    async def verify():
+        async with ThemeApp().run_test(size=size) as pilot:
+            buttons = list(pilot.app.query(Button))
+            for left, right in zip(buttons, buttons[1:]):
+                assert right.region.x - left.region.right == 1
+            assert buttons[-1].styles.margin.right == 0
+            assert all(button.content_region.height == 1 for button in buttons)
+            widths = [button.region.width for button in buttons]
+            assert max(widths) - min(widths) <= 1
+
+    asyncio.run(verify())

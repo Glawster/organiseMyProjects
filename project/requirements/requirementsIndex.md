@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 012
+Next available number: 013
 
 ## Requirement index
 
@@ -17,3 +17,4 @@ Next available number: 012
 | 009 | [Log section linting](features/009-logSectionLinting.md) | Detect missing run and section markers in Python entry points. | Completed | [Prompt](prompt/009-logSectionLinting.md) | Not required |
 | 010 | [Centralise linter implementation](features/010-centraliseLinterImplementation.md) | Make the installed OMP package authoritative for linting and remove recognised obsolete project-local linter copies during update. | Completed | Not required | Not required |
 | 011 | [Repository and project root awareness](features/011-repositoryAndProjectRootAwareness.md) | Distinguish the Git repository root from a nested project root so repository-level checks such as ENT-001/002/003 resolve against the correct location. | ToDo | [Prompt](prompt/011-repositoryAndProjectRootAwareness.md) | Not required |
+| 012 | [Shared TUI button presentation](features/012-sharedTuiButtonPresentation.md) | Standardise one-row TUI buttons, spacing, equal grouped sizing, and shared presentation across conforming repos while keeping `clannEolas` exempt. | ToDo | [Prompt](prompt/012-sharedTuiButtonPresentation.md) | Not required |

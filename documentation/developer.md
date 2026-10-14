@@ -124,7 +124,6 @@ newline directly to stdout and today's application log file without using
 logging or adding prefixes. Initialise `setApplication()` in the entry point;
 helper functions reuse that context. Do not construct separator strings locally.
 
-
 `runLinter` checks conventional Python entry points (`main()`, functions calling
 `setApplication()`, and inline `__main__` guards) that emit `logger.*` headers:
 
@@ -621,3 +620,12 @@ When reporting issues:
 - Provide minimal reproduction case
 - Include full error traceback
 - Describe expected vs actual behavior
+
+## Checks in repositories containing nested projects
+
+`manageProject check --project <path>` keeps the selected directory as the
+project root for tests, requirements and project-management checks. Agent entry
+points (`ENT-001` through `ENT-004`) and repository-specific verification guidance
+are resolved at the containing Git work-tree root, discovered using Git. When the
+roots differ, diagnostics show both paths. Outside Git, or when Git is unavailable,
+repository checks fall back to the selected project directory.

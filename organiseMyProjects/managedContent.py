@@ -27,6 +27,8 @@ MARKER_PREFIXES = (
     "<!-- synced from Glawster/organiseMyProjects release ",
     "# deployed from Glawster/organiseMyProjects release ",
     "# synced from Glawster/organiseMyProjects release ",
+    "/* deployed from Glawster/organiseMyProjects release ",
+    "/* synced from Glawster/organiseMyProjects release ",
 )
 
 MANAGED_BLOCK_BEGIN = "OMP-MANAGED-BEGIN"
@@ -68,6 +70,12 @@ def managedContentBuild(
 ) -> str:
     """Add the scaffold release marker to canonical managed content."""
     sourceContent, _ = managedContentBody(sourceContent)
+    if suffix == ".css":
+        operation = "synced" if sync else "deployed"
+        return (
+            f"/* {operation} from Glawster/organiseMyProjects release {VERSION} "
+            "-- do not edit directly */\n" + sourceContent
+        )
     marker = PYTHON_SYNC_COMMENT if sync else PYTHON_DEPLOYMENT_COMMENT
     markdownMarker = SYNC_COMMENT if sync else DEPLOYMENT_COMMENT
     if suffix not in _PYTHON_LIKE_SUFFIXES:

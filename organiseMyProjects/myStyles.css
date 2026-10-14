@@ -190,10 +190,12 @@ SelectCurrent .arrow {
 /* Primary actions use the darker accent; hover/focus deliberately moves to
    the lighter accent colour. */
 Button {
-    height: 3;
+    height: 1;
+    min-height: 1;
+    padding: 0 1;
     background: #31b98f;
     color: #061510;
-    border: solid #31b98f;
+    border: none;
     text-style: bold;
     content-align: center middle;
 }
@@ -202,7 +204,7 @@ Button:hover,
 Button:focus {
     background: #56d6b0;
     color: #061510;
-    border: solid #56d6b0;
+    border: none;
 }
 
 Button.-primary {
@@ -233,4 +235,33 @@ Button.-error,
     background: #442329;
     color: #ff9da7;
     border: solid #7b3943;
+}
+
+/* Geometry applies to semantic and interaction states as well as plain buttons.
+   Widget defaults may otherwise restore top/bottom borders on focus or press. */
+Button, Button:hover, Button:focus, Button:disabled, Button.-active,
+Button.-primary, Button.-success, Button.-warning, Button.-error {
+    border: none !important;
+    padding: 0 1;
+    height: 1;
+    min-height: 1;
+}
+
+/* Opt-in logical horizontal groups share width and keep surrounding rows free.
+   Only non-final buttons receive a margin, avoiding an extra trailing gap. */
+.button-group {
+    layout: horizontal;
+    height: auto;
+    margin: 1 0;
+    padding: 0;
+}
+
+.button-group > Button {
+    width: 1fr;
+    min-width: 0;
+    margin: 0 1 0 0;
+}
+
+.button-group > Button:last-child {
+    margin-right: 0;
 }

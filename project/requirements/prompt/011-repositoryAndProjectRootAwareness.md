@@ -1,3 +1,5 @@
+# 011: Implement repository and project root awareness
+
 Implement requirement 011, Repository and project root awareness.
 
 Update `manageProject check` so it distinguishes the selected project root from the containing Git repository root. Repository-owned checks, including `ENT-001`, `ENT-002`, and `ENT-003`, must resolve their files from the Git repository root, while project-owned checks continue to resolve from the selected project root.

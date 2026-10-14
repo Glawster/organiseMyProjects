@@ -13,3 +13,4 @@ include organiseMyProjects/logUtils.sh
 include organiseMyProjects/myStyles.css
 recursive-include organiseMyProjects/ui *.py
 recursive-include organiseMyProjects/qt *.py
+include documentation/tuiStyling.md

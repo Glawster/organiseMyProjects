@@ -593,6 +593,10 @@ MANAGED_COPY_TEMPLATES = [
         TEMPLATE_DIR.parent / "documentation" / "agentImplementationWorkflow.md",
         Path("documentation") / "agentImplementationWorkflow.md",
     ),
+    (
+        TEMPLATE_DIR.parent / "documentation" / "tuiStyling.md",
+        Path("documentation") / "tuiStyling.md",
+    ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
@@ -651,6 +655,8 @@ MANAGED_BLOCK_TEMPLATES = [
 
 # Exactly one ownership policy for every file createProject can deploy.
 FILE_OWNERSHIP = {
+    "myStyles.css": POLICY_MANAGED_OVERWRITE,
+    "documentation/tuiStyling.md": POLICY_MANAGED_OVERWRITE,
     "AGENTS.md": POLICY_MANAGED_OVERWRITE,
     "CLAUDE.md": POLICY_MANAGED_OVERWRITE,
     "projectGuidelines.md": POLICY_MANAGED_OVERWRITE,
@@ -1020,6 +1026,12 @@ def createProject(
         (basePath / ".vscode").mkdir(exist_ok=True)
         (basePath / ".vscode" / "settings.json").write_text(VSCODE_SETTINGS_CONTENT)
 
+    stylingGuide = TEMPLATE_DIR.parent / "documentation" / "tuiStyling.md"
+    if stylingGuide.exists():
+        _managedCopyUpdate(
+            stylingGuide, basePath / "documentation" / "tuiStyling.md", dryRun
+        )
+    _sharedStylesDeploy(basePath, dryRun)
     _onboardingScaffoldEnsure(basePath, dryRun)
 
     # Initialize git and install pre-commit
@@ -1211,6 +1223,24 @@ def migrateProject(projectName, dryRun: bool = False):
         logger.info("migration simulation complete: no changes were applied")
 
 
+def _sharedStylesDeploy(basePath: Path, dryRun: bool = False) -> None:
+    """Deploy the shared theme while preserving deliberately project-owned CSS."""
+    if basePath.name.casefold() == "clanneolas":
+        return
+    destination = basePath / "myStyles.css"
+    source = TEMPLATE_DIR / "myStyles.css"
+    # Existing unmarked themes are application-owned. Adoption is explicit;
+    # subsequent managed copies are refreshed through the normal update path.
+    if destination.exists() and not _fileIsOmpManaged(destination):
+        if destination.read_text(encoding="utf-8") != source.read_text(
+            encoding="utf-8"
+        ):
+            logger.info(f"project-owned stylesheet preserved: {destination}")
+            return
+    ownershipPolicy("myStyles.css")
+    _managedCopyUpdate(source, destination, dryRun)
+
+
 def _fileIsOmpManaged(path: Path) -> bool:
     """Return whether a file carries an OMP deployment or sync marker."""
     try:
@@ -1329,6 +1359,7 @@ def updateProject(
     _migrateManagedNames(basePath, dryRun)
     _managedPathRelocate(basePath, dryRun)
 
+    _sharedStylesDeploy(basePath, dryRun)
     _onboardingScaffoldEnsure(basePath, dryRun)
 
     logger.done("project updated")

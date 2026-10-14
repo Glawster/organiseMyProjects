@@ -134,7 +134,7 @@ validation while reducing documentation and managed-file churn.
 - `manageProject` logs the running OMP version, including during `--check`.
 - Semantic progress logging distinguishes safe previews from applied actions.
 
-### Adoption
+### OMP 0.5 adoption
 
 Existing projects do not need to rewrite historical requirements or other
 documents solely to adopt 0.5. Run an update preview, inspect the proposed

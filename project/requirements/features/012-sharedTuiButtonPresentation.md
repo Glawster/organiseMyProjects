@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo — planned for OMP 0.8.
+InProgress
 
 ## Outcome
 

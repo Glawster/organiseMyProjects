@@ -19,6 +19,7 @@ The living guides are:
 - [Release Notes](documentation/releaseNotes.md)
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
+- [Shared TUI Styling](documentation/tuiStyling.md)
 - [Testing Process](documentation/testingProcess.md)
 - [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)

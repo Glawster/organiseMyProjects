@@ -29,7 +29,7 @@ The living guides are:
 - [Architecture Decisions](project/adr/adrIndex.md)
 - [Requirements](project/requirements/requirementsIndex.md)
 
-## OMP 0.6 development direction
+## Project scaffold
 
 OMP 0.6 makes the generated scaffold conform to the repository standards that
 OMP distributes.
@@ -83,6 +83,13 @@ See
 and
 [requirement 004](project/requirements/features/004-requirementDocumentationLayout.md)
 for the governing 0.6 behaviour.
+
+## OMP 0.8
+
+The current release centralises the installed linter, adds repository-aware
+checks for nested projects, and supplies shared Textual palette and button
+styling. See the [release notes](documentation/releaseNotes.md) and
+[styling guide](documentation/tuiStyling.md).
 
 ## Features
 

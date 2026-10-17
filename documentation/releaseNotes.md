@@ -1,6 +1,42 @@
 # Release notes
 
-## 0.7 — in development
+## 0.8 — 2026-10-17
+
+OMP 0.8 centralises downstream linting, distinguishes repository and project
+roots, and provides shared Textual styling.
+
+### Linting and logging
+
+- Downstream projects use the installed OMP linter. Updates remove recognised
+  obsolete local linter copies while preserving custom implementations.
+- Naming checks accept digit-aware names, approved proper names and acronyms,
+  and framework-required Textual hooks.
+- Spelling checks ignore docstrings; documentation checks ignore generated
+  cache directories.
+- Entry-point logging checks validate run markers and section separators.
+  `runLinter` reports its OMP version at startup, and `logUtils.line()` provides
+  a shared section separator.
+
+### Repository checks
+
+- Git-aware discovery resolves repository-owned entry points against the
+  repository root while retaining the selected project root for local checks.
+- Diagnostics identify both roots when they differ or verbose output is used.
+- Non-Git projects and systems without Git use a deterministic fallback.
+
+### Shared styling and guidance
+
+- The packaged `myStyles.tcss` supplies the shared palette and one-row Textual
+  buttons with consistent borders, padding and semantic colours.
+- Opt-in horizontal button groups provide equal sizing and consistent gaps.
+- Theme deployment supports provenance checks, previews and idempotent updates,
+  preserves custom themes and exempts `clannEolas`.
+- See [Shared TUI Styling](tuiStyling.md) for adoption and
+  [Agent Implementation Workflow](agentImplementationWorkflow.md) for delivery
+  guidance. The optional development dependencies include Textual for rendering
+  tests.
+
+## 0.7
 
 OMP 0.7 improves default `runLinter` discovery for root-package repositories
 and relaxes class-method and private-constant naming.
@@ -34,7 +70,7 @@ and relaxes class-method and private-constant naming.
   required to use `domainAction`.
 - Private constants such as `_MAX_RETRIES` are accepted.
 
-## 0.6 — in development
+## 0.6
 
 OMP 0.6 aligns generated project structure with the standards OMP distributes
 and makes established-project updates policy-driven.

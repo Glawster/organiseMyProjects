@@ -6,7 +6,7 @@
 
 ## Status
 
-InReview — OMP implementation verified; downstream TUI adoption remains pending.
+ReleaseReady — OMP 0.8 scope verified; outstanding acceptance work carries into 0.9.
 
 ## Requirements
 
@@ -27,12 +27,13 @@ InReview — OMP implementation verified; downstream TUI adoption remains pendin
 
 ## Verification
 
-- Full pytest suite: 418 passed using the existing mailAgent Conda environment.
+- Full pytest suite: 420 passed using the existing mailAgent Conda environment.
 - Regression coverage includes a real nested-project CLI check, genuine missing
   repository entry points, project-local test settings and Git discovery fallback.
 - Real Textual rendering verified at 81×24, 80×24, 41×16 and 40×16; widths differ
   by at most one column when fractional sizes require integer rounding.
-- Changed Python files pass Black, Ruff and OMP source lint; `git diff --check` passes.
+- Release checks pass pytest, Black, Ruff, OMP source/markup lint and
+  `manageProject check`; source distribution and wheel builds succeed.
 - Repository-wide markup validation passes after correcting duplicate headings,
   prompt titles and excess blank lines.
 - Source distribution and wheel build successfully; wheel stylesheet and source
@@ -48,6 +49,7 @@ InReview — OMP implementation verified; downstream TUI adoption remains pendin
   Resolve that requirement before implementing runtime synchronisation.
 - Requirement 004 already has migration/check implementations and passing
   regression tests; its existing InProgress status is retained for acceptance review.
-- No commits or remote changes were made; work is on `release/0.8`.
+- Release closure uses a squash pull request into `main`, an annotated `v0.8`
+  tag and a new `release/0.9` development branch.
 - Suite impact: OMS, OMV and OMP may opt into shared Textual styling; their existing
   Qt/Tkinter UIs require no changes. OMPR owns theme and check implementation.

@@ -26,7 +26,7 @@ roots, and provides shared Textual styling.
 
 ### Shared styling and guidance
 
-- The packaged `myStyles.tcss` supplies the shared palette and one-row Textual
+- The packaged `myStyles.css` supplies the shared palette and one-row Textual
   buttons with consistent borders, padding and semantic colours.
 - Opt-in horizontal button groups provide equal sizing and consistent gaps.
 - Theme deployment supports provenance checks, previews and idempotent updates,

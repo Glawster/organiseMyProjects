@@ -1,5 +1,10 @@
 # Release notes
 
+## 0.9 — in development
+
+Scope and acceptance work are tracked in
+[the current increment](../project/currentIncrement.md).
+
 ## 0.8 — 2026-10-17
 
 OMP 0.8 centralises downstream linting, distinguishes repository and project

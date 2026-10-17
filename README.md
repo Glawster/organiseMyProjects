@@ -23,6 +23,7 @@ The living guides are:
 - [Testing Process](documentation/testingProcess.md)
 - [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
+- [Linter Guide](documentation/linter.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Repository Agent Notes](.github/additional-instructions.md)

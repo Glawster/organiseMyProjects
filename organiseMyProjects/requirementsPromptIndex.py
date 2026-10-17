@@ -64,7 +64,9 @@ def promptIndexEnsure(
         replaceEnd = endIndex + len(_PROMPT_INDEX_END)
         while replaceEnd < len(existing) and existing[replaceEnd] == "\n":
             replaceEnd += 1
-        updated = existing[:replaceStart].rstrip() + "\n\n" + block + existing[replaceEnd:]
+        updated = (
+            existing[:replaceStart].rstrip() + "\n\n" + block + existing[replaceEnd:]
+        )
     elif "## Prompt index" in existing:
         # Preserve an existing project-owned prompt index rather than replacing it.
         return

@@ -209,7 +209,9 @@ def test_historicalMultiPromptDirectoryIsPreserved(tmp_path):
 
     assert refine.exists()
     assert review.exists()
-    assert not (tmp_path / "project/requirements/prompt/001-handbookFoundation.md").exists()
+    assert not (
+        tmp_path / "project/requirements/prompt/001-handbookFoundation.md"
+    ).exists()
 
 
 def test_promptDirectoryWithoutRequirementIsPreserved(tmp_path):
@@ -254,3 +256,23 @@ def test_migrationIsIdempotent(tmp_path):
     )
 
     assert first == second
+
+
+def test_generatedCacheReadmeIsIgnoredByDocumentationCheck(tmp_path):
+    """Generated cache README files must not trigger DOC-005."""
+    from organiseMyProjects import agentCheck
+    from organiseMyProjects.requirementLayout import agentCheckPatchesInstall
+
+    _write(tmp_path / "README.md", "# Project\n")
+    _write(tmp_path / ".pytest_cache/README.md", "# pytest cache\n")
+
+    agentCheckPatchesInstall(agentCheck)
+    validator = agentCheck.AgentCheckValidator(tmp_path)
+    validator._checkDocumentation()
+
+    failures = [
+        item
+        for item in validator.report.findings
+        if getattr(item, "ruleId", None) == "DOC-005"
+    ]
+    assert failures == []

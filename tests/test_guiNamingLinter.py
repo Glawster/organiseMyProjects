@@ -897,3 +897,22 @@ class MyFrame:
         violations = fileCheck(str(test_file))
 
         assert violations == []
+
+
+@pytest.mark.parametrize("directoryMode", [False, True])
+def testLinterHeaderSeparator(tmp_path, capsys, directoryMode):
+    target = tmp_path / "example.py"
+    target.write_text("VALUE = 1\n")
+    if directoryMode:
+        lintGuiNaming(str(tmp_path))
+    else:
+        lintFile(str(target))
+    output = capsys.readouterr().out.strip().splitlines()
+    assert output[1] == "-" * 80
+    assert output[2].endswith(": OK")
+
+
+def testLinePublicApiNamingException(tmp_path):
+    target = tmp_path / "logUtils.py"
+    target.write_text('def line():\n    print("-" * 80)\n')
+    assert not any("domainAction" in rule for _, rule, _ in fileCheck(str(target)))

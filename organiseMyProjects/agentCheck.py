@@ -6,14 +6,35 @@ and relational integrity across OMP-managed projects.
 
 import argparse
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.version import VERSION
+
+
+def _repositoryRootResolve(projectRoot: Path) -> Path:
+    """Resolve the containing Git work tree, falling back for non-Git projects."""
+    # Git handles worktrees and submodules correctly; OMP file locations do not
+    # establish repository ownership. Missing Git must not prevent validation.
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(projectRoot), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        )
+        repositoryRoot = Path(result.stdout.strip()).resolve()
+        if projectRoot.is_relative_to(repositoryRoot):
+            return repositoryRoot
+    except (OSError, subprocess.SubprocessError, ValueError):
+        pass
+    return projectRoot
 
 
 class Severity(Enum):
@@ -67,6 +88,7 @@ class AgentCheckValidator:
 
     def __init__(self, rootPath: Path, verbose: bool = False):
         self.rootPath = rootPath.resolve()
+        self.repositoryRoot = _repositoryRootResolve(self.rootPath)
         self.verbose = verbose
         self.report = CheckReport()
 
@@ -85,7 +107,7 @@ class AgentCheckValidator:
 
     def _checkEntryPoints(self) -> None:
         # ENT-001: AGENTS.md must exist and link to agent-instructions.md
-        agentsMd = self.rootPath / "AGENTS.md"
+        agentsMd = self.repositoryRoot / "AGENTS.md"
         if not agentsMd.exists():
             self.report.add(
                 "ENT-001",
@@ -112,7 +134,7 @@ class AgentCheckValidator:
                 )
 
         # ENT-002: Vendor shims should exist and point directly to agent-instructions.md
-        copilotShim = self.rootPath / ".github" / "copilot-instructions.md"
+        copilotShim = self.repositoryRoot / ".github" / "copilot-instructions.md"
         if copilotShim.exists():
             try:
                 cContent = copilotShim.read_text(encoding="utf-8")
@@ -133,7 +155,7 @@ class AgentCheckValidator:
                 copilotShim,
             )
 
-        claudeShim = self.rootPath / "CLAUDE.md"
+        claudeShim = self.repositoryRoot / "CLAUDE.md"
         if claudeShim.exists():
             try:
                 clContent = claudeShim.read_text(encoding="utf-8")
@@ -148,7 +170,7 @@ class AgentCheckValidator:
                 pass
 
         # ENT-003: .github/additional-instructions.md should exist
-        addInstructions = self.rootPath / ".github" / "additional-instructions.md"
+        addInstructions = self.repositoryRoot / ".github" / "additional-instructions.md"
         if not addInstructions.exists():
             self.report.add(
                 "ENT-003",
@@ -158,7 +180,7 @@ class AgentCheckValidator:
             )
 
         # ENT-004: requirements guidance is mandatory context for agents.
-        agentInstructions = self.rootPath / ".github" / "agent-instructions.md"
+        agentInstructions = self.repositoryRoot / ".github" / "agent-instructions.md"
         if agentInstructions.exists():
             try:
                 instructionsText = agentInstructions.read_text(encoding="utf-8")
@@ -249,7 +271,7 @@ class AgentCheckValidator:
             self._validateMarkdownFile(mdFile)
 
         # Check build/verification commands discoverability
-        addInstructions = self.rootPath / ".github" / "additional-instructions.md"
+        addInstructions = self.repositoryRoot / ".github" / "additional-instructions.md"
         devDocs = [readme]
         if addInstructions.exists():
             devDocs.append(addInstructions)
@@ -274,7 +296,12 @@ class AgentCheckValidator:
             self.report.add(
                 "DOC-003",
                 Severity.WARNING,
-                "No discoverable test command (e.g. `pytest`) found in README.md, developer.md, or additional-instructions.md",
+                "No discoverable test command (e.g. `pytest`) found in README.md, "
+                "documentation/developer.md, or .github/additional-instructions.md. "
+                "This is expected for a new repository with no tests configured yet; "
+                "document the actual test command when tests are added. "
+                "Detection currently recognises only pytest and python -m unittest, "
+                "so non-Python test commands may also trigger this warning.",
             )
 
     def _validateMarkdownFile(self, mdPath: Path) -> None:
@@ -586,9 +613,14 @@ def checkProject(
     setApplication(thisApplication)
     logger = getLogger(includeConsole=True)
 
+    runStart()
     logger.value("OMP version", VERSION)
     logger.doing(f"checking project at {resolvedPath}")
+    line()
     validator = AgentCheckValidator(resolvedPath, verbose=verbose)
+    if verbose or validator.repositoryRoot != resolvedPath:
+        logger.value("project root", resolvedPath)
+        logger.value("repository root", validator.repositoryRoot)
     report = validator.runAll()
 
     failureCount = len(report.failures)
@@ -608,6 +640,7 @@ def checkProject(
         elif verbose:
             logger.info(msg)
 
+    line()
     logger.value("failures", failureCount)
     logger.value("warnings", warningCount)
 

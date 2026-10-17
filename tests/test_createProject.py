@@ -161,12 +161,13 @@ class TestCreateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             createProject(str(projectPath))
 
-        # Verify template files are copied
+        # Verify project-owned templates are copied while linters stay packaged.
         assert (
             projectPath / sample_project_name / "globalVars.py"
         ).exists(), "globalVars.py should be copied into the project package"
-        assert (projectPath / "tests" / "runLinter.py").exists()
-        assert (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert not (projectPath / "tests" / "runLinter.py").exists()
+        assert not (projectPath / "tests" / "guiNamingLinter.py").exists()
+        assert (projectPath / "documentation" / "linter.md").exists()
         assert_no_gui_scaffolds(projectPath)
 
         assert not (projectPath / "src").exists()
@@ -282,6 +283,24 @@ class TestCreateProject:
         assert (
             "Read `documentation/requirementsManagement.md`."
             in (projectPath / ".github" / "agent-instructions.md").read_text()
+        )
+
+    def testCreateProjectAgentImplementationWorkflow(
+        self, temp_dir, sample_project_name
+    ):
+        """New projects receive the managed workflow and discoverable pointers."""
+        projectPath = temp_dir / sample_project_name
+        with patch("organiseMyProjects.manageProject.subprocess.run"):
+            createProject(str(projectPath))
+
+        relativePath = "documentation/agentImplementationWorkflow.md"
+        sourceFile = Path(__file__).parent.parent / relativePath
+        assert (projectPath / relativePath).read_text() == _build_managed_content(
+            sourceFile.read_text()
+        )
+        assert relativePath in (projectPath / "README.md").read_text()
+        assert (
+            relativePath in (projectPath / ".github/agent-instructions.md").read_text()
         )
 
     def testCreateProjectTestingProcess(self, temp_dir, sample_project_name):
@@ -400,11 +419,11 @@ class TestUpdateProject:
         with patch("organiseMyProjects.manageProject.subprocess.run"):
             updateProject(str(projectPath))
 
-        # Verify only managed metadata folders are created by default
+        # Verify only managed/context metadata is added; no test-code scaffold.
         assert (projectPath / ".github").exists()
         assert not (projectPath / "src").exists()
-        # Managed test helper files are still deployed under tests/
-        assert (projectPath / "tests").exists()
+        assert not (projectPath / "tests").exists()
+        assert (projectPath / "documentation" / "linter.md").exists()
         assert not (projectPath / "logs").exists()
         assert_no_gui_scaffolds(projectPath)
 
@@ -469,6 +488,31 @@ class TestUpdateProject:
         agentFile = projectPath / "AGENTS.md"
         sourceFile = Path(__file__).parent.parent / ".github" / "AGENTS.md"
         assert agentFile.read_text() == _build_managed_content(sourceFile.read_text())
+
+    def testUpdateProjectAgentImplementationWorkflow(
+        self, temp_dir, sample_project_name
+    ):
+        """Updates install and refresh the workflow while respecting dry-run."""
+        projectPath = temp_dir / sample_project_name
+        projectPath.mkdir()
+        relativePath = "documentation/agentImplementationWorkflow.md"
+        guideFile = projectPath / relativePath
+        sourceFile = Path(__file__).parent.parent / relativePath
+        expected = _build_managed_content(sourceFile.read_text())
+
+        updateProject(str(projectPath), dryRun=True)
+        assert not guideFile.exists()
+        updateProject(str(projectPath))
+        assert guideFile.read_text() == expected
+
+        guideFile.write_text(_build_managed_content("# Outdated workflow\n"))
+        outdated = guideFile.read_text()
+        updateProject(str(projectPath), dryRun=True)
+        assert guideFile.read_text() == outdated
+        updateProject(str(projectPath))
+        assert guideFile.read_text() == expected
+        updateProject(str(projectPath))
+        assert guideFile.read_text() == expected
 
     def testUpdateProjectAddsRepositoryLayout(self, temp_dir, sample_project_name):
         """Test that updateProject adds the managed repository layout."""
@@ -1109,9 +1153,11 @@ class TestOwnershipPolicy:
 
     def testGeneratedMainImportsOrganiseMyProjectsLogging(self):
         assert (
-            "from organiseMyProjects.logUtils import getLogger, setApplication"
+            "from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication"
             in MAIN_PY_CONTENT
         )
+        assert 'runStart()\n    logger.doing("main")\n    line()' in MAIN_PY_CONTENT
+        assert 'line()\n    logger.done("main")' in MAIN_PY_CONTENT
 
 
 class TestPackagedCliUpdate:

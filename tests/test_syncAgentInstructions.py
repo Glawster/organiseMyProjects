@@ -149,6 +149,13 @@ class TestSyncSpecs:
         releaseSpec = specsByTarget["documentation/howToRelease.md"]
         assert releaseSpec["sourceFile"].name == "howToRelease.md"
 
+    def testIncludesAgentImplementationWorkflow(self):
+        """Sync ships the workflow referenced by the master instructions."""
+        specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}
+        guideSpec = specsByTarget["documentation/agentImplementationWorkflow.md"]
+        assert guideSpec["sourceFile"].is_file()
+        assert "# Agent implementation workflow" in guideSpec["sourceFile"].read_text()
+
     def testIncludesTestingProcess(self):
         """The shared testing process should be synced as documentation."""
         specsByTarget = {spec["targetPath"]: spec for spec in sci.SYNC_SPECS}

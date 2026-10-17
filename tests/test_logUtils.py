@@ -403,3 +403,45 @@ class TestSemanticLogMethods:
         records = self._captureRecords(logger)
         logger.action("moving file")
         assert records and records[0].getMessage() == "...moving file"
+
+
+def testLineWritesDirectlyToConsoleAndApplicationLog(tmp_path, monkeypatch, capsys):
+    """Separators append without formatting or invoking the logging machinery."""
+    from organiseMyProjects import logUtils
+
+    monkeypatch.setattr(logUtils, "thisApplication", "separatorTest")
+    monkeypatch.setattr(logUtils, "_applicationLogDir", tmp_path)
+    logFile = tmp_path / f"separatorTest-{datetime.date.today().isoformat()}.log"
+    logFile.write_text("existing entry\n", encoding="utf-8")
+    loggingCall = MagicMock(side_effect=AssertionError("Logging must not be used"))
+    monkeypatch.setattr(logging.Logger, "_log", loggingCall)
+    monkeypatch.setattr(logUtils, "_getLogger", loggingCall)
+
+    logUtils.line()
+    logUtils.line()
+
+    expected = ("-" * 80 + "\n") * 2
+    assert capsys.readouterr().out == expected
+    assert logFile.read_text(encoding="utf-8") == "existing entry\n" + expected
+    loggingCall.assert_not_called()
+
+
+def testRunStartAppendsPlainMarker(tmp_path, monkeypatch, capsys):
+    """Repeated runs retain their boundaries without involving logging."""
+    from organiseMyProjects import logUtils
+
+    monkeypatch.setattr(logUtils, "thisApplication", "runTest")
+    monkeypatch.setattr(logUtils, "_applicationLogDir", tmp_path)
+    logFile = tmp_path / f"runTest-{datetime.date.today().isoformat()}.log"
+    logFile.write_text("previous run\n")
+    forbidden = MagicMock(side_effect=AssertionError("Logging must not be used"))
+    monkeypatch.setattr(logging.Logger, "_log", forbidden)
+    monkeypatch.setattr(logUtils, "_getLogger", forbidden)
+
+    logUtils.runStart()
+    logUtils.runStart()
+
+    expected = ("\n>" + "-" * 80 + "<\n\n") * 2
+    assert capsys.readouterr().out == expected
+    assert logFile.read_text() == "previous run\n" + expected
+    forbidden.assert_not_called()

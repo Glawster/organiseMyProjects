@@ -19,7 +19,9 @@ The living guides are:
 - [Release Notes](documentation/releaseNotes.md)
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
+- [Shared TUI Styling](documentation/tuiStyling.md)
 - [Testing Process](documentation/testingProcess.md)
+- [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
@@ -27,7 +29,7 @@ The living guides are:
 - [Architecture Decisions](project/adr/adrIndex.md)
 - [Requirements](project/requirements/requirementsIndex.md)
 
-## OMP 0.6 development direction
+## Project scaffold
 
 OMP 0.6 makes the generated scaffold conform to the repository standards that
 OMP distributes.
@@ -82,6 +84,13 @@ and
 [requirement 004](project/requirements/features/004-requirementDocumentationLayout.md)
 for the governing 0.6 behaviour.
 
+## OMP 0.8
+
+The current release centralises the installed linter, adds repository-aware
+checks for nested projects, and supplies shared Textual palette and button
+styling. See the [release notes](documentation/releaseNotes.md) and
+[styling guide](documentation/tuiStyling.md).
+
 ## Features
 
 - Preview or create a standard Python project scaffold.
@@ -124,6 +133,19 @@ manageProject create --project myNewProject -qt --confirm
 ```
 
 ### Update an existing project
+
+For an existing repository, including a freshly initialised Git repository, use
+`manageProject update -y` to complete the OMP scaffold. Update creates missing
+`README.md`, `.github/additional-instructions.md` and
+`project/currentIncrement.md` files, preserving existing content. The starter
+README is language-neutral and the initial increment is idle. Project-specific
+instructions are owned by the project, not a managed copy of OMP's own instructions.
+`create` remains the command for a new project directory.
+
+A successful `manageProject update` followed immediately by `manageProject check`
+must not report deficiencies that `update` itself is responsible for correcting.
+Authors still supply actual setup and test commands; update explicitly reports
+this responsibility. Until documented, `check` may report `DOC-003`.
 
 Previewing is the default. Add `--confirm` to apply the update:
 
@@ -283,6 +305,14 @@ directly.
 
 Runtime helpers such as logging live in the `organiseMyProjects` package.
 Applications import `from organiseMyProjects.logUtils import getLogger`.
+Call `logUtils.runStart()` once after `setApplication()` and before the header
+to mark a new run with a blank line, `>` plus 80 hyphens plus `<`, and another
+blank line. Bash scripts can call `runStart` and `line` from `logUtils.sh`.
+For a plain console separator, call `logUtils.line()` after
+`from organiseMyProjects import logUtils`. It prints 80 hyphens and a newline
+directly to standard output and appends it to today's application log file,
+without using logging or adding prefixes. Call `setApplication()` first. Use the separator after the complete command
+header and before any final summary.
 
 ## Sync agent instructions and managed guidance
 

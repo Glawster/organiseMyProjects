@@ -53,7 +53,9 @@ def testAgentCheckFailsWhenPromptIsNotIndexed(tmp_path):
         "Read `documentation/requirementsManagement.md`.\n"
         "Read `documentation/repositoryLayout.md` before adding or moving repository content.\n",
     )
-    _write(root / "documentation/requirementsManagement.md", "# Requirements management\n")
+    _write(
+        root / "documentation/requirementsManagement.md", "# Requirements management\n"
+    )
     _write(root / "documentation/repositoryLayout.md", "# Repository layout\n")
     _write(root / "project/requirements/requirementsIndex.md", "# Requirements\n")
     promptPath = root / "project/requirements/prompt/001-firstFeature.md"

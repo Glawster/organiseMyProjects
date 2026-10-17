@@ -17,6 +17,8 @@ import ast
 import os
 import re
 
+from organiseMyProjects.logUtils import line, runStart, setApplication
+
 ## constants
 
 DOMAIN_ACTION_PATTERN = r"^_?[a-z]+[A-Z][a-zA-Z0-9]*$"
@@ -24,6 +26,7 @@ CLASS_METHOD_NAME_PATTERN = r"^_?[a-z][a-zA-Z0-9]*$"
 
 FUNCTION_NAME_EXCEPTIONS = {
     "main",
+    "line",  # Public logUtils separator API.
     # AST visitor callback names must match ast.NodeVisitor conventions.
     "visit_Assign",
     "visit_ClassDef",
@@ -513,6 +516,133 @@ class GuiNamingVisitor(ast.NodeVisitor):
         return None
 
 
+## log section structure
+
+
+def _sectionCallName(statement: ast.stmt) -> str:
+    """Identify conventional logging calls without inspecting strings or comments."""
+    if not isinstance(statement, ast.Expr) or not isinstance(statement.value, ast.Call):
+        return ""
+    function = statement.value.func
+    if isinstance(function, ast.Name):
+        return function.id
+    if isinstance(function, ast.Attribute) and isinstance(function.value, ast.Name):
+        if function.value.id == "logger":
+            return "logger." + function.attr
+        if function.value.id == "logUtils":
+            return function.attr
+    return ""
+
+
+def _sectionSummaryCheck(
+    body: list[ast.stmt], marked: bool = False, firstLog: tuple | None = None
+) -> list:
+    """Require a separator before summary logging, including conditional endings."""
+    findings = []
+    for statement in body:
+        name = _sectionCallName(statement)
+        if name == "line":
+            marked = True
+        elif name == "logger.done":
+            summaryMarked, summaryLine = firstLog or (marked, statement.lineno)
+            if not summaryMarked:
+                findings.append(
+                    (
+                        "line",
+                        "LOG-SEC-003: call line() before summary output",
+                        summaryLine,
+                    )
+                )
+        elif name.startswith("logger."):
+            # Remember the first summary count, so a separator placed only before
+            # done() cannot hide missing separation before the counts.
+            if firstLog is None:
+                firstLog = (marked, statement.lineno)
+        elif isinstance(statement, ast.If):
+            findings.extend(_sectionSummaryCheck(statement.body, marked, firstLog))
+            findings.extend(_sectionSummaryCheck(statement.orelse, marked, firstLog))
+            # Logging-only completion branches do not consume the separator
+            # before a following success summary; work in a branch does.
+            if any(
+                not isinstance(item, (ast.Return, ast.Pass))
+                and not _sectionCallName(item).startswith("logger.")
+                for item in [*statement.body, *statement.orelse]
+            ):
+                marked = False
+                firstLog = None
+        elif isinstance(statement, (ast.Return, ast.Pass)):
+            continue
+        elif isinstance(statement, (ast.Assign, ast.AnnAssign)) and not any(
+            isinstance(item, ast.Call) for item in ast.walk(statement)
+        ):
+            # Pure summary calculations do not produce intervening output.
+            continue
+        else:
+            marked = False
+            firstLog = None
+    return findings
+
+
+def loggingSectionsCheck(tree: ast.Module, isTestFile: bool = False) -> list:
+    """Check conventional Python entry-point headers and final logging summaries.
+
+    Scope is main(), functions establishing application context, and inline
+    __main__ guards. Helpers and tests do not own application run boundaries.
+    """
+    if isTestFile:
+        return []
+    findings = []
+    bodies = []
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name == "main" or any(
+                _sectionCallName(item) == "setApplication" for item in node.body
+            ):
+                bodies.append(node.body)
+        elif isinstance(node, ast.If) and isinstance(node.test, ast.Compare):
+            if isinstance(node.test.left, ast.Name) and node.test.left.id == "__name__":
+                bodies.append(node.body)
+
+    for body in bodies:
+        # A dispatcher delegating all output has no header of its own.
+        header = next(
+            (
+                i
+                for i, item in enumerate(body)
+                if _sectionCallName(item).startswith("logger.")
+            ),
+            None,
+        )
+        if header is None:
+            continue
+        if not any(_sectionCallName(item) == "runStart" for item in body[:header]):
+            findings.append(
+                (
+                    "runStart",
+                    "LOG-SEC-001: call runStart() before the application header",
+                    body[header].lineno,
+                )
+            )
+        end = header + 1
+        while (
+            end < len(body)
+            and _sectionCallName(body[end]).startswith("logger.")
+            and _sectionCallName(body[end]) != "logger.done"
+        ):
+            end += 1
+        if end == len(body) or _sectionCallName(body[end]) != "line":
+            findings.append(
+                (
+                    "line",
+                    "LOG-SEC-002: call line() immediately after the application header",
+                    body[end - 1].lineno,
+                )
+            )
+        # Do not let the header separator satisfy a later summary after work.
+        findings.extend(_sectionSummaryCheck(body[end:]))
+    return findings
+
+
 ## file
 
 
@@ -535,6 +665,7 @@ def fileCheck(filepath: str) -> list[tuple[str, str, int]]:
     visitor.violations.extend(testFileCheck(filepath))
 
     visitor.visit(tree)
+    visitor.violations.extend(loggingSectionsCheck(tree, isTestFile))
 
     if framework == "tkinter" and visitor.gridCalls > 0 and visitor.packCalls == 0:
         visitor.violations.append(("layout", "Use 'pack()' instead of 'grid()'", 0))
@@ -568,7 +699,8 @@ def testFileCheck(filepath: str) -> list[tuple[str, str, int]]:
 
 def lintFile(filepath: str) -> None:
     """Lint a single Python file."""
-    print(f"\nLinting: {filepath}\n" + "-" * 50)
+    print(f"\nLinting: {filepath}")
+    line()
 
     try:
         violations = fileCheck(filepath)
@@ -581,7 +713,8 @@ def lintFile(filepath: str) -> None:
 
 def lintGuiNaming(directory: str) -> None:
     """Lint all Python files below a directory."""
-    print(f"\nChecking GUI naming in: {directory}\n" + "-" * 50)
+    print(f"\nChecking GUI naming in: {directory}")
+    line()
 
     ignoredDirectories = {
         ".git",
@@ -623,6 +756,8 @@ def reportViolations(label: str, violations: list[tuple[str, str, int]]) -> None
 if __name__ == "__main__":
     import sys
 
+    setApplication("guiNamingLinter")
+    runStart()
     if len(sys.argv) > 1:
         lintFile(sys.argv[1])
     else:

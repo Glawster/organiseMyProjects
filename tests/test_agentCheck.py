@@ -342,3 +342,122 @@ Active
 
         monkeypatch.setattr(sys, "argv", ["agentCheck", str(validRepo)])
         assert main() == 0
+
+
+def testCheckCommandSeparatesHeaderAndSummary(validRepo, monkeypatch, capsys, caplog):
+    import logging
+
+    from organiseMyProjects import manageProject
+
+    monkeypatch.setattr(Path, "home", lambda: validRepo)
+    with caplog.at_level(logging.INFO):
+        assert manageProject.main(["check", "--project", str(validRepo)]) == 0
+    marker = "\n>" + "-" * 80 + "<\n\n"
+    assert capsys.readouterr().out == marker + ("-" * 80 + "\n") * 2
+    assert sum("OMP version" in record.getMessage() for record in caplog.records) == 1
+    logFile = next((validRepo / ".local/state/manageProject").glob("*.log"))
+    assert logFile.read_text().startswith(marker)
+    assert logFile.read_text().count(marker) == 1
+    lines = logFile.read_text().splitlines()
+    header = next(i for i, text in enumerate(lines) if "checking project at" in text)
+    summary = next(i for i, text in enumerate(lines) if "...failures:" in text)
+    assert lines[header + 1] == "-" * 80
+    assert lines[summary - 1] == "-" * 80
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def testGitRootEntryPoints(validRepo, nested):
+    import subprocess
+
+    subprocess.run(["git", "init", str(validRepo)], check=True, capture_output=True)
+    project = validRepo / "mailAgent" if nested else validRepo
+    project.mkdir(exist_ok=True)
+    validator = AgentCheckValidator(project)
+    assert validator.repositoryRoot == validRepo.resolve()
+    validator._checkEntryPoints()
+    assert not [
+        f
+        for f in validator.report.findings
+        if f.ruleId in {"ENT-001", "ENT-002", "ENT-003"}
+    ]
+    (validRepo / "AGENTS.md").unlink()
+    validator = AgentCheckValidator(project)
+    validator._checkEntryPoints()
+    finding = next(f for f in validator.report.findings if f.ruleId == "ENT-001")
+    assert finding.filePath == validRepo / "AGENTS.md"
+    validator._checkManagedConventions()
+    assert validator.rootPath == project.resolve()
+
+
+def testNonGitRootFallback(tmp_path):
+    validator = AgentCheckValidator(tmp_path)
+    assert validator.repositoryRoot == tmp_path.resolve()
+
+
+def testMissingGitRootFallback(tmp_path):
+    with patch(
+        "organiseMyProjects.agentCheck.subprocess.run", side_effect=FileNotFoundError
+    ):
+        validator = AgentCheckValidator(tmp_path)
+    assert validator.repositoryRoot == tmp_path.resolve()
+
+
+@pytest.mark.parametrize(
+    ("relativePath", "rule"),
+    [
+        ("AGENTS.md", "ENT-001"),
+        (".github/copilot-instructions.md", "ENT-002"),
+        (".github/additional-instructions.md", "ENT-003"),
+    ],
+)
+def testNestedMissingEntryPoints(validRepo, relativePath, rule):
+    import subprocess
+
+    subprocess.run(["git", "init", str(validRepo)], check=True, capture_output=True)
+    project = validRepo / "mailAgent"
+    project.mkdir()
+    missing = validRepo / relativePath
+    missing.unlink()
+    validator = AgentCheckValidator(project)
+    validator._checkEntryPoints()
+    finding = next(f for f in validator.report.findings if f.ruleId == rule)
+    assert finding.filePath == missing
+    # Project tests remain local even if the repository has valid test settings.
+    (project / "pytest.ini").write_text("[pytest]\npython_files = wrong.py\n")
+    validator._checkManagedConventions()
+    assert (
+        next(f for f in validator.report.failures if f.ruleId == "TST-001").filePath
+        == project / "pytest.ini"
+    )
+
+
+def testNestedProjectCheckProductionPath(validRepo, monkeypatch, caplog):
+    import shutil
+    import subprocess
+
+    from organiseMyProjects import manageProjectCli
+
+    subprocess.run(["git", "init", str(validRepo)], check=True, capture_output=True)
+    project = validRepo / "mailAgent"
+    shutil.copytree(
+        validRepo, project, ignore=shutil.ignore_patterns(".git", "mailAgent")
+    )
+    shutil.rmtree(project / ".github")
+    (project / "AGENTS.md").unlink()
+    (project / "CLAUDE.md").unlink()
+    readme = project / "README.md"
+    readme.write_text(
+        readme.read_text().replace(
+            "](.github/agent-instructions.md)", "](../.github/agent-instructions.md)"
+        )
+    )
+    monkeypatch.setattr(
+        sys, "argv", ["manageProject", "check", "--project", str(project)]
+    )
+    assert manageProjectCli.main() == 0
+    output = caplog.text
+    assert "project root" in output
+    assert "repository root" in output
+    assert "[ENT-001]" not in output
+    assert "[ENT-002]" not in output
+    assert "[ENT-003]" not in output

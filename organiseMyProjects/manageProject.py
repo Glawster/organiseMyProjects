@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.managedContent import (
     POLICY_MANAGED_BLOCK_MERGE,
     POLICY_MANAGED_OVERWRITE,
@@ -68,7 +68,7 @@ REQUIREMENTS_MANAGED_BLOCK = (
 DEV_REQUIREMENTS_MANAGED_BLOCK = "black\npytest\npre-commit\nruff"
 PACKAGE_MAIN_CONTENT = """from pathlib import Path
 
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 
 thisApplication = Path(__file__).resolve().parent.name
 setApplication(thisApplication)
@@ -108,13 +108,16 @@ def main():
         dryRun=dryRun,
     )
 
+    runStart()
     logger.doing("main")
+    line()
     if tkinterMainMenu is not None:
         tkinterMainMenu()
     elif qtMainMenu is not None:
         qtMainMenu()
     else:
         logger.info("no ui scaffold installed")
+    line()
     logger.done("main")
 
 
@@ -329,6 +332,51 @@ Idle
 history when a new increment starts; Git retains delivery history. -->
 """
 
+ADDITIONAL_INSTRUCTIONS_CONTENT = """# Project-specific instructions
+
+## Project context
+
+Record the project's purpose, conventions and layout exceptions here.
+
+## Verification
+
+Document the actual build and test commands for this repository here.
+"""
+
+
+def _onboardingReadmeBuild(basePath: Path) -> str:
+    """Build a language-neutral introduction using only deployed guide links."""
+    links = [
+        f"- [{path.stem}]({path.as_posix()})"
+        for source, path in MANAGED_COPY_TEMPLATES
+        if path.parts[0] == "documentation" and source.exists()
+    ]
+    return (
+        f"# {basePath.resolve().name}\n\n"
+        "Add a description of this project and its setup instructions.\n\n"
+        "## Documentation\n\n"
+        + "\n".join(links)
+        + "\n- [Project instructions](.github/additional-instructions.md)\n"
+        "- [Current increment](project/currentIncrement.md)\n"
+    )
+
+
+def _onboardingScaffoldEnsure(basePath: Path, dryRun: bool) -> None:
+    """Seed required project-owned context without replacing local content."""
+    for relative, content in (
+        (".github/additional-instructions.md", ADDITIONAL_INSTRUCTIONS_CONTENT),
+        ("README.md", _onboardingReadmeBuild(basePath)),
+        ("project/currentIncrement.md", CURRENT_INCREMENT_CONTENT),
+    ):
+        ownershipPolicy(relative)
+        _createTextFileIfMissing(basePath / relative, content, dryRun)
+    logger.info(
+        "project action required: document your actual setup and test commands in "
+        "README.md or .github/additional-instructions.md if not already documented; "
+        "update preserves this project-owned content"
+    )
+
+
 PROJECT_YAML_CONTENT = """name: "project"
 description: "Project description"
 version: "0.1.0"
@@ -459,6 +507,7 @@ The importable Python package is `{packageName}/`. Install the project with
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
 - [Testing Process](documentation/testingProcess.md)
+- [Agent Workflow](documentation/agentImplementationWorkflow.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 """
 
@@ -540,6 +589,14 @@ MANAGED_COPY_TEMPLATES = [
         TEMPLATE_DIR.parent / "documentation" / "howToRelease.md",
         Path("documentation") / "howToRelease.md",
     ),
+    (
+        TEMPLATE_DIR.parent / "documentation" / "agentImplementationWorkflow.md",
+        Path("documentation") / "agentImplementationWorkflow.md",
+    ),
+    (
+        TEMPLATE_DIR.parent / "documentation" / "tuiStyling.md",
+        Path("documentation") / "tuiStyling.md",
+    ),
     (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
     (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
 ]
@@ -598,6 +655,8 @@ MANAGED_BLOCK_TEMPLATES = [
 
 # Exactly one ownership policy for every file createProject can deploy.
 FILE_OWNERSHIP = {
+    "myStyles.css": POLICY_MANAGED_OVERWRITE,
+    "documentation/tuiStyling.md": POLICY_MANAGED_OVERWRITE,
     "AGENTS.md": POLICY_MANAGED_OVERWRITE,
     "CLAUDE.md": POLICY_MANAGED_OVERWRITE,
     "projectGuidelines.md": POLICY_MANAGED_OVERWRITE,
@@ -606,6 +665,7 @@ FILE_OWNERSHIP = {
     "documentation/repositoryLayout.md": POLICY_MANAGED_OVERWRITE,
     "documentation/requirementsManagement.md": POLICY_MANAGED_OVERWRITE,
     "documentation/testingProcess.md": POLICY_MANAGED_OVERWRITE,
+    "documentation/agentImplementationWorkflow.md": POLICY_MANAGED_OVERWRITE,
     "documentation/howToRelease.md": POLICY_MANAGED_OVERWRITE,
     "tests/runLinter.py": POLICY_MANAGED_OVERWRITE,
     "tests/guiNamingLinter.py": POLICY_MANAGED_OVERWRITE,
@@ -616,6 +676,7 @@ FILE_OWNERSHIP = {
     "requirements.txt": POLICY_MANAGED_BLOCK_MERGE,
     "dev-requirements.txt": POLICY_MANAGED_BLOCK_MERGE,
     ".gitignore": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    ".github/additional-instructions.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "README.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "main.py": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "pyproject.toml": POLICY_PROJECT_OWNED_MISSING_ONLY,
@@ -917,6 +978,16 @@ def createProject(
                 _managedContentBuild(srcTestingProcess.read_text())
             )
 
+    srcAgentWorkflow = (
+        TEMPLATE_DIR.parent / "documentation" / "agentImplementationWorkflow.md"
+    )
+    if srcAgentWorkflow.exists():
+        logger.action("copying agent implementation workflow guide")
+        if not dryRun:
+            (basePath / "documentation" / "agentImplementationWorkflow.md").write_text(
+                _managedContentBuild(srcAgentWorkflow.read_text())
+            )
+
     # Copy the release process guide
     srcHowToRelease = TEMPLATE_DIR.parent / "documentation" / "howToRelease.md"
     if srcHowToRelease.exists():
@@ -954,6 +1025,14 @@ def createProject(
     if not dryRun:
         (basePath / ".vscode").mkdir(exist_ok=True)
         (basePath / ".vscode" / "settings.json").write_text(VSCODE_SETTINGS_CONTENT)
+
+    stylingGuide = TEMPLATE_DIR.parent / "documentation" / "tuiStyling.md"
+    if stylingGuide.exists():
+        _managedCopyUpdate(
+            stylingGuide, basePath / "documentation" / "tuiStyling.md", dryRun
+        )
+    _sharedStylesDeploy(basePath, dryRun)
+    _onboardingScaffoldEnsure(basePath, dryRun)
 
     # Initialize git and install pre-commit
     logger.action("initializing git repository")
@@ -1144,6 +1223,24 @@ def migrateProject(projectName, dryRun: bool = False):
         logger.info("migration simulation complete: no changes were applied")
 
 
+def _sharedStylesDeploy(basePath: Path, dryRun: bool = False) -> None:
+    """Deploy the shared theme while preserving deliberately project-owned CSS."""
+    if basePath.name.casefold() == "clanneolas":
+        return
+    destination = basePath / "myStyles.css"
+    source = TEMPLATE_DIR / "myStyles.css"
+    # Existing unmarked themes are application-owned. Adoption is explicit;
+    # subsequent managed copies are refreshed through the normal update path.
+    if destination.exists() and not _fileIsOmpManaged(destination):
+        if destination.read_text(encoding="utf-8") != source.read_text(
+            encoding="utf-8"
+        ):
+            logger.info(f"project-owned stylesheet preserved: {destination}")
+            return
+    ownershipPolicy("myStyles.css")
+    _managedCopyUpdate(source, destination, dryRun)
+
+
 def _fileIsOmpManaged(path: Path) -> bool:
     """Return whether a file carries an OMP deployment or sync marker."""
     try:
@@ -1261,6 +1358,9 @@ def updateProject(
     # names. Existing destinations are never overwritten.
     _migrateManagedNames(basePath, dryRun)
     _managedPathRelocate(basePath, dryRun)
+
+    _sharedStylesDeploy(basePath, dryRun)
+    _onboardingScaffoldEnsure(basePath, dryRun)
 
     logger.done("project updated")
     if dryRun:
@@ -1526,13 +1626,6 @@ def main(argv: list[str] | None = None):
     dryRun = not getattr(args, "confirm", False)
     projectPath = _projectPathResolve(args, parser)
 
-    logger = getLogger(
-        includeConsole=True,
-        dryRun=dryRun,
-    )
-    logger.value("OMP version", VERSION)
-    logger.doing(thisApplication)
-
     if args.command == "check":
         from organiseMyProjects.agentCheck import checkProject
 
@@ -1542,6 +1635,15 @@ def main(argv: list[str] | None = None):
             strict=bool(getattr(args, "strict", False)),
             verbose=bool(getattr(args, "verbose", False)),
         )
+
+    logger = getLogger(
+        includeConsole=True,
+        dryRun=dryRun,
+    )
+    runStart()
+    logger.value("OMP version", VERSION)
+    logger.doing(thisApplication)
+    line()
 
     if args.command == "sync":
         syncAgentInstructions = _loadSyncModule()

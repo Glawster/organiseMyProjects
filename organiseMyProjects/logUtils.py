@@ -334,3 +334,33 @@ def drawBox(
     else:
         for outLine in outputLines:
             print(outLine)
+
+
+def line() -> None:
+    """Write a plain separator to stdout and today's application log directly.
+
+    Requires the application context established by setApplication(). No logging
+    records, handlers or formatting are used.
+    """
+    _plainOutputWrite("-" * 80 + "\n")
+
+
+def runStart() -> None:
+    """Mark a new application run with a bracketed separator and blank lines.
+
+    Call once at the entry point after setApplication() and before the header.
+    Output goes directly to stdout and today's application log without logging.
+    """
+    _plainOutputWrite("\n>" + "-" * 80 + "<\n\n")
+
+
+def _plainOutputWrite(text: str) -> None:
+    """Append unformatted output to the application log and flush it to stdout."""
+    name = getApplication()
+    logDir = getApplicationLogDir()
+    logFile = logDir / f"{name}-{datetime.date.today().isoformat()}.log"
+
+    # Append independently so existing log content and plain formatting survive.
+    with logFile.open("a", encoding="utf-8") as stream:
+        stream.write(text)
+    print(text, end="", flush=True)

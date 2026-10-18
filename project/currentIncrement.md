@@ -26,11 +26,16 @@ implemented in 0.10.
 
 ## Internal refactor (no requirement)
 
-Remove the six import-time patch installations from
-`organiseMyProjects/__init__.py` (`requirementLayout`,
-`requirementsPromptIndex`, `linter08`, `linterCentralisation`) by moving their
-behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
-`runLinter`. Existing tests define the behaviour and must remain green.
+Done: the six import-time patch installations are removed from
+`organiseMyProjects/__init__.py`. `linter08` and `linterCentralisation` are
+folded into `guiNamingLinter`, `runLinter` and `manageProject`; `manageProject`
+calls `layoutMigrate` and `promptIndexEnsure` explicitly; the requirement and
+README checks live in `agentCheck`. All existing tests pass unchanged apart
+from imports.
+
+Follow-up candidate: scaffold `requirementsIndex.md` and `adrIndex.md`
+directly instead of writing legacy `README.md` indexes that update then
+migrates.
 
 ## Planned order
 
@@ -39,7 +44,7 @@ behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
    requirements 013 and 014.
 2. Requirement 014 test environment — done.
 3. Requirement 004 evidence and close-out — done.
-4. Patch-removal refactor.
+4. Patch-removal refactor — done.
 5. Requirement 013.
 6. Requirement 012 downstream verification in `mailAgent`.
 7. Requirement 002 ADR and requirement refinement.
@@ -57,12 +62,14 @@ behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
 
 ## Verification still required
 
-- `runLinter .` currently reports four findings in this repository
-  (`syncAgentInstructions.py` LOG-SEC-001/002/003, `manageProject.py` logging
-  case) while exiting `0`; requirement 013 makes these release-blocking.
+- `runLinter .` currently reports 25 findings in this repository while exiting
+  `0`: `syncAgentInstructions.py` LOG-SEC-001/002/003, one `manageProject.py`
+  logging-case message, and 21 snake_case test names in
+  `tests/test_requirementLayout.py`. Requirement 013 makes these
+  release-blocking.
 - Render the adopted shared buttons in the downstream `mailAgent` checkout.
 - Run the full release validation for every 0.9 change.
 
 ## Immediate next action
 
-Start the patch-removal refactor in the `ompr` environment.
+Start requirement 013 in the `ompr` environment.

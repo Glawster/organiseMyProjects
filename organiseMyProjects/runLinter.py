@@ -30,22 +30,8 @@ SKIP_PACKAGE_DIR_NAMES = frozenset(
     }
 )
 
-# Compatibility allowances for behaviour queued for OMP 0.8. Keep these
-# narrow so genuinely new naming violations still surface in this project.
-LOGGING_CASE_EXCEPTIONS = frozenset(
-    {
-        "DJI",
-        "Firefox",
-        "GoPro",
-        "Grok",
-        "MCM",
-        "SQLite",
-        "TV",
-        "TVDB",
-        "X.ai",
-        "XML",
-    }
-)
+# Compatibility allowances. Keep these narrow so genuinely new naming
+# violations still surface; approved logging tokens live in guiNamingLinter.
 LOGGING_VARIABLE_METHODS_ALLOWED = frozenset(
     {"action", "debug", "doing", "done", "error", "multiline", "warning"}
 )
@@ -240,12 +226,6 @@ def lintTargetsDiscover(root: Path | None = None) -> list[str]:
     return ["."]
 
 
-def _loggingFirstToken(message: str) -> str:
-    """Return the first word-like token from a logging message."""
-    match = re.search(r"[A-Za-z][A-Za-z0-9.]*", message)
-    return match.group(0) if match else ""
-
-
 def _violationAllowed(name: str, ruleType: str) -> bool:
     """Return whether a finding is an acknowledged OMP 0.8 compatibility case."""
     if ruleType == "Function name (domainAction)":
@@ -254,22 +234,12 @@ def _violationAllowed(name: str, ruleType: str) -> bool:
     if ruleType == "Logging variables (only logger.info/logger.value accept variables)":
         return name in LOGGING_VARIABLE_METHODS_ALLOWED
 
-    if ruleType not in {"Logging (info)", "Logging (warning)", "Logging (error)"}:
-        return False
+    # Approved tokens are validated exactly by guiNamingLinter; only these
+    # specific historical messages remain allowed wholesale.
+    if ruleType in {"Logging (info)", "Logging (warning)", "Logging (error)"}:
+        return name in LOGGING_MESSAGE_ALLOWLIST
 
-    if name in LOGGING_MESSAGE_ALLOWLIST:
-        return True
-
-    token = _loggingFirstToken(name)
-    if not token:
-        return True
-
-    if ruleType in {"Logging (info)", "Logging (warning)"}:
-        return token[0].islower() or token in LOGGING_CASE_EXCEPTIONS
-
-    # Errors use sentence-style initial capitalisation. Interior acronyms and
-    # product names are deliberately left intact.
-    return token[0].isupper()
+    return False
 
 
 def _violationsFiltered(path: str) -> list[tuple[str, str, int]]:

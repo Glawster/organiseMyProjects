@@ -261,12 +261,10 @@ def test_migrationIsIdempotent(tmp_path):
 def test_generatedCacheReadmeIsIgnoredByDocumentationCheck(tmp_path):
     """Generated cache README files must not trigger DOC-005."""
     from organiseMyProjects import agentCheck
-    from organiseMyProjects.requirementLayout import agentCheckPatchesInstall
 
     _write(tmp_path / "README.md", "# Project\n")
     _write(tmp_path / ".pytest_cache/README.md", "# pytest cache\n")
 
-    agentCheckPatchesInstall(agentCheck)
     validator = agentCheck.AgentCheckValidator(tmp_path)
     validator._checkDocumentation()
 

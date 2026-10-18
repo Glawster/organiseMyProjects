@@ -16,6 +16,8 @@ from organiseMyProjects.managedContent import (
     managedContentBody,
     managedContentBuild,
 )
+from organiseMyProjects.requirementLayout import layoutMigrate
+from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
 from organiseMyProjects.version import VERSION
 
 
@@ -597,9 +599,17 @@ MANAGED_COPY_TEMPLATES = [
         TEMPLATE_DIR.parent / "documentation" / "tuiStyling.md",
         Path("documentation") / "tuiStyling.md",
     ),
-    (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
-    (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
+    (
+        TEMPLATE_DIR.parent / "documentation" / "linter.md",
+        Path("documentation") / "linter.md",
+    ),
 ]
+# Projects use the installed OMP linter; recognised unmodified copies from
+# earlier releases are removed during update (requirement 010).
+OBSOLETE_LINTER_PATHS = (
+    Path("tests") / "runLinter.py",
+    Path("tests") / "guiNamingLinter.py",
+)
 MANAGED_RELOCATIONS = [
     (
         Path(".github") / "repositoryLayout.md",
@@ -667,8 +677,7 @@ FILE_OWNERSHIP = {
     "documentation/testingProcess.md": POLICY_MANAGED_OVERWRITE,
     "documentation/agentImplementationWorkflow.md": POLICY_MANAGED_OVERWRITE,
     "documentation/howToRelease.md": POLICY_MANAGED_OVERWRITE,
-    "tests/runLinter.py": POLICY_MANAGED_OVERWRITE,
-    "tests/guiNamingLinter.py": POLICY_MANAGED_OVERWRITE,
+    "documentation/linter.md": POLICY_MANAGED_OVERWRITE,
     "pytest.ini": POLICY_MANAGED_BLOCK_MERGE,
     ".pre-commit-config.yaml": POLICY_MANAGED_BLOCK_MERGE,
     ".vscode/settings.json": POLICY_MANAGED_BLOCK_MERGE,
@@ -724,8 +733,6 @@ def _templateModulesIterate(
 ):
     modules = [
         (TEMPLATE_DIR / "globalVars.py", Path(packageName) / "globalVars.py"),
-        (TEMPLATE_DIR / "runLinter.py", Path("tests") / "runLinter.py"),
-        (TEMPLATE_DIR / "guiNamingLinter.py", Path("tests") / "guiNamingLinter.py"),
     ]
     if includeUi:
         modules.extend(
@@ -1031,6 +1038,11 @@ def createProject(
         _managedCopyUpdate(
             stylingGuide, basePath / "documentation" / "tuiStyling.md", dryRun
         )
+    linterGuide = TEMPLATE_DIR.parent / "documentation" / "linter.md"
+    if linterGuide.exists() and basePath.exists():
+        _managedCopyUpdate(
+            linterGuide, basePath / "documentation" / "linter.md", dryRun
+        )
     _sharedStylesDeploy(basePath, dryRun)
     _onboardingScaffoldEnsure(basePath, dryRun)
 
@@ -1044,6 +1056,7 @@ def createProject(
         except Exception as e:
             logger.error(f"Could not initialize git or install pre-commit: {e}")
 
+    _requirementLayoutMaintain(basePath, dryRun)
     logger.done(f"project '{projectName}' created")
     if dryRun:
         logger.info("create simulation complete: no changes were applied")
@@ -1218,9 +1231,49 @@ def migrateProject(projectName, dryRun: bool = False):
     for destRel, content in PROJECT_CONTEXT_TEMPLATES:
         _createTextFileIfMissing(basePath / destRel, content, dryRun)
 
+    _requirementLayoutMaintain(basePath, dryRun)
     logger.done("project context migrated")
     if dryRun:
         logger.info("migration simulation complete: no changes were applied")
+
+
+def _requirementLayoutMaintain(basePath: Path, dryRun: bool = False) -> None:
+    """Apply requirement 004 layout migration and refresh the prompt index."""
+    layoutMigrate(basePath, dryRun=dryRun, logger=logger)
+    promptIndexEnsure(basePath, dryRun=dryRun, logger=logger)
+
+
+def _obsoleteLinterRecognised(path: Path) -> bool:
+    """Recognise only unmodified current or explicitly managed linter copies."""
+    try:
+        deployed = path.read_text(encoding="utf-8")
+        canonical = (TEMPLATE_DIR / path.name).read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+    deployedBody, markerCount = _managedContentBody(deployed)
+    canonicalBody, _ = _managedContentBody(canonical)
+    if markerCount:
+        return deployedBody == canonicalBody
+    return deployed == canonical
+
+
+def _obsoleteLintersRemove(basePath: Path, dryRun: bool = False) -> None:
+    """Remove recognised old linter copies and preserve local variants."""
+    for relative in OBSOLETE_LINTER_PATHS:
+        path = basePath / relative
+        if not path.is_file():
+            continue
+        if not _obsoleteLinterRecognised(path):
+            logger.info(
+                f"obsolete linter preserved because ownership or local changes are ambiguous: {path}"
+            )
+            continue
+        if dryRun:
+            logger.action(f"would remove obsolete managed linter {path}")
+            continue
+        path.unlink()
+        logger.action(f"removed obsolete managed linter {path}")
 
 
 def _sharedStylesDeploy(basePath: Path, dryRun: bool = False) -> None:
@@ -1318,6 +1371,7 @@ def updateProject(
         logger.info(f"project '{projectName}' does not exist")
         return
 
+    _obsoleteLintersRemove(basePath, dryRun)
     logger.doing(f"updating project at {basePath}")
     detectedRole = _projectRoleDetect(basePath)
     logger.value("detected role", detectedRole)
@@ -1361,6 +1415,7 @@ def updateProject(
 
     _sharedStylesDeploy(basePath, dryRun)
     _onboardingScaffoldEnsure(basePath, dryRun)
+    _requirementLayoutMaintain(basePath, dryRun)
 
     logger.done("project updated")
     if dryRun:

@@ -21,7 +21,9 @@ from organiseMyProjects.logUtils import line, runStart, setApplication
 
 ## constants
 
-DOMAIN_ACTION_PATTERN = r"^_?[a-z]+[A-Z][a-zA-Z0-9]*$"
+# Digits may form part of the domain before the action boundary, for example
+# `_mp4BoxIterate`.
+DOMAIN_ACTION_PATTERN = r"^_?[a-z][a-z0-9]*[A-Z][a-zA-Z0-9]*$"
 CLASS_METHOD_NAME_PATTERN = r"^_?[a-z][a-zA-Z0-9]*$"
 
 FUNCTION_NAME_EXCEPTIONS = {
@@ -54,6 +56,27 @@ LOGGING_METHODS = {
     "value",
     "warning",
 }
+
+# Approved proper names and acronyms that keep their spelling inside logging
+# messages. Additions need an explicit change and regression test.
+LOGGING_CASE_WHITELIST = frozenset(
+    {
+        "DJI",
+        "Firefox",
+        "GoPro",
+        "Grok",
+        "MCM",
+        "SQLite",
+        "TVDB",
+        "X.ai",
+    }
+)
+
+# Textual dispatches these handlers by exact snake_case spelling.
+TEXTUAL_METHOD_PATTERNS = (
+    re.compile(r"^action_[a-z][a-z0-9_]*$"),
+    re.compile(r"^on_[a-z][a-z0-9_]*$"),
+)
 
 NAMING_RULES = {
     "Button": r"^btn[A-Z]\w+",
@@ -113,15 +136,35 @@ WIDGET_CLASSES = set(NAMING_RULES.keys()) - {"Handler", "Constant", "Class"}
 ## framework
 
 
+def _textualMethodName(name: str) -> bool:
+    """Return whether Textual dispatch requires this exact method name."""
+    return any(pattern.fullmatch(name) for pattern in TEXTUAL_METHOD_PATTERNS)
+
+
+def _loggingWhitelistNormalise(message: str) -> str:
+    """Lower approved case-sensitive tokens for casing validation only."""
+    normalised = message
+    for token in sorted(LOGGING_CASE_WHITELIST, key=len, reverse=True):
+        pattern = rf"(?<![A-Za-z0-9]){re.escape(token)}(?![A-Za-z0-9])"
+        normalised = re.sub(pattern, token.casefold(), normalised)
+    return normalised
+
+
 def frameworkDetect(fileContent: str) -> str | None:
     """
     Detect which GUI framework is used in the file.
 
     Returns:
+        textual for Textual projects
         tkinter for Tkinter projects
         qt for Qt/PySide6/PyQt5/PyQt6 projects
         None for files without recognized GUI framework
     """
+    if re.search(
+        r"(?m)^\s*(?:from\s+textual(?:\.|\s)|import\s+textual\b)", fileContent
+    ):
+        return "textual"
+
     if "import tkinter" in fileContent or "from tkinter" in fileContent:
         return "tkinter"
 
@@ -253,6 +296,9 @@ class GuiNamingVisitor(ast.NodeVisitor):
 
     def functionIsNamingExempt(self, node) -> bool:
         """Return whether Python, a framework, or pytest owns the function name."""
+        if self.framework == "textual" and _textualMethodName(node.name):
+            return True
+
         if node.name.startswith("__") and node.name.endswith("__"):
             return True
 
@@ -397,17 +443,30 @@ class GuiNamingVisitor(ast.NodeVisitor):
         if "..." in msg:
             self.violations.append((msg, "Logging (ellipsis misuse)", node.lineno))
 
-        if func.attr in {"info", "warning"} and not msg.islower():
+        normalised = _loggingWhitelistNormalise(msg)
+        if func.attr in {"info", "warning"} and not normalised.islower():
             self.violations.append((msg, f"Logging ({func.attr})", node.lineno))
 
-        elif func.attr == "error" and msg != msg.capitalize():
+        elif func.attr == "error" and normalised != normalised.capitalize():
             self.violations.append((msg, "Logging (error)", node.lineno))
 
     ## spelling
 
     def spellingCheckExpression(self, node) -> None:
-        """Check common spelling and capitalisation mistakes."""
+        """Check common spelling and capitalisation mistakes outside docstrings."""
         if not isinstance(node.value, ast.Constant):
+            return
+
+        parent = getattr(node, "parent", None)
+        parentBody = getattr(parent, "body", None)
+        if (
+            isinstance(
+                parent,
+                (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef),
+            )
+            and bool(parentBody)
+            and parentBody[0] is node
+        ):
             return
 
         value = node.value.value

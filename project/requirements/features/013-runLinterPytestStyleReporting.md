@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+Completed
 
 ## Outcome
 
@@ -118,3 +118,10 @@ linter output consistent with the rest of the OMPR validation workflow.
   quiet/verbose details are proposed and to be confirmed before InProgress.
 - 2026-10-18: refined — exit codes 0/1/2/5 confirmed; quiet/verbose switches
   dropped as not needed.
+- 2026-10-18: Completed — rule identifiers and messages added in
+  `guiNamingLinter.findingDescribe`; `runLinter` collects findings as data and
+  reports them pytest-style with exit codes 0/1/2/5. Existing findings fixed in
+  `syncAgentInstructions.py` and `manageProject.py`; `runLinter .` exits `0` on
+  this repository (52 files) and `1` on `mailAgent` (one `NAM-003` finding).
+  431 tests, Black, Ruff, markup lint and `manageProject --check` pass in
+  `ompr`.

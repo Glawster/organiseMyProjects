@@ -374,7 +374,8 @@ def _onboardingScaffoldEnsure(basePath: Path, dryRun: bool) -> None:
         _createTextFileIfMissing(basePath / relative, content, dryRun)
     logger.info(
         "project action required: document your actual setup and test commands in "
-        "README.md or .github/additional-instructions.md if not already documented; "
+        "the root readme or .github/additional-instructions.md if not already "
+        "documented; "
         "update preserves this project-owned content"
     )
 

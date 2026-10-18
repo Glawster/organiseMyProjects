@@ -259,4 +259,4 @@ class TestModuleImports:
         from organiseMyProjects import runLinter
 
         assert hasattr(runLinter, "main")
-        assert hasattr(runLinter, "_lintTarget")
+        assert hasattr(runLinter, "lintTargetsCollect")

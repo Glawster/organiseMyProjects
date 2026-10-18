@@ -5,6 +5,18 @@
 Scope and acceptance work are tracked in
 [the current increment](../project/currentIncrement.md).
 
+### runLinter reporting
+
+- `runLinter` reports pytest-style: relative `path:line:` locations, a stable
+  rule identifier and rule-specific message for every finding, per-file
+  `PASSED`/`FAILED` progress and a closing summary line.
+- **Exit status now reflects the result:** `0` clean, `1` findings, `2` invalid
+  invocation or unusable target, `5` nothing linted. Previously `runLinter`
+  always exited `0`, so pre-commit hooks and CI jobs that run it will now fail
+  on existing findings. Run `runLinter` in each project and fix or review its
+  findings before upgrading.
+- See [the linter guide](linter.md#output-and-exit-status).
+
 ## 0.8 — 2026-10-17
 
 OMP 0.8 centralises downstream linting, distinguishes repository and project

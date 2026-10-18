@@ -14,6 +14,39 @@ projects do not carry private copies of `runLinter.py` or
 `guiNamingLinter.py`; updating the installed OMP package updates linter
 behaviour for every project that uses it.
 
+## Output and exit status
+
+`runLinter` reports in the style of pytest. After the version header it prints
+the root directory and targets, then one line per linted file marked `PASSED`
+or `FAILED`, then each finding on its own line:
+
+```text
+organiseMyProjects/manageProject.py:375: LOG-CASE-001 logger.info message should be lowercase: '...'
+```
+
+Paths are relative to the directory `runLinter` was run from, so terminals and
+editors can open the location directly. Each finding carries a stable rule
+identifier, for example `NAM-003` for module function names or `LOG-SEC-002`
+for a missing separator after an application header. A closing line
+summarises the run:
+
+```text
+==================== 4 findings in 2 files, 23 files passed in 0.41s ====================
+```
+
+The exit status follows pytest conventions:
+
+| Status | Meaning |
+| --- | --- |
+| `0` | Every linted file passed. |
+| `1` | One or more findings were reported. |
+| `2` | Invalid invocation, or a supplied target is missing, unreadable or not a Python file or directory. |
+| `5` | No Python files were found to lint. |
+
+A target error takes precedence over findings. A file that cannot be parsed is
+reported as a `LINT-001` finding rather than stopping the run.
+`runLinter --markup` keeps the markdownlint output and exit status.
+
 ## Naming rules
 
 Module-level functions use `domainAction` camelCase. Digits may be part of the

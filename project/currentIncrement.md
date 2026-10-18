@@ -20,7 +20,7 @@ implemented in 0.10.
 
 - [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — Completed; all acceptance criteria verified in the 0.9 review.
 - [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests run in the `ompr` environment; verify downstream `mailAgent` adoption for acceptance criteria 5 and 6.
-- [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — ToDo; exit codes confirmed, no verbosity switches; implement after the patch-removal refactor.
+- [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — Completed; downstream projects with findings now fail `runLinter` (for example `mailAgent`: one `NAM-003`).
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — ToDo; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
 
@@ -45,7 +45,7 @@ migrates.
 2. Requirement 014 test environment — done.
 3. Requirement 004 evidence and close-out — done.
 4. Patch-removal refactor — done.
-5. Requirement 013.
+5. Requirement 013 — done.
 6. Requirement 012 downstream verification in `mailAgent`.
 7. Requirement 002 ADR and requirement refinement.
 8. Release checks per `documentation/howToRelease.md`.
@@ -62,13 +62,10 @@ migrates.
 
 ## Verification still required
 
-- `runLinter .` currently reports four findings in this repository while
-  exiting `0`: `syncAgentInstructions.py` LOG-SEC-001/002/003 and one
-  `manageProject.py` logging-case message. Requirement 013 makes these
-  release-blocking.
 - Render the adopted shared buttons in the downstream `mailAgent` checkout.
 - Run the full release validation for every 0.9 change.
 
 ## Immediate next action
 
-Start requirement 013 in the `ompr` environment.
+Verify requirement 012 downstream in `mailAgent`, which also needs its
+`NAM-003` finding addressed now that `runLinter` enforces findings.

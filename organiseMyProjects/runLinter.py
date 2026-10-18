@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-# deployed from Glawster/organiseMyProjects release 0.7 -- project compatibility overlay
 """CLI entry point for the GUI Naming Linter."""
 
 import argparse
 import os
 import re
+import shutil
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from organiseMyProjects.fixMarkup import markupFix
-from organiseMyProjects.guiNamingLinter import fileCheck
+from organiseMyProjects.guiNamingLinter import fileCheck, findingDescribe
 from organiseMyProjects.logUtils import line, runStart, setApplication
 from organiseMyProjects.version import VERSION
 
@@ -247,36 +249,166 @@ def _violationsFiltered(path: str) -> list[tuple[str, str, int]]:
     return [item for item in fileCheck(path) if not _violationAllowed(item[0], item[1])]
 
 
-def _violationsReport(label: str, violations: list[tuple[str, str, int]]) -> None:
-    """Print filtered violations using the established linter format."""
-    if not violations:
-        print(f"{label}: OK")
-        return
-
-    print(f"\n{label}:")
-    for name, ruleType, lineno in violations:
-        print(f"  Line {lineno}: '{name}' should follow naming rule for {ruleType}.")
+EXIT_OK = 0
+EXIT_FINDINGS = 1
+EXIT_USAGE = 2
+EXIT_NO_FILES = 5
 
 
-def _lintTarget(target: str) -> None:
-    """Lint a single file or directory with the project compatibility overlay."""
-    print(f"Linting: {target}")
-    line()
+@dataclass(frozen=True)
+class LintFinding:
+    """One reportable finding at a file location."""
+
+    path: str
+    line: int
+    ruleId: str
+    message: str
+
+    def render(self) -> str:
+        return f"{self.path}:{self.line}: {self.ruleId} {self.message}"
+
+
+@dataclass
+class LintResult:
+    """Collected outcome of a lint run, independent of how it is printed."""
+
+    files: list[str] = field(default_factory=list)
+    findings: list[LintFinding] = field(default_factory=list)
+    targetProblems: list[str] = field(default_factory=list)
+
+    @property
+    def failedFiles(self) -> list[str]:
+        failed = {finding.path for finding in self.findings}
+        return [path for path in self.files if path in failed]
+
+    @property
+    def exitCode(self) -> int:
+        if self.targetProblems:
+            return EXIT_USAGE
+        if self.findings:
+            return EXIT_FINDINGS
+        if not self.files:
+            return EXIT_NO_FILES
+        return EXIT_OK
+
+
+def _pathDisplay(path: str) -> str:
+    """Return a path relative to the invocation directory where possible."""
+    relative = os.path.relpath(path)
+    return path if relative.startswith("..") else relative
+
+
+def _pythonFilesIterate(target: str):
+    """Yield Python files for a file or directory target in stable order."""
     if not os.path.isdir(target):
-        _violationsReport(target, _violationsFiltered(target))
+        yield target
         return
-
-    print(f"\nChecking GUI naming in: {target}")
-    line()
     for root, directories, files in os.walk(target):
-        directories[:] = [
+        directories[:] = sorted(
             item for item in directories if item not in IGNORED_DIRECTORIES
-        ]
-        for filename in files:
-            if not filename.endswith(".py"):
+        )
+        for filename in sorted(files):
+            if filename.endswith(".py"):
+                yield os.path.join(root, filename)
+
+
+def _targetProblem(target: str) -> str | None:
+    """Describe why a supplied target cannot be linted, or None when usable."""
+    if not os.path.exists(target):
+        return f"target '{target}' does not exist"
+    if not os.access(target, os.R_OK):
+        return f"target '{target}' is not readable"
+    if not os.path.isdir(target) and not target.endswith(".py"):
+        return f"target '{target}' is not a Python file or directory"
+    return None
+
+
+def _fileFindings(path: str) -> list[LintFinding]:
+    """Lint one file and describe each finding with a rule identifier."""
+    display = _pathDisplay(path)
+    try:
+        violations = _violationsFiltered(path)
+    except (SyntaxError, UnicodeDecodeError) as exc:
+        lineNumber = getattr(exc, "lineno", None) or 1
+        return [LintFinding(display, lineNumber, "LINT-001", f"cannot parse: {exc}")]
+    findings = []
+    for name, ruleType, lineNumber in violations:
+        ruleId, message = findingDescribe(name, ruleType)
+        findings.append(LintFinding(display, max(lineNumber, 1), ruleId, message))
+    return findings
+
+
+def lintTargetsCollect(targets: list[str], checkTargets: bool = True) -> LintResult:
+    """Collect findings for targets without printing anything."""
+    result = LintResult()
+    seen = set()
+    for target in targets:
+        problem = _targetProblem(target) if checkTargets else None
+        if problem:
+            result.targetProblems.append(problem)
+            continue
+        for path in _pythonFilesIterate(target):
+            display = _pathDisplay(path)
+            if display in seen:
                 continue
-            path = os.path.join(root, filename)
-            _violationsReport(filename, _violationsFiltered(path))
+            seen.add(display)
+            result.files.append(display)
+            result.findings.extend(_fileFindings(path))
+    return result
+
+
+def _countPlural(count: int, word: str) -> str:
+    return f"{count} {word}{'' if count == 1 else 's'}"
+
+
+def _bannerFormat(text: str, fill: str = "=") -> str:
+    width = shutil.get_terminal_size((80, 24)).columns
+    return f" {text} ".center(width, fill)
+
+
+def _summaryText(result: LintResult, elapsed: float) -> str:
+    duration = f"in {elapsed:.2f}s"
+    passedCount = len(result.files) - len(result.failedFiles)
+    parts = []
+    if result.findings:
+        parts.append(
+            f"{_countPlural(len(result.findings), 'finding')} in "
+            f"{_countPlural(len(result.failedFiles), 'file')}"
+        )
+    if passedCount:
+        parts.append(f"{_countPlural(passedCount, 'file')} passed")
+    if result.targetProblems:
+        parts.append(_countPlural(len(result.targetProblems), "target error"))
+    if not result.files and not result.targetProblems:
+        parts.append("no Python files linted")
+    return f"{', '.join(parts)} {duration}"
+
+
+def lintReportPrint(
+    result: LintResult, targets: list[str], elapsed: float, rootDir: str
+) -> None:
+    """Print a pytest-style report for a collected lint result."""
+    print(f"rootdir: {rootDir}")
+    print(f"targets: {', '.join(targets) if targets else '(none)'}")
+    print()
+
+    failed = set(result.failedFiles)
+    for path in result.files:
+        print(f"{path} {'FAILED' if path in failed else 'PASSED'}")
+
+    if result.targetProblems:
+        print()
+        print(_bannerFormat("ERRORS"))
+        for problem in result.targetProblems:
+            print(f"ERROR: {problem}")
+
+    if result.findings:
+        print()
+        print(_bannerFormat("FINDINGS"))
+        for finding in result.findings:
+            print(finding.render())
+
+    print(_bannerFormat(_summaryText(result, elapsed)))
 
 
 def main() -> None:
@@ -334,22 +466,16 @@ def main() -> None:
             raise SystemExit(markupExitCode)
         return
 
-    for target in args.targets:
-        if not os.path.exists(target):
-            print(f"Target '{target}' does not exist. Skipping...")
-            continue
-        if not os.access(target, os.R_OK):
-            print(f"Target '{target}' is not readable. Skipping...")
-            continue
-        if not os.path.isdir(target) and not target.endswith(".py"):
-            print(f"Target '{target}' is not a Python file or directory. Skipping...")
-            continue
-        _lintTarget(target)
-
-    if not args.targets:
-        print("No target supplied. Searching for project directories to lint...")
-        for target in lintTargetsDiscover():
-            _lintTarget(target)
+    started = time.perf_counter()
+    if args.targets:
+        targets = list(args.targets)
+        result = lintTargetsCollect(targets)
+    else:
+        targets = lintTargetsDiscover()
+        result = lintTargetsCollect(targets, checkTargets=False)
+    lintReportPrint(result, targets, time.perf_counter() - started, os.getcwd())
+    line()
+    raise SystemExit(result.exitCode)
 
 
 if __name__ == "__main__":

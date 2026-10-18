@@ -798,6 +798,115 @@ def lintGuiNaming(directory: str) -> None:
 
 ## report
 
+_RULE_DESCRIPTIONS = (
+    ("Class", "NAM-001", "class '{name}' should be PascalCase"),
+    (
+        "Method name (action or domainAction)",
+        "NAM-002",
+        "method '{name}' should be action or domainAction camelCase",
+    ),
+    (
+        "Function name (domainAction)",
+        "NAM-003",
+        "function '{name}' should be domainAction camelCase",
+    ),
+    ("Constant", "NAM-004", "module constant '{name}' should be UPPER_CASE"),
+    (
+        "Function spacing (two blank lines before top-level def)",
+        "FMT-001",
+        "top-level def '{name}' needs two blank lines before it",
+    ),
+    (
+        "Logging variables (only logger.info/logger.value accept variables)",
+        "LOG-VAR-001",
+        "logger.{name} does not accept variables; use logger.info or logger.value",
+    ),
+    (
+        "Logging variables (logger.value requires exactly one variable)",
+        "LOG-VAR-002",
+        "logger.value requires exactly one variable",
+    ),
+    (
+        "Logging variables (use logger.value for a single variable)",
+        "LOG-VAR-003",
+        "use logger.value instead of logger.info for a single variable",
+    ),
+    (
+        "Logging variables (logger.value requires a value argument)",
+        "LOG-VAR-004",
+        "logger.value requires a value argument",
+    ),
+    (
+        "Logging (ellipsis misuse)",
+        "LOG-MSG-001",
+        "logging message uses '...': {quoted}",
+    ),
+    (
+        "Logging (info)",
+        "LOG-CASE-001",
+        "logger.info message should be lowercase: {quoted}",
+    ),
+    (
+        "Logging (warning)",
+        "LOG-CASE-002",
+        "logger.warning message should be lowercase: {quoted}",
+    ),
+    (
+        "Logging (error)",
+        "LOG-CASE-003",
+        "logger.error message should be sentence case: {quoted}",
+    ),
+    ("Spelling (iCloud)", "SPL-001", "'{name}' should be spelled 'iCloud'"),
+    (
+        "Test file naming (test_camelCaseName.py)",
+        "TST-001",
+        "test file '{name}' should be named test_camelCaseName.py",
+    ),
+    ("Use 'pack()' instead of 'grid()'", "GUI-005", "use pack() instead of grid()"),
+)
+_RULE_DESCRIPTION_MAP = {
+    rule: (ruleId, text) for rule, ruleId, text in _RULE_DESCRIPTIONS
+}
+_QUOTED_MESSAGE_LIMIT = 60
+
+
+def _findingQuote(name: str) -> str:
+    """Quote a finding subject, shortening long logging messages."""
+    if len(name) > _QUOTED_MESSAGE_LIMIT:
+        name = name[: _QUOTED_MESSAGE_LIMIT - 3] + "..."
+    return f"'{name}'"
+
+
+def findingDescribe(name: str, ruleType: str) -> tuple[str, str]:
+    """Return the stable rule identifier and rule-specific message for a finding."""
+    if ruleType.startswith("LOG-SEC-") and ":" in ruleType:
+        ruleId, message = ruleType.split(":", 1)
+        return ruleId, message.strip()
+
+    if ruleType in _RULE_DESCRIPTION_MAP:
+        ruleId, text = _RULE_DESCRIPTION_MAP[ruleType]
+        return ruleId, text.format(name=name, quoted=_findingQuote(name))
+
+    if ruleType in NAMING_RULES:
+        return (
+            "GUI-001",
+            f"{ruleType} widget '{name}' should match {NAMING_RULES[ruleType]}",
+        )
+
+    if ruleType.startswith(("Horizontal widget", "Vertical widget")):
+        hint = ruleType[ruleType.find("(") + 1 : ruleType.rfind(")")]
+        return "GUI-002", f"widget '{name}': {hint}"
+
+    if ruleType.startswith("Qt horizontal/vertical widget"):
+        hint = ruleType[ruleType.find("(") + 1 : ruleType.rfind(")")]
+        return "GUI-004", f"Qt spacer '{name}': {hint}"
+
+    if ruleType.startswith("Qt ") and ruleType.endswith("(snake_case)"):
+        widgetType = ruleType[3 : -len(" (snake_case)")]
+        return "GUI-003", f"Qt {widgetType} variable '{name}' should be snake_case"
+
+    return "LINT-000", f"{ruleType}: {_findingQuote(name)}"
+
 
 def reportViolations(label: str, violations: list[tuple[str, str, int]]) -> None:
     """Print lint violations for a file or OK when none exist."""

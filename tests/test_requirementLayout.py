@@ -276,3 +276,77 @@ def test_generatedCacheReadmeIsIgnoredByDocumentationCheck(tmp_path):
         if getattr(item, "ruleId", None) == "DOC-005"
     ]
     assert failures == []
+
+
+def _scaffoldCreate(tmp_path: Path) -> Path:
+    from unittest.mock import patch
+
+    from organiseMyProjects.manageProject import createProject
+
+    project = tmp_path / "layoutProject"
+    with patch("organiseMyProjects.manageProject.subprocess.run"):
+        createProject(str(project))
+    return project
+
+
+def test_newScaffoldUsesNamedIndexesWithoutNestedReadmes(tmp_path):
+    """Requirement 004 criteria 3 and 4 on a real createProject scaffold."""
+    project = _scaffoldCreate(tmp_path)
+
+    assert (project / "project/requirements/requirementsIndex.md").is_file()
+    assert (project / "project/adr/adrIndex.md").is_file()
+    assert list(project.rglob("folderIndex.md")) == []
+    assert [path for path in project.rglob("README.md")] == [project / "README.md"]
+
+
+def test_newScaffoldPassesLayoutChecks(tmp_path):
+    """Requirement 004 criterion 16: check accepts a fresh scaffold's named indexes."""
+    from organiseMyProjects.agentCheck import AgentCheckValidator
+
+    project = _scaffoldCreate(tmp_path)
+    report = AgentCheckValidator(project).runAll()
+
+    assert report.failures == []
+
+
+def test_newScaffoldRequirementListingIsCheckedAgainstNamedIndex(tmp_path):
+    """Check reads requirementsIndex.md when matching requirement files."""
+    from organiseMyProjects.agentCheck import AgentCheckValidator
+
+    project = _scaffoldCreate(tmp_path)
+    requirements = project / "project/requirements"
+    _write(requirements / "features/001-listedThing.md", "# 001\n\n## Status\n\nToDo\n")
+    _write(
+        requirements / "features/002-unlistedThing.md", "# 002\n\n## Status\n\nToDo\n"
+    )
+    index = requirements / "requirementsIndex.md"
+    index.write_text(
+        index.read_text(encoding="utf-8")
+        + "| 001 | [Listed](features/001-listedThing.md) | Listed. | ToDo |"
+        " Not required | Not required |\n",
+        encoding="utf-8",
+    )
+
+    report = AgentCheckValidator(project).runAll()
+    unlisted = [
+        finding.filePath.name
+        for finding in report.failures
+        if finding.ruleId == "REQ-001"
+    ]
+
+    assert unlisted == ["002-unlistedThing.md"]
+
+
+def test_newScaffoldNestedReadmeIsReported(tmp_path):
+    """Check reports an OMPR-owned nested README mistake in a fresh scaffold."""
+    from organiseMyProjects.agentCheck import AgentCheckValidator
+
+    project = _scaffoldCreate(tmp_path)
+    _write(
+        project / "project/requirements/features/003-viewManagement/README.md",
+        "# 003\n",
+    )
+
+    report = AgentCheckValidator(project).runAll()
+
+    assert any(finding.ruleId == "DOC-005" for finding in report.failures)

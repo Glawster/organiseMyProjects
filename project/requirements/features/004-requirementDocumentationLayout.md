@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+Completed
 
 ## Outcome
 
@@ -254,12 +254,13 @@ For all such cleanup:
 
 - Implementation: `organiseMyProjects/requirementLayout.py`,
   `organiseMyProjects/__init__.py`
-- Tests: `tests/test_requirementLayout.py`, `tests/test_agentCheck.py`, existing
-  scaffold/integration regression tests
+- Tests: `tests/test_requirementLayout.py` (migration cases, plus real
+  `createProject` scaffold tests for criteria 3, 4 and 16),
+  `tests/test_agentCheck.py`, existing scaffold/integration regression tests
 - Documentation: `README.md`, `documentation/repositoryLayout.md`,
   `documentation/requirementsManagement.md`
-- Pull request: pending
-- Agent runs: v0.6 requirement 004 implementation
+- Pull request: OMPR 0.9 release pull request from `release/0.9`
+- Agent runs: v0.6 requirement 004 implementation; v0.9 acceptance review
 
 ## Change history
 
@@ -271,3 +272,7 @@ For all such cleanup:
 - 2026-09-01: corrected directory-index naming to `<folderName>Index.md`, making
   `requirementsIndex.md` and `adrIndex.md` canonical and `folderIndex.md` a
   migration source only.
+- 2026-10-18: Completed — 0.9 acceptance review added scaffold-level evidence
+  for criteria 3, 4 and 16, aligned the prompt with `<folderName>Index.md`, and
+  verified all criteria (424 tests, Black, Ruff, markup lint and
+  `manageProject --check` passing in the `ompr` environment).

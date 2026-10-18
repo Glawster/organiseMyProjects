@@ -18,7 +18,7 @@ implemented in 0.10.
 
 ## Requirements
 
-- [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — InProgress; add missing evidence for acceptance criteria 3, 4, 14 and 16, review guidance for 1, 2, 5 and 6, complete traceability.
+- [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — Completed; all acceptance criteria verified in the 0.9 review.
 - [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests run in the `ompr` environment; verify downstream `mailAgent` adoption for acceptance criteria 5 and 6.
 - [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — ToDo; confirm proposed format, exit codes and quiet/verbose modes, then implement after the patch-removal refactor.
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
@@ -38,7 +38,7 @@ behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
    `documentation/omp-agent-portability-design-proposal(1).md`; captured
    requirements 013 and 014.
 2. Requirement 014 test environment — done.
-3. Requirement 004 evidence and close-out.
+3. Requirement 004 evidence and close-out — done.
 4. Patch-removal refactor.
 5. Requirement 013.
 6. Requirement 012 downstream verification in `mailAgent`.
@@ -65,5 +65,5 @@ behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
 
 ## Immediate next action
 
-Confirm the proposed details of requirement 013, then start requirement 004
-evidence work in the `ompr` environment.
+Confirm the proposed details of requirement 013, then start the patch-removal
+refactor in the `ompr` environment.

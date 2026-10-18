@@ -62,10 +62,9 @@ migrates.
 
 ## Verification still required
 
-- `runLinter .` currently reports 25 findings in this repository while exiting
-  `0`: `syncAgentInstructions.py` LOG-SEC-001/002/003, one `manageProject.py`
-  logging-case message, and 21 snake_case test names in
-  `tests/test_requirementLayout.py`. Requirement 013 makes these
+- `runLinter .` currently reports four findings in this repository while
+  exiting `0`: `syncAgentInstructions.py` LOG-SEC-001/002/003 and one
+  `manageProject.py` logging-case message. Requirement 013 makes these
   release-blocking.
 - Render the adopted shared buttons in the downstream `mailAgent` checkout.
 - Run the full release validation for every 0.9 change.

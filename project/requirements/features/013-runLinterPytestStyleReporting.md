@@ -46,8 +46,6 @@ linter output consistent with the rest of the OMPR validation workflow.
   - `2` — invalid invocation, or a supplied target is missing, unreadable or
     not lintable;
   - `5` — no Python files were found to lint.
-- Provide `-q`/`--quiet` (findings and summary only) and `-v`/`--verbose` (also
-  list each passed file), with the default output between the two.
 - Keep reporting logic separate from rule evaluation so findings can be
   collected and tested as data without parsing printed text.
 - Update `documentation/linter.md` and the release checklist in
@@ -60,6 +58,7 @@ linter output consistent with the rest of the OMPR validation workflow.
 - Machine-readable output formats such as JSON, SARIF or JUnit XML.
 - Colour output beyond what can be disabled safely for non-terminal output.
 - Running the linter as a pytest plugin.
+- Output verbosity switches such as `-q`/`--quiet` or `-v`/`--verbose`.
 
 ## Acceptance criteria
 
@@ -81,17 +80,15 @@ linter output consistent with the rest of the OMPR validation workflow.
    reported and the exit status is `2`.
 7. Given targets that contain no Python files, when `runLinter` runs, then the
    summary says nothing was linted and the exit status is `5`.
-8. Given `-q`, when `runLinter` runs, then only findings and the summary are
-   printed; given `-v`, then every passed file is also listed.
-9. Given `runLinter --markup`, when it runs, then its existing behaviour and
+8. Given `runLinter --markup`, when it runs, then its existing behaviour and
    exit status are unchanged.
-10. Given the OMPR repository itself, when the release checklist runs
+9. Given the OMPR repository itself, when the release checklist runs
     `runLinter .`, then it exits `0`, with any existing findings either fixed or
     explicitly allowed by an existing rule.
-11. Automated tests cover the finding format, relative paths, summary counts,
-    each exit status and the quiet and verbose modes, using collected findings
-    rather than only captured output.
-12. `documentation/linter.md` and `documentation/howToRelease.md` describe the
+10. Automated tests cover the finding format, relative paths, summary counts
+    and each exit status, using collected findings rather than only captured
+    output.
+11. `documentation/linter.md` and `documentation/howToRelease.md` describe the
     output format and exit codes.
 
 ## Dependencies and decisions
@@ -110,8 +107,8 @@ linter output consistent with the rest of the OMPR validation workflow.
 ## Verification
 
 - Focused tests in `tests/test_runLinter.py` for each acceptance criterion.
-- Run `runLinter .`, `runLinter -q .` and `runLinter -v .` on this repository
-  and on a downstream project, confirming output and exit status.
+- Run `runLinter .` on this repository and on a downstream project, confirming
+  output and exit status.
 - Full `pytest`, `runLinter .` and `runLinter --markup` release validation.
 
 ## Change history
@@ -119,3 +116,5 @@ linter output consistent with the rest of the OMPR validation workflow.
 - 2026-10-18: created — agreed for OMPR 0.9 to make runLinter output
   pytest-style and its exit status enforceable. Format, exit-code and
   quiet/verbose details are proposed and to be confirmed before InProgress.
+- 2026-10-18: refined — exit codes 0/1/2/5 confirmed; quiet/verbose switches
+  dropped as not needed.

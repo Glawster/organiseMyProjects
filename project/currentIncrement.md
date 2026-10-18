@@ -20,7 +20,7 @@ implemented in 0.10.
 
 - [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — Completed; all acceptance criteria verified in the 0.9 review.
 - [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests run in the `ompr` environment; verify downstream `mailAgent` adoption for acceptance criteria 5 and 6.
-- [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — ToDo; confirm proposed format, exit codes and quiet/verbose modes, then implement after the patch-removal refactor.
+- [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — ToDo; exit codes confirmed, no verbosity switches; implement after the patch-removal refactor.
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — ToDo; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
 
@@ -65,5 +65,4 @@ behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
 
 ## Immediate next action
 
-Confirm the proposed details of requirement 013, then start the patch-removal
-refactor in the `ompr` environment.
+Start the patch-removal refactor in the `ompr` environment.

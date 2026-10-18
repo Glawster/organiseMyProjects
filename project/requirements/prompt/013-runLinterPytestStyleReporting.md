@@ -2,15 +2,15 @@
 
 Implement requirement 013,
 [runLinter pytest-style reporting](../features/013-runLinterPytestStyleReporting.md).
-The requirement is authoritative for scope and acceptance criteria 1–12.
+The requirement is authoritative for scope and acceptance criteria 1–11.
 
 Change `organiseMyProjects/runLinter.py` so linting collects findings as data
 (relative path, line, rule identifier and rule-specific message) and a separate
 reporter prints a pytest-style header, per-file progress, findings as
 `<relativePath>:<line>: <ruleId> <message>` and a closing summary line. Return
 exit status `0` when clean, `1` on findings, `2` for invalid invocation or
-unusable targets, and `5` when nothing was linted. Add `-q`/`--quiet` and
-`-v`/`--verbose`.
+unusable targets, and `5` when nothing was linted. Do not add verbosity
+switches.
 
 Constraints:
 
@@ -31,10 +31,8 @@ Verify with:
 ```bash
 pytest
 runLinter .; echo $?
-runLinter -q .; echo $?
-runLinter -v .
 runLinter --markup
 ```
 
-Hand off with the test results, sample output from each mode, observed exit
+Hand off with the test results, sample output, observed exit
 statuses, and a note of any downstream exit-status impact.

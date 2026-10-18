@@ -8,7 +8,7 @@ include documentation/testingProcess.md
 include documentation/agentImplementationWorkflow.md
 include documentation/releaseNotes.md
 include pyproject.toml
-include environment.yml
+include organiseMyProjectsEnvironment.yml
 include organiseMyProjects/logUtils.sh
 include organiseMyProjects/myStyles.css
 recursive-include organiseMyProjects/ui *.py

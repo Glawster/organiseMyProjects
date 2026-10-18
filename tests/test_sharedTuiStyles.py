@@ -1,6 +1,7 @@
 """Shared theme deployment and real Textual layout regressions."""
 
 import asyncio
+import importlib.util
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,10 @@ from organiseMyProjects import manageProject
 from organiseMyProjects.managedContent import managedContentBody, managedContentBuild
 
 THEME = Path(manageProject.TEMPLATE_DIR) / "myStyles.css"
+REQUIRES_TEXTUAL = pytest.mark.skipif(
+    importlib.util.find_spec("textual") is None,
+    reason="textual is not installed; run in the ompr Conda environment",
+)
 
 
 def testStylesDeployment(tmp_path):
@@ -37,6 +42,7 @@ def testProjectOwnedStylesPreserved(tmp_path, name):
     assert stylesheet.read_text() == "/* application-owned */"
 
 
+@REQUIRES_TEXTUAL
 @pytest.mark.parametrize("size", [(81, 24), (41, 16), (80, 24), (40, 16)])
 def testRenderedButtonGroup(size):
     from textual.app import App, ComposeResult
@@ -79,6 +85,7 @@ def testRenderedButtonGroup(size):
     asyncio.run(verify())
 
 
+@REQUIRES_TEXTUAL
 @pytest.mark.parametrize("size", [(80, 24), (40, 16)])
 def testPlainHorizontalButtonGaps(size):
     from textual.app import App, ComposeResult

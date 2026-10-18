@@ -420,18 +420,28 @@ def test_file_creation(temp_dir):
 
 ### Setting Up Development Environment
 
-1. Clone the repository
-2. Install development dependencies:
+OMPR is installed as a tool in many Conda environments, but its own tests run
+in the dedicated `ompr` environment, which installs OMPR in editable mode with
+every `dev` extra, including `textual` for the shared-style rendering tests.
+
+1. Clone the repository.
+2. Create the environment, or update it after dependency changes:
 
    ```bash
-   pip install pytest black ruff
+   conda env create -f organiseMyProjectsEnvironment.yml
+   conda env update -n ompr -f organiseMyProjectsEnvironment.yml --prune
    ```
 
-3. Install the package in development mode:
+3. Run the tests from that environment:
 
    ```bash
-   pip install -e .
+   conda activate ompr
+   pytest -rs
    ```
+
+Running `pytest` from another environment is supported, but tests needing a
+missing optional dependency are skipped. Release validation must use `ompr`
+with no dependency-related skips.
 
 ### Code Quality Standards
 

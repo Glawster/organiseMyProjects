@@ -19,9 +19,9 @@ implemented in 0.10.
 ## Requirements
 
 - [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — InProgress; add missing evidence for acceptance criteria 3, 4, 14 and 16, review guidance for 1, 2, 5 and 6, complete traceability.
-- [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests now run (requires `textual` from the `dev` extras); verify downstream `mailAgent` adoption for acceptance criteria 5 and 6.
+- [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests run in the `ompr` environment; verify downstream `mailAgent` adoption for acceptance criteria 5 and 6.
 - [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — ToDo; confirm proposed format, exit codes and quiet/verbose modes, then implement after the patch-removal refactor.
-- [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — ToDo; dedicated `organiseMyProjects` Conda environment, clean skips outside it, strict release validation. `textual` was installed into `py313` during planning and can be removed once the environment exists.
+- [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — ToDo; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
 
 ## Internal refactor (no requirement)
@@ -37,7 +37,7 @@ behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
 1. Housekeeping — done: removed duplicate
    `documentation/omp-agent-portability-design-proposal(1).md`; captured
    requirements 013 and 014.
-2. Requirement 014 test environment, so later evidence comes from it.
+2. Requirement 014 test environment — done.
 3. Requirement 004 evidence and close-out.
 4. Patch-removal refactor.
 5. Requirement 013.
@@ -65,4 +65,5 @@ behaviour into `manageProject`, `agentCheck`, `guiNamingLinter` and
 
 ## Immediate next action
 
-Confirm the proposed details of requirement 013, then start requirement 014.
+Confirm the proposed details of requirement 013, then start requirement 004
+evidence work in the `ompr` environment.

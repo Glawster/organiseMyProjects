@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+Completed
 
 ## Outcome
 
@@ -31,17 +31,18 @@ been created, and the filename does not follow OMPR's own
 
 ## Scope
 
-- Provide `organiseMyProjectsEnvironment.yml` defining the `organiseMyProjects`
-  Conda environment, installing OMPR in editable mode with the `dev` extras.
+- Provide `organiseMyProjectsEnvironment.yml` defining the `ompr` Conda
+  environment, installing OMPR in editable mode with the `dev` extras.
 - Replace the existing `environment.yml` and update its references in
   `MANIFEST.in` and `.github/additional-instructions.md`.
 - Tests that need an optional development dependency, such as `textual`, skip
   with a clear reason when it is not installed instead of failing at import.
-- Document creating, updating and using the environment in
-  `documentation/testingProcess.md`.
-- Make the release checklist in `documentation/howToRelease.md` run validation
-  inside the `organiseMyProjects` environment and treat any dependency-related
-  skip as a release failure.
+- Document creating, updating and using the `ompr` environment in
+  `documentation/developer.md`.
+- Because `documentation/testingProcess.md` and
+  `documentation/howToRelease.md` are deployed to downstream projects, state
+  the rule there generically: validation runs in the project's own Conda
+  environment and a dependency-related skip blocks acceptance and release.
 - Keep OMPR's runtime dependencies unchanged so it remains cheap to install in
   any environment.
 
@@ -58,9 +59,9 @@ been created, and the filename does not follow OMPR's own
 
 1. Given a clean machine with Conda, when
    `conda env create -f organiseMyProjectsEnvironment.yml` is run, then an
-   `organiseMyProjects` environment exists with OMPR installed in editable mode
+   `ompr` environment exists with OMPR installed in editable mode
    and every `dev` extra available.
-2. Given the `organiseMyProjects` environment, when `pytest` is run, then the
+2. Given the `ompr` environment, when `pytest` is run, then the
    full suite runs with no dependency-related skips.
 3. Given an environment where OMPR is installed without `textual`, when
    `pytest` is run, then the shared-style tests are reported as skipped with a
@@ -68,11 +69,12 @@ been created, and the filename does not follow OMPR's own
 4. Given the repository, when it is inspected, then `environment.yml` no longer
    exists and no packaging metadata or guidance refers to it as OMPR's own
    environment file.
-5. Given `documentation/testingProcess.md`, when read, then it explains how to
-   create, update and activate the test environment.
-6. Given `documentation/howToRelease.md`, when the release checklist is
-   followed, then validation runs in the `organiseMyProjects` environment and a
-   dependency-related skip blocks the release.
+5. Given `documentation/developer.md`, when read, then it explains how to
+   create, update and activate the `ompr` environment.
+6. Given `documentation/testingProcess.md` and `documentation/howToRelease.md`,
+   when the release checklist is followed, then validation runs in the
+   project's Conda environment (`ompr` for OMPR) and a dependency-related skip
+   blocks the release.
 7. Given OMPR's runtime dependencies, when this requirement is complete, then
    they are unchanged.
 
@@ -100,3 +102,12 @@ been created, and the filename does not follow OMPR's own
 - 2026-10-18: created — 0.9 planning found OMPR's tests depended on whichever
   Conda environment happened to be active; agreed to define a dedicated test
   environment.
+- 2026-10-18: environment named `ompr`; the file keeps the
+  `<projectName>Environment.yml` convention.
+- 2026-10-18: InProgress; OMPR-specific set-up moved to
+  `documentation/developer.md` because the testing and release guides are
+  deployed downstream.
+- 2026-10-18: Completed — `ompr` created from the file; 420 passed there with
+  no skips; in `py313` without `textual`, 414 passed and 6 skipped with the
+  stated reason.
+- 2026-10-18: `ompr` pinned to Python 3.13; 420 passed on 3.13.16.

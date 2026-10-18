@@ -5,12 +5,13 @@ Implement requirement 014,
 The requirement is authoritative for scope and acceptance criteria 1–7.
 
 Replace `environment.yml` with `organiseMyProjectsEnvironment.yml`, defining the
-`organiseMyProjects` Conda environment with `-e .[dev]`, and update
+`ompr` Conda environment with `-e .[dev]`, and update
 `MANIFEST.in` and `.github/additional-instructions.md`. Make tests that need
 `textual` use `pytest.importorskip("textual")` or an equivalent marker so they
-skip with a clear reason outside the environment. Document environment set-up
-in `documentation/testingProcess.md`, and make the release checklist in
-`documentation/howToRelease.md` run inside that environment with no
+skip with a clear reason outside the environment. Document `ompr` set-up in
+`documentation/developer.md`. Because `documentation/testingProcess.md` and
+`documentation/howToRelease.md` are deployed downstream, state there only the
+generic rule that validation runs in the project's Conda environment with no
 dependency-related skips.
 
 Constraints:
@@ -21,14 +22,14 @@ Constraints:
 Allowed files: `organiseMyProjectsEnvironment.yml`, `environment.yml`,
 `MANIFEST.in`, `.github/additional-instructions.md`,
 `tests/test_sharedTuiStyles.py` and any other test needing an optional
-dependency, `documentation/testingProcess.md` and
+dependency, `documentation/developer.md`, `documentation/testingProcess.md` and
 `documentation/howToRelease.md`.
 
 Verify with:
 
 ```bash
 conda env create -f organiseMyProjectsEnvironment.yml
-conda run -n organiseMyProjects pytest -rs
+conda run -n ompr pytest -rs
 pytest -rs   # from an environment without textual
 runLinter --markup
 ```

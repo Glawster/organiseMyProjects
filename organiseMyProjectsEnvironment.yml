@@ -1,8 +1,8 @@
-name: organiseMyProjects
+name: ompr
 channels:
   - conda-forge
 dependencies:
-  - python>=3.10
+  - python=3.13
   - pip
   - pip:
       - -e .[dev]

@@ -30,8 +30,8 @@ This guide defines a safe, repeatable release workflow for this repository.
 ## Release Checklist
 
 1. Confirm the target release branch is green in CI.
-2. Run local validation:
-   - `pytest`
+2. Run local validation inside the project's Conda environment:
+   - `pytest -rs`, confirming no tests were skipped for a missing dependency
    - `runLinter .`
    - `runLinter --markup`
    - If markup issues are reported, run `runLinter --markup --fix` and then

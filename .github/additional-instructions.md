@@ -111,7 +111,7 @@ organiseMyProjects/
 ├── syncAgentInstructions.py               # Shared-instruction sync utility
 ├── pyproject.toml                         # Authoritative package/tool configuration
 ├── setup.py                               # Legacy packaging compatibility shim
-├── environment.yml                       # Preferred Conda environment
+├── organiseMyProjectsEnvironment.yml     # Conda `ompr` development/test environment
 ├── MANIFEST.in                            # Distribution files
 └── .github/workflows/validate.yml         # Release-branch validation
 ```

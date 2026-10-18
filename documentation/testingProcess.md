@@ -137,6 +137,14 @@ requirement changes an affected production path, its relevant expensive suite
 must run before acceptance and release. Expensive tests must not become
 effectively optional at completion.
 
+Run the suite in the project's own Conda environment, created from
+`<projectName>Environment.yml`, so every development dependency is present.
+Tests that need an optional development dependency must skip with a reason
+naming that dependency rather than fail at import, so the suite stays usable in
+other environments. Such skips are not evidence: acceptance and release
+validation run in the project environment with `pytest -rs` and must report no
+dependency-related skips.
+
 ## Completion checklist
 
 For requirements affecting extraction, parsing, persistence or UI, confirm:

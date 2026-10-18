@@ -7,7 +7,8 @@ runtime architecture decision
 
 ## Status
 
-Planning agreed — scope fixed; implementation not yet started.
+In progress — 004, 013, 014 and the patch-removal refactor done; 012, 002 and
+release checks remain.
 
 ## Objective
 

@@ -8,6 +8,7 @@ import pytest
 
 from organiseMyProjects.agentCheck import (
     AgentCheckValidator,
+    Severity,
     checkProject,
     main,
 )
@@ -461,3 +462,161 @@ def testNestedProjectCheckProductionPath(validRepo, monkeypatch, caplog):
     assert "[ENT-001]" not in output
     assert "[ENT-002]" not in output
     assert "[ENT-003]" not in output
+
+
+def _ruleFindings(report, ruleId: str) -> list:
+    return [finding for finding in report.findings if finding.ruleId == ruleId]
+
+
+def _recordRename(repo: Path, newName: str, indexId: str | None = None) -> Path:
+    """Rename the fixture record, keeping the index and prompt links aligned."""
+    reqDir = repo / "project" / "requirements"
+    newPath = reqDir / "features" / newName
+    (reqDir / "features" / "001-testFeature.md").rename(newPath)
+    (reqDir / "prompt" / "001-testFeature.md").rename(reqDir / "prompt" / newName)
+    index = reqDir / "requirementsIndex.md"
+    text = index.read_text(encoding="utf-8").replace("001-testFeature.md", newName)
+    if indexId:
+        text = text.replace("| 001 |", f"| {indexId} |")
+    index.write_text(text, encoding="utf-8")
+    return newPath
+
+
+class TestRequirementConformance:
+    """Requirement 015: records, index rows and prompts follow the guide."""
+
+    def testConformingRepositoryHasNoConformanceFindings(self, validRepo: Path):
+        report = AgentCheckValidator(validRepo).runAll()
+
+        for ruleId in (
+            "REQ-007",
+            "REQ-008",
+            "REQ-009",
+            "REQ-010",
+            "REQ-011",
+            "REQ-012",
+        ):
+            assert _ruleFindings(report, ruleId) == []
+
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            ("001-test-feature.md", "001-testFeature.md"),
+            ("MA-001-testFeature.md", "001-testFeature.md"),
+            ("001-TestFeature.md", "001-testFeature.md"),
+        ],
+    )
+    def testNonConformingFilenameFailsWithSuggestion(
+        self, validRepo: Path, name: str, expected: str
+    ):
+        _recordRename(validRepo, name, "MA-001" if name.startswith("MA-") else None)
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        findings = _ruleFindings(report, "REQ-007")
+        assert [f.severity for f in findings] == [Severity.FAILURE]
+        assert f"'{expected}'" in findings[0].message
+
+    @pytest.mark.parametrize(
+        "heading",
+        ["# REQ-001 - Test feature", "# MA-001 Test feature", "# 002: Test feature"],
+    )
+    def testNonConformingHeadingFails(self, validRepo: Path, heading: str):
+        record = validRepo / "project/requirements/features/001-testFeature.md"
+        text = record.read_text(encoding="utf-8")
+        record.write_text(
+            text.replace("# 001: Test feature", heading), encoding="utf-8"
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        findings = _ruleFindings(report, "REQ-008")
+        assert len(findings) == 1
+        assert findings[0].severity == Severity.FAILURE
+        assert "'# 001: Test feature'" in findings[0].message
+
+    def testStatusLineWithoutSectionFails(self, validRepo: Path):
+        record = validRepo / "project/requirements/features/001-testFeature.md"
+        text = record.read_text(encoding="utf-8")
+        record.write_text(
+            text.replace("## Status\n\nInProgress", "Status: InProgress"),
+            encoding="utf-8",
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        failures = [
+            f
+            for f in _ruleFindings(report, "REQ-009")
+            if f.severity == Severity.FAILURE
+        ]
+        assert len(failures) == 1
+        assert "## Status" in failures[0].message
+
+    def testOtherMissingSectionsOnlyWarn(self, validRepo: Path):
+        record = validRepo / "project/requirements/features/001-testFeature.md"
+        text = record.read_text(encoding="utf-8")
+        text = text.replace("## Context\n\nTesting context.\n\n", "")
+        record.write_text(
+            text.replace("## Acceptance criteria", "## Acceptance Criteria"),
+            encoding="utf-8",
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        findings = _ruleFindings(report, "REQ-009")
+        assert [f.severity for f in findings] == [Severity.WARNING]
+        assert findings[0].message.endswith("Context")
+        assert report.isSuccess
+
+    def testPrefixedIndexIdFailsInsteadOfBeingSkipped(self, validRepo: Path):
+        index = validRepo / "project/requirements/requirementsIndex.md"
+        text = index.read_text(encoding="utf-8")
+        index.write_text(text.replace("| 001 |", "| MA-001 |"), encoding="utf-8")
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        findings = _ruleFindings(report, "REQ-010")
+        assert len(findings) == 1
+        assert "'MA-001' should be '001'" in findings[0].message
+        assert findings[0].line is not None
+
+    def testPromptOutsideCanonicalDirectoryFails(self, validRepo: Path):
+        reqDir = validRepo / "project" / "requirements"
+        legacy = validRepo / "project" / "prompts"
+        legacy.mkdir()
+        (reqDir / "prompt" / "001-testFeature.md").rename(legacy / "001-testFeature.md")
+        index = reqDir / "requirementsIndex.md"
+        text = index.read_text(encoding="utf-8")
+        index.write_text(
+            text.replace(
+                "](prompt/001-testFeature.md)", "](../prompts/001-testFeature.md)"
+            ),
+            encoding="utf-8",
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        messages = [f.message for f in _ruleFindings(report, "REQ-011")]
+        assert len(messages) == 2
+        assert any("../prompts/001-testFeature.md" in message for message in messages)
+        assert any(
+            "project/requirements/prompt/001-testFeature.md" in message
+            for message in messages
+        )
+
+    def testIndexDeclaringPrefixWarns(self, validRepo: Path):
+        index = validRepo / "project/requirements/requirementsIndex.md"
+        text = index.read_text(encoding="utf-8")
+        index.write_text(
+            text.replace(
+                "# Requirements\n",
+                "# Requirements\n\nNew requirement records use the stable project prefix `MA`.\n",
+            ),
+            encoding="utf-8",
+        )
+
+        report = AgentCheckValidator(validRepo).runAll()
+
+        findings = _ruleFindings(report, "REQ-012")
+        assert [f.severity for f in findings] == [Severity.WARNING]

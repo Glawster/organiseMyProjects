@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from organiseMyProjects.requirementLayout import layoutMigrate
+import pytest
+
+from organiseMyProjects.requirementLayout import (
+    layoutMigrate,
+    requirementFilenameSuggest,
+)
 
 
 class _Logger:
@@ -348,3 +353,20 @@ def testNewScaffoldNestedReadmeIsReported(tmp_path):
     report = AgentCheckValidator(project).runAll()
 
     assert any(finding.ruleId == "DOC-005" for finding in report.failures)
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("009-read-inbox-filing.md", "009-readInboxFiling.md"),
+        ("MA-012-rolling-imap-retention.md", "012-rollingImapRetention.md"),
+        ("MA-011-sessionCredentialCache.md", "011-sessionCredentialCache.md"),
+        (
+            "004-requirementDocumentationLayout.md",
+            "004-requirementDocumentationLayout.md",
+        ),
+        ("notARequirement.md", None),
+    ],
+)
+def testRequirementFilenameSuggest(name, expected):
+    assert requirementFilenameSuggest(name) == expected

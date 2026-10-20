@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+Completed
 
 ## Outcome
 
@@ -43,7 +43,10 @@ fail; they silently skipped what they could not parse:
   equal to the filename number.
 - Report a record missing any required template section (`Status`, `Outcome`,
   `Context`, `Scope`, `Out of scope`, `Acceptance criteria`,
-  `Dependencies and decisions`, `Verification`, `Change history`).
+  `Dependencies and decisions`, `Verification`, `Change history`). Section
+  names match case-insensitively. A missing `Status` is a failure because the
+  status agreement check depends on it; other missing sections are warnings,
+  because completed records are history and are not rewritten.
 - Report an index row whose Req ID is not the three-digit number of the file
   it links, or that cannot be parsed, instead of skipping it.
 - Report a record whose status cannot be read, instead of skipping REQ-002.
@@ -80,6 +83,9 @@ fail; they silently skipped what they could not parse:
    then a warning cites the conflicting shared rule.
 7. Given a repository that already conforms, when checked, then no new
    findings are reported.
+8. Given a record that lacks a template section other than `Status`, when
+   checked, then a warning names the missing sections and the check still
+   passes.
 
 ## Dependencies and decisions
 
@@ -99,3 +105,10 @@ fail; they silently skipped what they could not parse:
 
 - 2026-10-20: created — `mailAgent` review found fourteen non-conforming
   records that `manageProject --check` passed; captured for the 0.9 backlog.
+- 2026-10-20: InProgress; refined so only a missing `Status` section fails and
+  other missing sections warn, after finding that six completed OMPR records
+  predate the full template.
+- 2026-10-20: Completed — REQ-007 to REQ-012 in `agentCheck.py`; 17 new
+  tests, 448 passed in `ompr`. The pre-correction `mailAgent` tree (`922573d`)
+  reports 38 failures and 11 warnings, with suggestions matching its manual
+  correction; corrected `mailAgent` and OMPR report no failures.

@@ -254,6 +254,12 @@ python tests/agentCheck.py --strict
 | **`REQ-001`** | **FAILURE** | Requirements Index Alignment | A file exists in `project/requirements/features/` but is missing from `project/requirements/README.md` (or vice versa). |
 | **`REQ-002`** | **FAILURE** | Status Agreement | The `Status` column in `project/requirements/README.md` contradicts the `## Status` in the feature file. |
 | **`REQ-003`** | **FAILURE** | ADR Reference Integrity | An ADR linked in a requirement or current increment does not exist in `project/adr/`. |
+| **`REQ-007`** | **FAILURE** | Requirement Filename | A record is not named `<nnn>-<camelCaseName>.md`; the message suggests the conforming name. |
+| **`REQ-008`** | **FAILURE** | Requirement Heading | The first line is not `# <nnn>: <Title>` for the file's number. |
+| **`REQ-009`** | **FAILURE** / **WARNING** | Requirement Sections | No `## Status` section (failure), or other template sections are missing (warning). |
+| **`REQ-010`** | **FAILURE** | Index Req ID | An index row's Req ID is not the three-digit number of the record it links. |
+| **`REQ-011`** | **FAILURE** | Prompt Location | A prompt is linked or stored outside `project/requirements/prompt/`. |
+| **`REQ-012`** | **WARNING** | Index Conventions | The requirements index declares a filename prefix that the shared guide does not allow. |
 
 *Note: No rule checks document age or timestamps. Staleness is evaluated strictly through concrete structural contradictions.*
 

@@ -43,7 +43,7 @@ migrates.
 Captured on 2026-10-20 from the `mailAgent` review; all ToDo and not yet
 scheduled within the planned order below.
 
-- [015: Requirement record conformance checks](requirements/features/015-requirementRecordConformance.md)
+- [015: Requirement record conformance checks](requirements/features/015-requirementRecordConformance.md) — Completed; REQ-007 to REQ-012 added to `manageProject --check`.
 - [016: Requirement naming correction during update](requirements/features/016-requirementNamingCorrection.md) — depends on 015.
 - [017: Requirements guide clarifications](requirements/features/017-requirementsGuideClarifications.md)
 - [018: Framework override naming exemptions beyond Textual](requirements/features/018-frameworkOverrideNamingExemptions.md)

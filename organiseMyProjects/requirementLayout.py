@@ -48,6 +48,8 @@ _REFERENCE_REPLACEMENTS = (
 )
 
 _REQUIREMENT_DIR_RE = re.compile(r"^(\d{3})-([A-Za-z][A-Za-z0-9_-]*)$")
+# Any record name with a three-digit number, optionally behind a project prefix.
+_REQUIREMENT_NAME_RE = re.compile(r"(?:[A-Za-z]+-)?(\d{3})-(.+)\.md")
 _PROMPT_DIR_RE = re.compile(r"^(\d{3}[a-z]?)-([A-Za-z][A-Za-z0-9_-]*)$")
 
 _IGNORED_GENERATED_DIRECTORIES = frozenset(
@@ -103,6 +105,33 @@ def _indexRecognised(path: Path, markers: tuple[str, ...]) -> bool:
         )
 
     return False
+
+
+def requirementFilenameSuggest(name: str) -> str | None:
+    """Return the conforming ``<nnn>-<camelCaseName>.md`` form of a record name.
+
+    A leading project prefix such as ``MA-`` is dropped and a hyphenated or
+    underscored name becomes camelCase. ``None`` means no number was found.
+    """
+    match = _REQUIREMENT_NAME_RE.fullmatch(name)
+    if not match:
+        return None
+    number, words = match.group(1), re.split(r"[-_\s]+", match.group(2))
+    words = [word for word in words if word]
+    if not words:
+        return None
+    camel = (
+        words[0][:1].lower()
+        + words[0][1:]
+        + "".join(word[:1].upper() + word[1:] for word in words[1:])
+    )
+    return f"{number}-{camel}.md"
+
+
+def requirementNumber(name: str) -> str | None:
+    """Return the three-digit number of a record name, ignoring any prefix."""
+    match = _REQUIREMENT_NAME_RE.fullmatch(name)
+    return match.group(1) if match else None
 
 
 def pathGenerated(path: Path) -> bool:

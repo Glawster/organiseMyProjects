@@ -17,6 +17,7 @@ from organiseMyProjects.managedContent import (
     managedContentBuild,
 )
 from organiseMyProjects.requirementLayout import layoutMigrate
+from organiseMyProjects.requirementNaming import requirementNamesCorrect
 from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
 from organiseMyProjects.version import VERSION
 
@@ -1239,8 +1240,11 @@ def migrateProject(projectName, dryRun: bool = False):
 
 
 def _requirementLayoutMaintain(basePath: Path, dryRun: bool = False) -> None:
-    """Apply requirement 004 layout migration and refresh the prompt index."""
+    """Apply requirement 004 layout migration, 016 naming correction, then index."""
     layoutMigrate(basePath, dryRun=dryRun, logger=logger)
+    # Names are corrected after layout migration has produced flat files, and
+    # before the prompt index is refreshed against the corrected prompt names.
+    requirementNamesCorrect(basePath, dryRun=dryRun, logger=logger)
     promptIndexEnsure(basePath, dryRun=dryRun, logger=logger)
 
 

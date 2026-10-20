@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+Completed
 
 ## Outcome
 
@@ -85,3 +85,8 @@ hyphenated names or a misplaced prompt directory.
 
 - 2026-10-20: created — the manual `mailAgent` naming correction showed the
   work is deterministic; captured for the 0.9 backlog.
+- 2026-10-20: Completed — `requirementNaming.requirementNamesCorrect` runs from
+  `manageProject --update` after layout migration; 8 tests, 456 passed in
+  `ompr`. On the pre-correction `mailAgent` tree (`922573d`) it made 16 renames
+  and 18 edits matching commit `ff5cb72` apart from reported prose mentions,
+  took `--check` from 38 failures to 0, and a second run changed nothing.

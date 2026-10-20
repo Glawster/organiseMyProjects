@@ -2,7 +2,7 @@
 
 Implement requirement 019,
 [Environment and test configuration consistency](../features/019-environmentAndTestConfigConsistency.md).
-The requirement is authoritative for scope and acceptance criteria 1–7.
+The requirement is authoritative for scope and acceptance criteria 1–8.
 
 Make the scaffold write one pytest configuration, add `pytest-cov` to the
 development dependencies, and add checks for undefined extras, Python

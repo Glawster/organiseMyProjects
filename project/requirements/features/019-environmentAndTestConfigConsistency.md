@@ -29,6 +29,10 @@ The 2026-10-20 `mailAgent` review found:
   includes `pytest-cov`, so coverage cannot be measured.
 - Existing projects onboarded by update receive no `[tool.black]
   target-version`; black then warned that it inferred Python 3.15.
+- The scaffolded `.pre-commit-config.yaml` pins black `25.1.0` while the
+  environment installs an unpinned black (26.5.1 in `mailAgent`). The two
+  format some string concatenations differently, so running the
+  environment's black produced changes the commit hook then reverted.
 
 Requirement 014 recorded the related open question that update still manages
 `environment.yml` while new projects use `<packageName>Environment.yml`.
@@ -47,6 +51,8 @@ Requirement 014 recorded the related open question that update still manages
 - Include `pytest-cov` in the scaffolded and managed development dependencies.
 - Report a missing `[tool.black] target-version` and offer the scaffold value
   during update when the project does not already set one.
+- Keep the black used by pre-commit and the black installed in the
+  environment on the same version, or report when they differ.
 
 ## Out of scope
 
@@ -71,6 +77,9 @@ Requirement 014 recorded the related open question that update still manages
    `pytest --cov` runs without installing anything else.
 7. Given a project without `[tool.black] target-version`, when checked, then a
    warning is reported.
+8. Given a scaffolded project, when `black` from the environment and the
+   pre-commit black hook both run over the same files, then neither changes
+   what the other produced.
 
 ## Dependencies and decisions
 
@@ -90,3 +99,5 @@ Requirement 014 recorded the related open question that update still manages
 
 - 2026-10-20: created — `mailAgent` review found inconsistent environment,
   packaging and test configuration; captured for the 0.9 backlog.
+- 2026-10-20: added the pre-commit and environment black version mismatch
+  found while tidying `mailAgent`.

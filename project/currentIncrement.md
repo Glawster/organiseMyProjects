@@ -38,6 +38,18 @@ Follow-up candidate: scaffold `requirementsIndex.md` and `adrIndex.md`
 directly instead of writing legacy `README.md` indexes that update then
 migrates.
 
+## Backlog
+
+Captured on 2026-10-20 from the `mailAgent` review; all ToDo and not yet
+scheduled within the planned order below.
+
+- [015: Requirement record conformance checks](requirements/features/015-requirementRecordConformance.md)
+- [016: Requirement naming correction during update](requirements/features/016-requirementNamingCorrection.md) — depends on 015.
+- [017: Requirements guide clarifications](requirements/features/017-requirementsGuideClarifications.md)
+- [018: Framework override naming exemptions beyond Textual](requirements/features/018-frameworkOverrideNamingExemptions.md)
+- [019: Environment and test configuration consistency](requirements/features/019-environmentAndTestConfigConsistency.md) — resolves the open question in 014.
+- [020: Documentation completeness checks](requirements/features/020-documentationCompletenessChecks.md)
+
 ## Planned order
 
 1. Housekeeping — done: removed duplicate

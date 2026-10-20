@@ -20,7 +20,7 @@ implemented in 0.10.
 ## Requirements
 
 - [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — Completed; all acceptance criteria verified in the 0.9 review.
-- [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests run in the `ompr` environment; verify downstream `mailAgent` adoption for acceptance criteria 5 and 6.
+- [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests run in the `ompr` environment. `mailAgent` adopted the shared `button-group` on both execute rows in `f75f694`, removing local width/height/padding overrides; headless render tests measure one-row buttons, equal widths, one-column gaps and one free row around each group. Remaining: visual confirmation in the running app, then Completed.
 - [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — Completed; downstream projects with findings now fail `runLinter` (for example `mailAgent`: one `NAM-003`).
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — ToDo; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
@@ -75,10 +75,10 @@ scheduled within the planned order below.
 
 ## Verification still required
 
-- Render the adopted shared buttons in the downstream `mailAgent` checkout.
+- Look at the adopted shared buttons in the running `mailAgent` app (headless geometry already verified).
 - Run the full release validation for every 0.9 change.
 
 ## Immediate next action
 
-Verify requirement 012 downstream in `mailAgent`, which also needs its
-`NAM-003` finding addressed now that `runLinter` enforces findings.
+Confirm requirement 012 visually in `mailAgent` (its `NAM-003` finding is
+already resolved; `runLinter` reports none), then continue with 017–020.

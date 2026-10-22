@@ -24,6 +24,7 @@ implemented in 0.10.
 - [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — Completed; downstream projects with findings now fail `runLinter` (for example `mailAgent`: one `NAM-003`).
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — ToDo; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
+- [021: Requirement board](requirements/features/021-myBoard.md) — InProgress
 
 ## Internal refactor (no requirement)
 

@@ -32,6 +32,13 @@ Migrate
 Check
   Read-only validation of repository and agent readiness.
 
+#### `myBoard`
+
+`myBoard` is the requirement board for the project it is run from. The domain
+module is `requirementBoard.py`. `myBoard.py` is the command, and
+`myBoardTui.py` is the Textual view. Textual is loaded only when the board
+opens. See [Requirement board](myBoard.md).
+
 Role detection
   Classifies standalone applications, packaged CLIs and libraries from
   `main.py`, `pyproject.toml`, `setup.cfg`, `setup.py` and `src/` without

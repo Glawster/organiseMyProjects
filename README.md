@@ -19,6 +19,7 @@ The living guides are:
 - [Release Notes](documentation/releaseNotes.md)
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
+- [Requirement Board](documentation/myBoard.md)
 - [Shared TUI Styling](documentation/tuiStyling.md)
 - [Testing Process](documentation/testingProcess.md)
 - [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
@@ -208,6 +209,19 @@ manageProject check --project myExistingProject
 The check operation is read-only and validates the applicable OMP repository,
 documentation and agent conventions, including the one-root-README rule and
 canonical named directory indexes.
+
+### Review requirements on the board
+
+`myBoard` reads the nearest `project/requirements/` tree and shows Backlog,
+ToDo, InProgress and Completed. Moves stay as a dry-run until `--confirm`.
+The Textual board needs the `tui` extra. See the
+[requirement board guide](documentation/myBoard.md).
+
+```bash
+myBoard
+myBoard list
+myBoard move 012 InProgress --confirm
+```
 
 ### Run Python and GUI naming checks
 

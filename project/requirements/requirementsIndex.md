@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 021
+Next available number: 022
 
 ## Requirement index
 
@@ -26,3 +26,4 @@ Next available number: 021
 | 018 | [Framework override naming exemptions beyond Textual](features/018-frameworkOverrideNamingExemptions.md) | Accept method names dictated by external base classes such as `HTMLParser` without weakening project naming rules. | ToDo | [Prompt](prompt/018-frameworkOverrideNamingExemptions.md) | Not required |
 | 019 | [Environment and test configuration consistency](features/019-environmentAndTestConfigConsistency.md) | Keep scaffolded environment, packaging and pytest configuration consistent and make coverage measurable. | ToDo | [Prompt](prompt/019-environmentAndTestConfigConsistency.md) | Not required |
 | 020 | [Documentation completeness checks](features/020-documentationCompletenessChecks.md) | Report guides missing from the README Documentation section and placeholder project instructions. | ToDo | [Prompt](prompt/020-documentationCompletenessChecks.md) | Not required |
+| 021 | [Requirement board](features/021-myBoard.md) | Show and update the requirements of the project the command is run from. | InProgress | [Prompt](prompt/021-myBoard.md) | Not required |

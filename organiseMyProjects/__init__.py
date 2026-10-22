@@ -12,6 +12,7 @@ Main components:
 - guiNamingLinter: Naming convention checker (package utility)
 - runLinter: Linter CLI interface (package utility)
 - logUtils: Logging utility (package utility)
+- myBoard: Requirement board for the project the command is run from
 
 Template files (copied to new projects):
 - globalVars.py, baseFrame.py, frameTemplate.py, statusFrame.py
@@ -24,17 +25,29 @@ Usage:
 """
 
 # Expose main functionality for programmatic use
-from . import agentCheck, guiNamingLinter, logUtils, manageProject, runLinter
+from . import (
+    agentCheck,
+    guiNamingLinter,
+    logUtils,
+    manageProject,
+    requirementBoard,
+    runLinter,
+)
 from .guiNamingLinter import lintFile, lintGuiNaming
+from .requirementBoard import boardLoad, cardMove, requirementCreate
 from .version import VERSION as __version__
 
 __all__ = [
     "__version__",
     "agentCheck",
+    "boardLoad",
+    "cardMove",
     "guiNamingLinter",
     "lintFile",
     "lintGuiNaming",
     "logUtils",
     "manageProject",
+    "requirementBoard",
+    "requirementCreate",
     "runLinter",
 ]

@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+Completed
 
 ## Outcome
 
@@ -64,3 +64,4 @@ The shared OMP stylesheet should define the standard button presentation for TUI
 ## Change history
 
 - 2026-10-14: created from cross-repository TUI button styling discussion; establishes the shared one-row button convention, standard spacing, and `mailAgent` adoption while exempting `clannEolas`.
+- 2026-10-22: status InProgress -> Completed — myBoard.

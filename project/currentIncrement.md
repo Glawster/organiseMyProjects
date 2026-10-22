@@ -7,7 +7,7 @@ runtime architecture decision
 
 ## Status
 
-In progress — 004, 013, 014 and the patch-removal refactor done; 012, 002 and
+In progress — 004, 012, 013, 014 and the patch-removal refactor done; 002 and
 release checks remain.
 
 ## Objective
@@ -20,7 +20,7 @@ implemented in 0.10.
 ## Requirements
 
 - [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — Completed; all acceptance criteria verified in the 0.9 review.
-- [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — InProgress; style tests run in the `ompr` environment. `mailAgent` adopted the shared `button-group` on both execute rows in `f75f694`, removing local width/height/padding overrides; headless render tests measure one-row buttons, equal widths, one-column gaps and one free row around each group. Remaining: visual confirmation in the running app, then Completed.
+- [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — Completed; style tests run in the `ompr` environment. `mailAgent` adopted the shared `button-group` on both execute rows in `f75f694`, removing local width/height/padding overrides; headless render tests measure one-row buttons, equal widths, one-column gaps and one free row around each group.
 - [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — Completed; downstream projects with findings now fail `runLinter` (for example `mailAgent`: one `NAM-003`).
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — ToDo; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
@@ -60,7 +60,7 @@ scheduled within the planned order below.
 3. Requirement 004 evidence and close-out — done.
 4. Patch-removal refactor — done.
 5. Requirement 013 — done.
-6. Requirement 012 downstream verification in `mailAgent`.
+6. Requirement 012 downstream verification in `mailAgent` — done.
 7. Requirement 002 ADR and requirement refinement.
 8. Release checks per `documentation/howToRelease.md`.
 
@@ -76,10 +76,8 @@ scheduled within the planned order below.
 
 ## Verification still required
 
-- Look at the adopted shared buttons in the running `mailAgent` app (headless geometry already verified).
 - Run the full release validation for every 0.9 change.
 
 ## Immediate next action
 
-Confirm requirement 012 visually in `mailAgent` (its `NAM-003` finding is
-already resolved; `runLinter` reports none), then continue with 017–020.
+Continue with requirement 002, then the release checks.

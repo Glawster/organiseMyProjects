@@ -667,6 +667,38 @@ def testRightClickSelectsAndLeftClickOpensTheCard(tmp_path: Path):
 
 
 @REQUIRES_TEXTUAL
+def testSelectingInAnotherColumnClearsTheFirst(tmp_path: Path):
+    from textual.widgets import ListView
+
+    from organiseMyProjects.myBoardTui import BoardApp
+
+    root = boardFixture(tmp_path)
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(140, 36)) as pilot:
+            backlog = completed = None
+            for _attempt in range(20):
+                await pilot.pause()
+                backlog = app.query_one("#list-Backlog", ListView)
+                completed = app.query_one("#list-Completed", ListView)
+                if backlog.children and completed.children:
+                    break
+            assert backlog is not None and backlog.children
+            assert completed is not None and completed.children
+            await pilot.click(backlog.children[0], button=3)
+            await pilot.pause()
+            assert backlog.highlighted_child is backlog.children[0]
+            await pilot.click(completed.children[0], button=3)
+            await pilot.pause()
+            assert completed.highlighted_child is completed.children[0]
+            assert backlog.highlighted_child is None
+            assert app.activeCard().number == "001"
+
+    asyncio.run(verify())
+
+
+@REQUIRES_TEXTUAL
 def testDetailShowsFilesOnSeparateLines(tmp_path: Path):
     from textual.widgets import Static
 

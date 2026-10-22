@@ -1,9 +1,20 @@
 # Release notes
 
-## 0.9 — in development
+## 0.9a
 
 Scope and acceptance work are tracked in
 [the current increment](../project/currentIncrement.md).
+
+### Requirement board
+
+- `myBoard` shows the requirements of the project it is run from in Backlog,
+  ToDo, InProgress and Completed columns.
+- Confirmed moves update the requirement record, `requirementsIndex.md` and
+  `project/currentIncrement.md` together. Without `--confirm` the command only
+  reports the files it would change.
+- The board strip shows the current Git branch. Checks, `runLinter` and pytest
+  run when requested.
+- See [Requirement board](myBoard.md).
 
 ### runLinter reporting
 

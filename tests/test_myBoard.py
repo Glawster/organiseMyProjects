@@ -385,6 +385,60 @@ def testGitLinksTheRequirementId(tmp_path: Path):
     assert other.commits == ()
 
 
+def _colourAverage(colour) -> float:
+    return (colour.r + colour.g + colour.b) / 3
+
+
+def _assertDarkContrast(ink, surface) -> None:
+    """Fail when text is not clearly lighter than a dark working surface."""
+    assert surface.a == 1
+    row = _colourAverage(surface)
+    assert row < 80
+    assert abs(_colourAverage(ink) - row) > 80
+
+
+@REQUIRES_TEXTUAL
+def testSelectedCardStaysReadable(tmp_path: Path):
+    from textual.widgets import Label, ListView, Static
+
+    from organiseMyProjects.myBoardTui import BoardApp
+
+    root = boardFixture(tmp_path)
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(140, 36)) as pilot:
+            view = None
+            for _attempt in range(20):
+                await pilot.pause()
+                view = app.query_one("#list-ToDo", ListView)
+                if view.children:
+                    break
+            assert view is not None and view.children
+            # Focus alone leaves the cursor unset. The row highlight is the index.
+            view.focus()
+            view.index = 0
+            await pilot.pause()
+            highlighted = view.highlighted_child
+            assert highlighted is not None
+            column = view.parent
+            _assertDarkContrast(column.styles.color, column.styles.background)
+            _assertDarkContrast(view.styles.color, view.styles.background)
+            title = app.query_one("#title-ToDo", Static)
+            _assertDarkContrast(title.styles.color, column.styles.background)
+            _assertDarkContrast(
+                highlighted.query_one(Label).styles.color,
+                highlighted.styles.background,
+            )
+            plain = app.query_one("#list-Backlog", ListView).children[0]
+            _assertDarkContrast(
+                plain.query_one(Label).styles.color,
+                plain.styles.background,
+            )
+
+    asyncio.run(verify())
+
+
 @REQUIRES_TEXTUAL
 def testBoardMoveFromTheColumns(tmp_path: Path):
     from textual.widgets import Label, ListView

@@ -11,6 +11,21 @@ copy of the canonical theme can be adopted automatically. To adopt from a custom
 theme, review and replace it with the canonical theme first; update adds provenance.
 `clannEolas` is exempt and its stylesheet is never deployed or refreshed.
 
+## Where colour lives
+
+`myStyles.css` owns colour: the canvas, surfaces, the cursor, and the `Label`
+and `Static` ink on those surfaces. Hex values stay in that file. Application
+CSS owns layout only: size, padding, alignment, and which regions use
+`classes="surface"`.
+
+The light canvas is the chrome: the screen, header, footer, tabs, and a one-line
+status strip. The working frame is the dark surface. That frame is tables, lists,
+columns, and dialogs. A highlighted list row uses the same cursor colours as a
+table, and the label inside that row uses the cursor text colour.
+
+A dark surface sets the colour of its own `Label` and `Static` children. A colour
+on the container does not reach them.
+
 ## Buttons and groups
 
 Standard buttons occupy exactly one terminal row, with no border and no vertical

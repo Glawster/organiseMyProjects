@@ -148,6 +148,61 @@ DataTable:focus {
     border: solid #14b8a6;
 }
 
+/* Lists are the same dark working surface as tables. The canvas Label colour
+   would otherwise stay dark when a row is highlighted. */
+ListView {
+    background: #101f2e;
+    color: #f5f8fb;
+    border: solid #30465a;
+}
+
+ListView > ListItem {
+    background: #101f2e;
+    color: #f5f8fb;
+    padding: 0 1;
+}
+
+ListView > ListItem Label,
+ListView > ListItem Static {
+    background: transparent;
+    color: #f5f8fb;
+}
+
+ListView > ListItem.-hovered {
+    background: #243545;
+    color: #f5f8fb;
+}
+
+ListView > ListItem.-hovered Label,
+ListView > ListItem.-hovered Static {
+    color: #f5f8fb;
+}
+
+ListView > ListItem.-highlight {
+    background: #163b38;
+    color: #75e0bf;
+}
+
+ListView > ListItem.-highlight Label,
+ListView > ListItem.-highlight Static {
+    background: transparent;
+    color: #75e0bf;
+}
+
+/* A focused list has its own cursor rule. Keep the same success colours the
+   table cursor uses, including the label, or the row text falls back to the
+   dark canvas ink. */
+ListView:focus > ListItem.-highlight {
+    background: #163b38;
+    color: #75e0bf;
+}
+
+ListView:focus > ListItem.-highlight Label,
+ListView:focus > ListItem.-highlight Static {
+    background: transparent;
+    color: #75e0bf;
+}
+
 Input,
 TextArea,
 Select {

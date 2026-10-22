@@ -56,7 +56,7 @@ class ConfirmMove(ModalScreen[bool]):
         self.message = message
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="confirm-box"):
+        with Vertical(id="confirm-box", classes="surface"):
             yield Static(self.message, id="confirm-text")
             with Horizontal(classes="button-group"):
                 yield Button("Apply", id="move-apply", variant="success")
@@ -140,24 +140,15 @@ class BoardApp(App):
     .column {
         width: 1fr;
         height: 1fr;
-        border-right: solid #d9e5ef;
     }
     .column-title {
         height: 1;
         padding: 0 1;
         text-style: bold;
-        color: #239b78;
     }
-    ListView {
+    .column ListView {
         height: 1fr;
-        background: #f7f7f5;
-    }
-    ListItem {
-        padding: 0 1;
-    }
-    ListItem.-highlight {
-        background: #243545;
-        color: #f5f8fb;
+        border: none;
     }
     ConfirmMove {
         align: center middle;
@@ -166,9 +157,6 @@ class BoardApp(App):
         width: 72;
         height: auto;
         padding: 1 2;
-        background: #101f2e;
-        color: #f5f8fb;
-        border: solid #239b78;
     }
     #detail-text {
         padding: 1 2;
@@ -203,7 +191,7 @@ class BoardApp(App):
         yield Static("loading", id="board-strip")
         with Horizontal(id="columns"):
             for column in COLUMNS:
-                with Vertical(classes="column"):
+                with Vertical(classes="column surface"):
                     yield Static(column, classes="column-title", id=f"title-{column}")
                     yield ListView(id=f"list-{column}")
         yield Footer()

@@ -11,6 +11,7 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.events import Click
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, Static
 
@@ -83,17 +84,27 @@ class CardItem(ListItem):
         super().__init__(Label(f"{card.number}  {card.title}{mark}"))
         self.card = card
 
+    def on_click(self, event: Click) -> None:
+        """A right click only highlights the card. A left click also opens it."""
+        if event.button == 1:
+            return
+        # ListItem treats every button as a selection that opens the card.
+        event.prevent_default()
+        view = self.parent
+        if isinstance(view, CardList):
+            view.selectCard(self)
+
 
 class CardList(ListView):
-    """A column list. A click selects the card. Enter opens it."""
+    """A column list. Left click opens a card. Right click only selects it."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.selectOnly = False
-
-    def _on_list_item__child_clicked(self, event: ListItem._ChildClicked) -> None:
-        """Remember that this selection came from a click, not Enter."""
-        self.selectOnly = isinstance(event.item, CardItem)
+    def selectCard(self, item: CardItem) -> None:
+        """Highlight one card without opening its detail."""
+        items = list(self.children)
+        if item not in items:
+            return
+        self.focus()
+        self.index = items.index(item)
 
 
 class ConfirmMove(ModalScreen[bool]):
@@ -316,11 +327,7 @@ class BoardApp(App):
             self.columnFocus(0)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Open the card on Enter. A click only highlights it for a move."""
-        view = event.list_view
-        if isinstance(view, CardList) and view.selectOnly:
-            view.selectOnly = False
-            return
+        """Open the card. Enter and a left click both post this selection."""
         if isinstance(event.item, CardItem):
             self.push_screen(DetailScreen(event.item.card))
 

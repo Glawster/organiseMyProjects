@@ -7,8 +7,8 @@ runtime architecture decision
 
 ## Status
 
-In progress — 004, 012, 013, 014 and the patch-removal refactor done; 002 and
-release checks remain.
+In progress — 004, 012, 013, 014, 021 and the patch-removal refactor done; 002
+and release checks remain.
 
 ## Objective
 
@@ -24,7 +24,7 @@ implemented in 0.10.
 - [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — Completed; downstream projects with findings now fail `runLinter` (for example `mailAgent`: one `NAM-003`).
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — InProgress; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
-- [021: Requirement board](requirements/features/021-myBoard.md) — InProgress
+- [021: Requirement board](requirements/features/021-myBoard.md) — Completed; myBoard lists each requirement in one column. A confirmed move updates the record, the index and the increment together. The detail shows the linked branch, commits and changed files. Checks, runLinter and pytest run on request, and a pytest failure stays with the requirement it names.
 
 ## Internal refactor (no requirement)
 

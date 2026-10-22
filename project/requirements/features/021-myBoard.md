@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+Completed
 
 ## Outcome
 
@@ -49,3 +49,4 @@ Requirements already live in project/requirements, with status in both the recor
 
 - 2026-10-22: created — myBoard.
 - 2026-10-22: status ToDo -> InProgress — myBoard.
+- 2026-10-22: status InProgress -> Completed — myBoard.

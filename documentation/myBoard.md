@@ -59,8 +59,8 @@ pip install 'organiseMyProjects[tui]'
 | Key | Action |
 | --- | --- |
 | Left, Right | Move between columns |
-| Up, Down, or click | Select a card |
-| Enter | Open the selected card |
+| Up, Down, or right click | Select a card |
+| Enter, or left click | Open the selected card |
 | `[`, `]` | Move the selected card one column, after confirmation. On an open requirement these keys do nothing |
 | `c` | Run `manageProject` checks |
 | `n` | Run `runLinter` |

@@ -630,7 +630,7 @@ def testDetailIgnoresColumnMoves(tmp_path: Path):
 
 
 @REQUIRES_TEXTUAL
-def testClickSelectsWithoutOpeningTheCard(tmp_path: Path):
+def testRightClickSelectsAndLeftClickOpensTheCard(tmp_path: Path):
     from textual.widgets import ListView
 
     from organiseMyProjects.myBoardTui import BoardApp, ConfirmMove, DetailScreen
@@ -647,14 +647,21 @@ def testClickSelectsWithoutOpeningTheCard(tmp_path: Path):
                 if backlog.children:
                     break
             assert backlog is not None and backlog.children
-            await pilot.click(backlog.children[0])
+            card = backlog.children[0]
+            await pilot.click(card, button=3)
             await pilot.pause()
             assert not isinstance(app.screen, DetailScreen)
-            assert backlog.highlighted_child is backlog.children[0]
+            assert backlog.highlighted_child is card
             await pilot.press("right_square_bracket")
             await pilot.pause()
             assert isinstance(app.screen, ConfirmMove)
             assert boardLoad(root).cardGet("003").column == "Backlog"
+            await pilot.click("#move-cancel")
+            await pilot.pause()
+            await pilot.click(card)
+            await pilot.pause()
+            assert isinstance(app.screen, DetailScreen)
+            assert backlog.highlighted_child is card
 
     asyncio.run(verify())
 

@@ -1,8 +1,8 @@
 # Release notes
 
-## 0.9b
+## 0.9a1
 
-Bug fixes and refinements to the 0.9a requirement board.
+Bug fixes and refinements to the 0.9a0 requirement board.
 
 ### Requirement board fixes
 

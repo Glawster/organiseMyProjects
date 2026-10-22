@@ -43,6 +43,7 @@ FRAMEWORK_METHOD_EXCEPTIONS = {
     "clear",  # Qt widget override
     "emit",  # logging.Handler
     "process",  # logging.LoggerAdapter
+    "_on_list_item__child_clicked",  # Textual ListView click dispatch
 }
 
 LOGGING_METHODS = {

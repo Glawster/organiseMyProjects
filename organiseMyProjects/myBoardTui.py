@@ -24,19 +24,55 @@ from organiseMyProjects.requirementBoard import (
     RequirementCard,
     RequirementGit,
     boardLoad,
-    cardFormat,
     cardMove,
+    detailParts,
     changeApply,
     checkFindingsLoad,
     findingsSelect,
     gitContextLoad,
     lintSelect,
     lintSnapshotLoad,
+    pytestSelect,
     pytestSnapshotLoad,
     requirementGitLoad,
 )
 
 _THEME = Path(__file__).with_name("myStyles.css")
+
+
+def _detailWidgets(parts: list[tuple[str, str]]) -> list[Horizontal | Static]:
+    """Map detail parts onto labelled widgets. Colour comes from myStyles.css."""
+    widgets: list[Horizontal | Static] = []
+    for role, text in parts:
+        widgets.extend(_detailWidget(role, text))
+    return widgets
+
+
+def _detailWidget(role: str, text: str) -> list[Horizontal | Static]:
+    """Return the widgets for one detail part."""
+    if role == "pair":
+        label, _, value = text.partition("\t")
+        return [_detailRow(label, value, "detail-label")]
+    if role == "commit":
+        revision, _, subject = text.partition("\t")
+        return [_detailRow(revision, subject, "detail-hash")]
+    classes = {
+        "title": "detail-title",
+        "heading": "detail-heading",
+        "prose": "detail-prose",
+        "file": "detail-file",
+        "finding": "detail-finding",
+    }.get(role, "detail-muted")
+    return [Static(text, classes=classes, markup=False)]
+
+
+def _detailRow(label: str, value: str, labelClass: str) -> Horizontal:
+    """Return one labelled row. The label class carries the bold or accent ink."""
+    return Horizontal(
+        Static(label, classes=labelClass, markup=False),
+        Static(value, classes="detail-value", markup=False),
+        classes="detail-row",
+    )
 
 
 class CardItem(ListItem):
@@ -46,6 +82,18 @@ class CardItem(ListItem):
         mark = " !" if card.drift else ""
         super().__init__(Label(f"{card.number}  {card.title}{mark}"))
         self.card = card
+
+
+class CardList(ListView):
+    """A column list. A click selects the card. Enter opens it."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.selectOnly = False
+
+    def _on_list_item__child_clicked(self, event: ListItem._ChildClicked) -> None:
+        """Remember that this selection came from a click, not Enter."""
+        self.selectOnly = isinstance(event.item, CardItem)
 
 
 class ConfirmMove(ModalScreen[bool]):
@@ -73,7 +121,11 @@ class DetailScreen(Screen):
         Binding("escape", "back", "Back"),
         Binding("c", "checks", "Checks"),
         Binding("n", "lint", "Lint"),
-        Binding("t", "pytest", "pytest"),
+        Binding("p", "pytest", "pytest"),
+        # The board's move keys stay on the app. Bind them here so they do not
+        # move a card, and hide them, while this requirement is open.
+        Binding("left_square_bracket", "ignore_move", show=False),
+        Binding("right_square_bracket", "ignore_move", show=False),
     ]
 
     def __init__(self, card: RequirementCard) -> None:
@@ -82,8 +134,8 @@ class DetailScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with VerticalScroll():
-            yield Static("", id="detail-text")
+        with VerticalScroll(id="detail-scroll"):
+            yield Vertical(id="detail-lines")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -93,15 +145,24 @@ class DetailScreen(Screen):
 
     def textRefresh(self) -> None:
         """Redraw the detail from the signals the board has loaded."""
+        self.run_worker(self.detailFill, exclusive=True, group="detail-fill")
+
+    async def detailFill(self) -> None:
+        """Replace the detail widgets. Headings and files are separate rows."""
+        if not self.is_mounted:
+            return
         board = self.boardApp
         git = board.gitCards.get(self.card.number)
+        paths = () if git is None else git.paths
         findings = findingsSelect(board.checkFindings, self.card)
-        lint = None
-        if board.lintFindings is not None:
-            paths = () if git is None else git.paths
-            lint = lintSelect(board.lintFindings, paths)
-        self.query_one("#detail-text", Static).update(
-            cardFormat(self.card, git, findings, lint, board.pytestSummary)
+        lint = lintSelect(board.lintFindings, paths)
+        # The suite summary stays on the strip. This card lists only the
+        # failures that name its own files.
+        pytestLines = pytestSelect(board.pytestSnapshot, paths, self.card.verification)
+        view = self.query_one("#detail-lines", Vertical)
+        await view.remove_children()
+        await view.mount(
+            *_detailWidgets(detailParts(self.card, git, findings, lint, pytestLines))
         )
 
     @property
@@ -122,6 +183,9 @@ class DetailScreen(Screen):
 
     def action_pytest(self) -> None:
         self.boardApp.pytestLoad()
+
+    def action_ignore_move(self) -> None:
+        """Column moves apply on the board, not while a requirement is open."""
 
 
 class BoardApp(App):
@@ -158,8 +222,30 @@ class BoardApp(App):
         height: auto;
         padding: 1 2;
     }
-    #detail-text {
-        padding: 1 2;
+    #detail-scroll {
+        height: 1fr;
+    }
+    #detail-lines {
+        height: auto;
+        padding: 0 2 1 2;
+    }
+    .detail-row {
+        height: 1;
+        width: 1fr;
+    }
+    .detail-label,
+    .detail-hash {
+        width: 14;
+        height: 1;
+    }
+    .detail-value {
+        width: 1fr;
+        height: 1;
+    }
+    .detail-file {
+        height: 1;
+        width: 1fr;
+        padding: 0 2;
     }
     """
     BINDINGS = [
@@ -170,7 +256,7 @@ class BoardApp(App):
         Binding("right_square_bracket", "move_right", "Move right"),
         Binding("c", "checks", "Checks"),
         Binding("n", "lint", "Lint"),
-        Binding("t", "pytest", "pytest"),
+        Binding("p", "pytest", "pytest"),
         Binding("g", "refresh", "Refresh"),
     ]
 
@@ -183,6 +269,7 @@ class BoardApp(App):
         self.checkFindings: tuple[CheckFinding, ...] | None = None
         self.lintFindings: tuple[CheckFinding, ...] | None = None
         self.lintSummary = ""
+        self.pytestSnapshot: CommandSnapshot | None = None
         self.pytestSummary = ""
         self.pendingMove: tuple[str, str] | None = None
 
@@ -193,7 +280,7 @@ class BoardApp(App):
             for column in COLUMNS:
                 with Vertical(classes="column surface"):
                     yield Static(column, classes="column-title", id=f"title-{column}")
-                    yield ListView(id=f"list-{column}")
+                    yield CardList(id=f"list-{column}")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -229,6 +316,11 @@ class BoardApp(App):
             self.columnFocus(0)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Open the card on Enter. A click only highlights it for a move."""
+        view = event.list_view
+        if isinstance(view, CardList) and view.selectOnly:
+            view.selectOnly = False
+            return
         if isinstance(event.item, CardItem):
             self.push_screen(DetailScreen(event.item.card))
 
@@ -437,6 +529,7 @@ class BoardApp(App):
         self.call_from_thread(self.pytestShow, snapshot)
 
     def pytestShow(self, snapshot: CommandSnapshot) -> None:
+        self.pytestSnapshot = snapshot
         self.pytestSummary = snapshot.summary
         self.stripRefresh()
         self.detailRefresh()

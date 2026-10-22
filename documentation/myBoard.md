@@ -59,12 +59,12 @@ pip install 'organiseMyProjects[tui]'
 | Key | Action |
 | --- | --- |
 | Left, Right | Move between columns |
-| Up, Down | Move between cards |
-| Enter | Open the card |
-| `[`, `]` | Move the selected card one column, after confirmation |
+| Up, Down, or click | Select a card |
+| Enter | Open the selected card |
+| `[`, `]` | Move the selected card one column, after confirmation. On an open requirement these keys do nothing |
 | `c` | Run `manageProject` checks |
 | `n` | Run `runLinter` |
-| `t` | Run pytest |
+| `p` | Run pytest |
 | `g` | Reload the board and the Git strip |
 | `q` | Quit |
 
@@ -73,10 +73,13 @@ dirty, and how far the branch is ahead of or behind `main` and the release
 branch named by the increment. Checks, lint and pytest stay blank until you
 ask for them.
 
-The card shows branches, commits and changed files whose names or messages
-contain the requirement id. Check findings that name the requirement are
+The card shows the branch whose name contains the requirement id, and the
+branch that still holds an unmerged commit for it. Commits from that mention
+to the branch tip are listed. Each changed file is on its own line. Check findings that name the requirement are
 listed on the card. Lint findings are listed when they sit in a file changed
-on one of those branches. A `!` on a card means the record status and the
+on one of those branches. Pytest failures are listed when they name one of
+those files or a path in the requirement's Verification section. The suite
+summary stays on the strip. A `!` on a card means the record status and the
 index status disagree. Moving the card writes both.
 
 ## What the board does not do

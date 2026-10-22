@@ -29,6 +29,8 @@ _NAME = re.compile(r"^[a-z][A-Za-z0-9]*$")
 # Spaces only. A newline must stay in place so the following blank line survives.
 _NEXT_NUMBER = re.compile(r"(?m)^(Next available number:\s*)(\d+)[ \t]*$")
 _FEATURE_LINK = re.compile(r"features/(\d{3})-")
+# File paths in pytest output and in a requirement's Verification section.
+_PYTEST_PATH = re.compile(r"(?<![\w.-])((?:[\w.-]+/)*[\w.-]+\.[A-Za-z0-9]+)")
 _HEADING = re.compile(r"(?m)^## ([^\n]+)\n")
 _STATUS_WORD = re.compile(r"(—\s*)(ToDo|InProgress|Completed)\b")
 _RECORD_STATUS = re.compile(r"^## Status\s*\n+([A-Za-z]+)", re.M)
@@ -48,6 +50,7 @@ class RequirementCard:
     outcome: str
     onIncrement: bool
     inBacklog: bool
+    verification: str
 
     @property
     def column(self) -> str:
@@ -239,7 +242,7 @@ def boardLoad(root: Path) -> Board:
             number = path.name[:3]
             if not number.isdigit():
                 continue
-            title, status, outcome = _recordRead(path)
+            title, status, outcome, verification = _recordRead(path)
             row = rows.get(number)
             cards.append(
                 RequirementCard(
@@ -252,6 +255,7 @@ def boardLoad(root: Path) -> Board:
                     outcome=outcome,
                     onIncrement=number in mentioned[0],
                     inBacklog=number in mentioned[1],
+                    verification=verification,
                 )
             )
     return Board(
@@ -311,32 +315,42 @@ def cardFormat(
     git: RequirementGit | None = None,
     findings: tuple[CheckFinding, ...] | None = None,
     lint: tuple[CheckFinding, ...] | None = None,
-    pytestSummary: str = "",
+    pytestLines: tuple[str, ...] | None = None,
 ) -> str:
     """Return the detail text for one card."""
-    lines = [
-        f"{card.number}  {card.title}",
-        f"Column: {card.column}",
-        f"Status: {card.status}",
+    return _partsText(detailParts(card, git, findings, lint, pytestLines))
+
+
+def detailParts(
+    card: RequirementCard,
+    git: RequirementGit | None = None,
+    findings: tuple[CheckFinding, ...] | None = None,
+    lint: tuple[CheckFinding, ...] | None = None,
+    pytestLines: tuple[str, ...] | None = None,
+) -> list[tuple[str, str]]:
+    """Return ``(role, text)`` pairs for one card.
+
+    A commit's text is ``revision`` then tab then subject. A pair's text is
+    the label, a tab, and the value. Each changed file is its own ``file`` part.
+    """
+    parts = [
+        ("title", f"{card.number}  {card.title}"),
+        ("pair", f"Column\t{card.column}"),
+        ("pair", f"Status\t{card.status}"),
     ]
     if card.drift:
-        lines.append(f"Index status: {card.indexStatus}")
+        parts.append(("pair", f"Index status\t{card.indexStatus}"))
     if card.description:
-        lines.append(card.description)
+        parts.append(("prose", card.description))
     if card.outcome:
-        lines.extend(["", card.outcome])
-    lines.append("")
-    lines.extend(_gitLines(git))
-    lines.append("")
-    lines.extend(_findingLines("Checks", findings, "no findings for this requirement"))
-    lines.extend(
-        _findingLines("Lint", lint, "no findings in files changed on a linked branch")
+        parts.append(("prose", card.outcome))
+    parts.extend(_gitParts(git))
+    parts.extend(_findingParts("Checks", findings, "no findings for this requirement"))
+    parts.extend(
+        _findingParts("Lint", lint, "no findings in files changed on a linked branch")
     )
-    if pytestSummary:
-        lines.append(f"pytest: {pytestSummary}")
-    else:
-        lines.append("pytest: not run")
-    return "\n".join(lines) + "\n"
+    parts.extend(_pytestParts(pytestLines))
+    return parts
 
 
 def columnNormalise(value: str) -> str:
@@ -517,39 +531,45 @@ def pytestSnapshotLoad(root: Path) -> CommandSnapshot:
     summary = lines[-1] if lines else "pytest produced no output"
     if len(summary) > 160:
         summary = summary[:157] + "..."
-    return CommandSnapshot(completed.returncode, summary, "\n".join(lines[-12:]))
+    return CommandSnapshot(completed.returncode, summary, _pytestKeep(completed.stdout))
+
+
+def pytestSelect(
+    snapshot: CommandSnapshot | None,
+    paths: tuple[str, ...],
+    verification: str = "",
+) -> tuple[str, ...] | None:
+    """Return pytest lines that belong to this requirement.
+
+    ``None`` means pytest has not run. A failure line is kept when it names a
+    changed file or a path written in Verification. The suite summary stays on
+    the strip, so one requirement does not show another's failures.
+    """
+    if snapshot is None:
+        return None
+    if snapshot.summary == "pytest failed to start":
+        return (snapshot.summary,)
+    wanted = _pytestWanted(paths, verification)
+    return tuple(
+        line for line in snapshot.text.splitlines() if _pytestLineMatches(line, wanted)
+    )
 
 
 def requirementGitLoad(root: Path, number: str) -> RequirementGit:
-    """Find branches, commits and changed paths that mention this requirement id."""
+    """Find the branch and commits for one requirement id.
+
+    A branch counts when its name contains the id, or when it contains an
+    unmerged commit whose message does. The card then lists that branch and
+    the commits from the mention through the branch tip.
+    """
     normalised = numberNormalise(number)
     pattern = re.compile(rf"(^|[^0-9]){re.escape(normalised)}([^0-9]|$)")
-    listed = _gitRun(
-        root,
-        ["for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes"],
-    )
-    branches: list[str] = []
-    if listed is not None and listed.returncode == 0:
-        branches = [name for name in listed.stdout.splitlines() if pattern.search(name)]
-    logged = _gitRun(
-        root,
-        [
-            "log",
-            "--all",
-            "-n",
-            "8",
-            "-E",
-            f"--grep=(^|[^0-9]){normalised}([^0-9]|$)",
-            "--pretty=format:%h%x09%s",
-        ],
-    )
-    commits: list[tuple[str, str]] = []
-    if logged is not None and logged.returncode == 0 and logged.stdout.strip():
-        for line in logged.stdout.splitlines():
-            revision, separator, subject = line.partition("\t")
-            if separator:
-                commits.append((revision, subject))
-    paths = _changedPaths(root, branches)
+    mentioned = _commitsMentioning(root, normalised)
+    branches = _branchesFor(root, pattern, mentioned)
+    commits = _commitsForCard(root, branches, mentioned)
+    paths = _commitPaths(root, [revision for revision, _subject in commits])
+    if not paths:
+        paths = _changedPaths(root, branches)
     return RequirementGit(tuple(branches[:8]), tuple(commits), paths)
 
 
@@ -615,6 +635,160 @@ def _bulletEnsure(
 def _bulletLine(number: str, title: str, filename: str, status: str) -> str:
     safe = title.replace("[", "(").replace("]", ")")
     return f"- [{number}: {safe}](requirements/features/{filename}) — {status}\n"
+
+
+def _branchNames(root: Path) -> list[str]:
+    """Return local branch names, plus a remote only when it has no local branch."""
+    listed = _gitRun(
+        root,
+        ["for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes"],
+    )
+    if listed is None or listed.returncode != 0:
+        return []
+    names = [
+        name for name in listed.stdout.splitlines() if name and name != "origin/HEAD"
+    ]
+    local = {name for name in names if not name.startswith("origin/")}
+    return [
+        name
+        for name in names
+        if not (name.startswith("origin/") and name.removeprefix("origin/") in local)
+    ]
+
+
+def _branchesContaining(root: Path, revision: str) -> list[str]:
+    """Return local branches that contain one commit."""
+    listed = _gitRun(
+        root, ["branch", "--contains", revision, "--format=%(refname:short)"]
+    )
+    if listed is None or listed.returncode != 0:
+        return []
+    return [name.strip() for name in listed.stdout.splitlines() if name.strip()]
+
+
+def _branchesFor(
+    root: Path, pattern: re.Pattern[str], mentioned: list[tuple[str, str]]
+) -> list[str]:
+    """Return branches named for the id, or holding its unmerged commits."""
+    linked = [name for name in _branchNames(root) if pattern.search(name)]
+    for revision, _subject in mentioned:
+        if _commitIn(root, revision, "main"):
+            continue
+        for name in _earliestBranches(root, _branchesContaining(root, revision)):
+            if name not in linked:
+                linked.append(name)
+    current = _currentBranch(root)
+    if current in linked:
+        linked = [current, *[name for name in linked if name != current]]
+    return linked
+
+
+def _earliestBranches(root: Path, holders: list[str]) -> list[str]:
+    """Keep the branch that introduced the commit, not branches that contain it later."""
+    return [
+        branch
+        for branch in holders
+        if not any(
+            other != branch and _commitIn(root, other, branch) for other in holders
+        )
+    ]
+
+
+def _commitIn(root: Path, revision: str, branch: str) -> bool:
+    """Return whether ``revision`` is already contained in ``branch``."""
+    probe = _gitRun(root, ["merge-base", "--is-ancestor", revision, branch])
+    return probe is not None and probe.returncode == 0
+
+
+def _commitPaths(root: Path, revisions: list[str]) -> tuple[str, ...]:
+    """Return files touched by these commits, in first-seen order."""
+    paths: list[str] = []
+    for revision in revisions:
+        diff = _gitRun(
+            root, ["diff-tree", "--no-commit-id", "--name-only", "-r", revision]
+        )
+        if diff is None or diff.returncode != 0:
+            continue
+        paths.extend(name for name in diff.stdout.splitlines() if name)
+    return tuple(dict.fromkeys(paths))
+
+
+def _commitsForCard(
+    root: Path, branches: list[str], mentioned: list[tuple[str, str]]
+) -> list[tuple[str, str]]:
+    """Prefer the short span from the requirement commit to the branch tip."""
+    for branch in branches:
+        if branch.startswith("origin/"):
+            continue
+        span = _branchCommitsSinceMention(root, branch, mentioned)
+        if span:
+            return span[:8]
+    return mentioned[:8]
+
+
+def _branchCommitsSinceMention(
+    root: Path, branch: str, mentioned: list[tuple[str, str]]
+) -> list[tuple[str, str]]:
+    """Return commits from an unmerged mention to the branch tip.
+
+    A long span is left alone so an old merged requirement does not list
+    every later commit on the current branch.
+    """
+    for revision, _subject in mentioned:
+        if _commitIn(root, revision, "main") or not _commitIn(root, revision, branch):
+            continue
+        counted = _gitRun(root, ["rev-list", "--count", f"{revision}^..{branch}"])
+        if counted is None or counted.returncode != 0:
+            continue
+        try:
+            span = int(counted.stdout.strip())
+        except ValueError:
+            continue
+        if span == 0 or span > 8:
+            continue
+        logged = _gitRun(
+            root,
+            ["log", f"{revision}^..{branch}", "--pretty=format:%h%x09%s"],
+        )
+        return _parseLog(logged)
+    return []
+
+
+def _commitsMentioning(root: Path, number: str) -> list[tuple[str, str]]:
+    """Return recent commits whose message names this requirement id."""
+    logged = _gitRun(
+        root,
+        [
+            "log",
+            "--all",
+            "-n",
+            "8",
+            "-E",
+            f"--grep=(^|[^0-9]){number}([^0-9]|$)",
+            "--pretty=format:%h%x09%s",
+        ],
+    )
+    return _parseLog(logged)
+
+
+def _currentBranch(root: Path) -> str:
+    current = _gitRun(root, ["rev-parse", "--abbrev-ref", "HEAD"])
+    if current is None or current.returncode != 0:
+        return ""
+    return current.stdout.strip()
+
+
+def _parseLog(
+    completed: subprocess.CompletedProcess[str] | None,
+) -> list[tuple[str, str]]:
+    if completed is None or completed.returncode != 0 or not completed.stdout.strip():
+        return []
+    commits = []
+    for line in completed.stdout.splitlines():
+        revision, separator, subject = line.partition("\t")
+        if separator and subject:
+            commits.append((revision, subject))
+    return commits
 
 
 def _changedPaths(root: Path, branches: list[str]) -> tuple[str, ...]:
@@ -708,33 +882,111 @@ def _documentSplit(text: str) -> tuple[str, list[tuple[str, str]]]:
     return preamble, sections
 
 
-def _findingLines(
+def _pytestKeep(stdout: str) -> str:
+    """Keep pytest lines that name a file. The summary line is stored apart."""
+    kept = []
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("FAILED ") or _PYTEST_PATH.search(stripped):
+            kept.append(stripped)
+    return "\n".join(kept)
+
+
+def _pytestLineMatches(line: str, wanted: set[str]) -> bool:
+    """Return whether a pytest line names one of this requirement's paths."""
+    if not wanted:
+        return False
+    for token in _PYTEST_PATH.findall(line):
+        candidate = token.lstrip("./")
+        if candidate in wanted:
+            return True
+        if any(
+            candidate.endswith("/" + path) or path.endswith("/" + candidate)
+            for path in wanted
+        ):
+            return True
+    return False
+
+
+def _pytestParts(
+    lines: tuple[str, ...] | None,
+) -> list[tuple[str, str]]:
+    """Return the pytest block for one card."""
+    if lines is None:
+        return [("muted", "pytest: not run")]
+    if not lines:
+        return [("muted", "pytest: no failures for this requirement")]
+    return [("heading", "pytest"), *(("finding", line) for line in lines)]
+
+
+def _pytestWanted(paths: tuple[str, ...], verification: str) -> set[str]:
+    """Return changed files plus paths named in Verification."""
+    wanted = {path.lstrip("./") for path in paths if path.strip()}
+    wanted.update(token.lstrip("./") for token in _PYTEST_PATH.findall(verification))
+    return wanted
+
+
+def _findingParts(
     label: str, findings: tuple[CheckFinding, ...] | None, empty: str
-) -> list[str]:
+) -> list[tuple[str, str]]:
     if findings is None:
-        return [f"{label}: not run"]
+        return [("muted", f"{label}: not run")]
     if not findings:
-        return [f"{label}: {empty}"]
-    lines = [f"{label}:"]
+        return [("muted", f"{label}: {empty}")]
+    parts = [("heading", label)]
     for item in findings:
         location = f"{item.path}: " if item.path else ""
-        lines.append(f"  {location}{item.ruleId} {item.severity}: {item.message}")
-    return lines
+        parts.append(
+            ("finding", f"{location}{item.ruleId} {item.severity}: {item.message}")
+        )
+    return parts
 
 
-def _gitLines(git: RequirementGit | None) -> list[str]:
+def _gitParts(git: RequirementGit | None) -> list[tuple[str, str]]:
+    """Return branch, commits, and one part per changed file."""
     if git is None:
-        return ["Git: not loaded"]
-    if not git.branches and not git.commits:
-        return ["Git: no branch or commit mentions this requirement"]
-    lines = []
+        return [("muted", "Git: not loaded")]
+    if not git.branches and not git.commits and not git.paths:
+        return [("muted", "Git: no branch or commit mentions this requirement")]
+    parts: list[tuple[str, str]] = []
     if git.branches:
-        lines.append("Branches: " + ", ".join(git.branches))
-    for revision, subject in git.commits:
-        lines.append(f"  {revision}  {subject}")
+        label = "Branch" if len(git.branches) == 1 else "Branches"
+        parts.append(("pair", f"{label}\t{', '.join(git.branches)}"))
+    if git.commits:
+        parts.append(("heading", "Commits"))
+        for revision, subject in git.commits:
+            parts.append(("commit", f"{revision}\t{subject}"))
     if git.paths:
-        lines.append("Changed files: " + ", ".join(git.paths[:12]))
-    return lines
+        parts.append(("heading", "Changed files"))
+        parts.extend(("file", path) for path in git.paths)
+    return parts
+
+
+def _partLine(role: str, text: str) -> list[str]:
+    """Return the plain lines for one detail part."""
+    if role == "pair":
+        label, _, value = text.partition("\t")
+        return [f"{label}: {value}"]
+    if role == "commit":
+        revision, _, subject = text.partition("\t")
+        return [f"  {revision}  {subject}"]
+    if role == "file":
+        return [f"  {text}"]
+    if role == "heading":
+        return [f"{text}:"]
+    if role == "finding":
+        return [f"  {text}"]
+    return [text]
+
+
+def _partsText(parts: list[tuple[str, str]]) -> str:
+    """Join detail parts into the plain text used by the command."""
+    lines: list[str] = []
+    for role, text in parts:
+        if role in {"prose", "heading", "muted"} and lines and lines[-1] != "":
+            lines.append("")
+        lines.extend(_partLine(role, text))
+    return "\n".join(lines) + "\n"
 
 
 def _gitRun(root: Path, args: list[str]) -> subprocess.CompletedProcess[str] | None:
@@ -994,14 +1246,19 @@ def _recordChange(
     return TextChange(path, text, _documentJoin(preamble, updated))
 
 
-def _recordRead(path: Path) -> tuple[str, str, str]:
+def _recordRead(path: Path) -> tuple[str, str, str, str]:
     text = path.read_text(encoding="utf-8")
     first = text.split("\n", 1)[0].strip()
     titleMatch = _RECORD_TITLE.match(first)
     title = titleMatch.group(1).strip() if titleMatch else path.stem
     statusMatch = _RECORD_STATUS.search(text)
     status = statusMatch.group(1) if statusMatch else ""
-    return title, status, _sectionText(text, "Outcome")
+    return (
+        title,
+        status,
+        _sectionText(text, "Outcome"),
+        _sectionText(text, "Verification"),
+    )
 
 
 def _releaseName(text: str) -> str:

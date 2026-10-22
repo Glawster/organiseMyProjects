@@ -10,15 +10,21 @@ import pytest
 
 from organiseMyProjects.myBoard import main
 from organiseMyProjects.requirementBoard import (
+    CommandSnapshot,
+    RequirementCard,
     RequirementDraft,
+    RequirementGit,
+    detailParts,
     _documentJoin,
     _documentSplit,
     boardLoad,
+    cardFormat,
     cardMove,
     checkFindingsLoad,
     findingsSelect,
     gitContextLoad,
     projectRootFind,
+    pytestSelect,
     requirementCreate,
     requirementGitLoad,
 )
@@ -346,6 +352,52 @@ def testCheckSelectsDriftForOneCard(tmp_path: Path):
     )
 
 
+def _sampleCard() -> RequirementCard:
+    return RequirementCard(
+        number="002",
+        title="Second",
+        description="",
+        status="ToDo",
+        indexStatus="ToDo",
+        filename="002-second.md",
+        outcome="",
+        onIncrement=True,
+        inBacklog=False,
+        verification="",
+    )
+
+
+def testPytestStaysWithTheRequirementItNames():
+    snapshot = CommandSnapshot(
+        1,
+        "1 failed, 3 passed in 0.2s",
+        "\n".join(
+            [
+                "tests/test_myBoard.py:12: assert False",
+                "FAILED tests/test_other.py::test_unrelated - assert 0",
+            ]
+        ),
+    )
+    mine = pytestSelect(snapshot, (), "pytest tests/test_myBoard.py")
+    by_path = pytestSelect(snapshot, ("tests/test_myBoard.py",), "")
+    other = pytestSelect(snapshot, (), "- pytest tests/test_other.py")
+    module_only = pytestSelect(snapshot, (), "runLinter on myBoard.py")
+    untouched = pytestSelect(snapshot, ("src/notes.txt",), "- pytest")
+    assert mine == ("tests/test_myBoard.py:12: assert False",)
+    assert by_path == mine
+    assert module_only == ()
+    assert other == ("FAILED tests/test_other.py::test_unrelated - assert 0",)
+    assert untouched == ()
+    assert pytestSelect(None, (), "pytest tests/test_myBoard.py") is None
+    shown = cardFormat(_sampleCard(), pytestLines=mine)
+    assert "tests/test_myBoard.py:12" in shown
+    assert "test_other.py" not in shown
+    assert "no failures for this requirement" in cardFormat(
+        _sampleCard(), pytestLines=untouched
+    )
+    assert "pytest: not run" in cardFormat(_sampleCard())
+
+
 def testGitLinksTheRequirementId(tmp_path: Path):
     root = boardFixture(tmp_path)
     subprocess.run(
@@ -383,6 +435,72 @@ def testGitLinksTheRequirementId(tmp_path: Path):
     other = requirementGitLoad(root, "002")
     assert other.branches == ()
     assert other.commits == ()
+    detail = cardFormat(boardLoad(root).cardGet("003"), linked)
+    assert "Branch: 003-work" in detail
+    assert "Commits:" in detail
+    assert "\n  notes.txt\n" in detail
+
+
+def testChangedFilesAreOnePerLine():
+    git = RequirementGit(
+        ("feature/board",),
+        (("abc1234", "004: start the board"),),
+        ("board.txt", "notes.txt"),
+    )
+    parts = detailParts(_sampleCard(), git)
+    assert [text for role, text in parts if role == "file"] == [
+        "board.txt",
+        "notes.txt",
+    ]
+    plain = cardFormat(_sampleCard(), git)
+    assert "Changed files:\n  board.txt\n  notes.txt\n" in plain
+
+
+def testBranchFollowsAnUnmergedRequirementCommit(tmp_path: Path):
+    root = tmp_path / "proj"
+    root.mkdir()
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=root, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "board@example.com"], cwd=root, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Board Test"], cwd=root, check=True)
+    (root / "readme.txt").write_text("start\n")
+    subprocess.run(["git", "add", "readme.txt"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "initial"], cwd=root, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "checkout", "-b", "feature/board"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    (root / "board.txt").write_text("004\n")
+    subprocess.run(["git", "add", "board.txt"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "004: start the board"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    (root / "board.txt").write_text("004\nmore\n")
+    subprocess.run(["git", "add", "board.txt"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "adjust the board"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    linked = requirementGitLoad(root, "004")
+    assert linked.branches == ("feature/board",)
+    assert [subject for _revision, subject in linked.commits] == [
+        "adjust the board",
+        "004: start the board",
+    ]
+    assert "board.txt" in linked.paths
+    assert "readme.txt" not in linked.paths
 
 
 def _colourAverage(colour) -> float:
@@ -471,5 +589,126 @@ def testBoardMoveFromTheColumns(tmp_path: Path):
                     break
             assert boardLoad(root).cardGet("003").column == "ToDo"
             assert boardLoad(root).cardGet("003").status == "ToDo"
+
+    asyncio.run(verify())
+
+
+@REQUIRES_TEXTUAL
+def testDetailIgnoresColumnMoves(tmp_path: Path):
+    from textual.widgets import ListView
+
+    from organiseMyProjects.myBoardTui import BoardApp, DetailScreen
+
+    root = boardFixture(tmp_path)
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(140, 36)) as pilot:
+            backlog = None
+            for _attempt in range(20):
+                await pilot.pause()
+                backlog = app.query_one("#list-Backlog", ListView)
+                if backlog.children:
+                    break
+            assert backlog is not None and backlog.children
+            backlog.focus()
+            backlog.index = 0
+            await pilot.press("enter")
+            await pilot.pause()
+            assert isinstance(app.screen, DetailScreen)
+            shown = {
+                key.description.casefold() for key in app.screen.query("FooterKey")
+            }
+            assert "move left" not in shown
+            assert "move right" not in shown
+            await pilot.press("right_square_bracket", "left_square_bracket")
+            await pilot.pause()
+            assert not app.query("ConfirmMove")
+            assert boardLoad(root).cardGet("003").column == "Backlog"
+
+    asyncio.run(verify())
+
+
+@REQUIRES_TEXTUAL
+def testClickSelectsWithoutOpeningTheCard(tmp_path: Path):
+    from textual.widgets import ListView
+
+    from organiseMyProjects.myBoardTui import BoardApp, ConfirmMove, DetailScreen
+
+    root = boardFixture(tmp_path)
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(140, 36)) as pilot:
+            backlog = None
+            for _attempt in range(20):
+                await pilot.pause()
+                backlog = app.query_one("#list-Backlog", ListView)
+                if backlog.children:
+                    break
+            assert backlog is not None and backlog.children
+            await pilot.click(backlog.children[0])
+            await pilot.pause()
+            assert not isinstance(app.screen, DetailScreen)
+            assert backlog.highlighted_child is backlog.children[0]
+            await pilot.press("right_square_bracket")
+            await pilot.pause()
+            assert isinstance(app.screen, ConfirmMove)
+            assert boardLoad(root).cardGet("003").column == "Backlog"
+
+    asyncio.run(verify())
+
+
+@REQUIRES_TEXTUAL
+def testDetailShowsFilesOnSeparateLines(tmp_path: Path):
+    from textual.widgets import Static
+
+    from organiseMyProjects.myBoardTui import BoardApp, DetailScreen
+
+    root = boardFixture(tmp_path)
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(100, 32)) as pilot:
+            backlog = None
+            for _attempt in range(20):
+                await pilot.pause()
+                backlog = app.query_one("#list-Backlog")
+                if backlog.children:
+                    break
+            assert backlog is not None and backlog.children
+            backlog.focus()
+            backlog.index = 0
+            await pilot.press("enter")
+            await pilot.pause()
+            assert isinstance(app.screen, DetailScreen)
+            app.gitCards["003"] = RequirementGit(
+                branches=("003-work",),
+                commits=(("abc1234", "003: start"),),
+                paths=("notes.txt", "other.txt"),
+            )
+            app.screen.textRefresh()
+            files = []
+            for _attempt in range(20):
+                await pilot.pause()
+                files = list(app.screen.query(".detail-file"))
+                if len(files) == 2:
+                    break
+            assert [widget.render().plain for widget in files] == [
+                "notes.txt",
+                "other.txt",
+            ]
+            assert files[1].region.y > files[0].region.y
+            title = app.screen.query_one(".detail-title", Static)
+            assert title.styles.text_style.bold
+            assert (
+                title.styles.color.r,
+                title.styles.color.g,
+                title.styles.color.b,
+            ) == (
+                35,
+                155,
+                120,
+            )
 
     asyncio.run(verify())

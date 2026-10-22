@@ -24,7 +24,8 @@ columns, and dialogs. A highlighted list row uses the same cursor colours as a
 table, and the label inside that row uses the cursor text colour.
 
 A dark surface sets the colour of its own `Label` and `Static` children. A colour
-on the container does not reach them.
+on the container does not reach them. Detail headings and commit hashes use the
+accent on the light canvas. Each changed file is its own line.
 
 ## Buttons and groups
 

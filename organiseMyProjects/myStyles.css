@@ -112,6 +112,22 @@ Label {
     color: #8fa3b8;
 }
 
+/* Detail headings sit on the light canvas, in the same green as an active tab. */
+.detail-title,
+.detail-heading,
+.detail-hash {
+    text-style: bold;
+    color: #239b78;
+}
+
+.detail-label {
+    text-style: bold;
+}
+
+.detail-muted {
+    color: #60788e;
+}
+
 /* Scroll areas stay clear of the canvas. DataTable is itself a
    ScrollableContainer, so its dark surface has to follow this rule or the
    transparent background wins and the light table text disappears. */

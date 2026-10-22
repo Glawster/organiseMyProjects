@@ -98,6 +98,16 @@ class CardItem(ListItem):
 class CardList(ListView):
     """A column list. Left click opens a card. Right click only selects it."""
 
+    def on_focus(self) -> None:
+        """Keep one selected card on the board.
+
+        Each column remembers its own highlight, so clear the other columns
+        when this one takes focus.
+        """
+        for view in self.screen.query(CardList):
+            if view is not self:
+                view.index = None
+
     def selectCard(self, item: CardItem) -> None:
         """Highlight one card without opening its detail."""
         items = list(self.children)

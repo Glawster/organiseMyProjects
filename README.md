@@ -20,6 +20,7 @@ The living guides are:
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
 - [Requirement Board](documentation/myBoard.md)
+- [Agent Sessions](documentation/agentSessions.md)
 - [Shared TUI Styling](documentation/tuiStyling.md)
 - [Testing Process](documentation/testingProcess.md)
 - [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
@@ -221,6 +222,18 @@ The Textual board needs the `tui` extra. See the
 myBoard
 myBoard list
 myBoard move 012 InProgress --confirm
+```
+
+### List and resume agent sessions
+
+`agentSessions` lists local Codex, Claude, Grok and Copilot sessions for the
+current directory and can resume one from a menu. It never edits session
+stores. See the [agent sessions guide](documentation/agentSessions.md).
+
+```bash
+agentSessions
+agentSessions --all --search raid
+agentSessions --resume
 ```
 
 ### Run Python and GUI naming checks

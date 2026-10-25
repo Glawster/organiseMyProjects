@@ -227,12 +227,14 @@ myBoard move 012 InProgress --confirm
 ### List and resume agent sessions
 
 `agentSessions` lists local Codex, Claude, Grok and Copilot sessions for the
-current directory and can resume one from a menu. It never edits session
-stores. See the [agent sessions guide](documentation/agentSessions.md).
+current directory and can resume a numbered row directly or choose one from a
+menu. It never edits session stores. See the
+[agent sessions guide](documentation/agentSessions.md).
 
 ```bash
 agentSessions
 agentSessions --all --search raid
+agentSessions --id 1
 agentSessions --resume
 ```
 

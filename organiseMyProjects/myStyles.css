@@ -54,6 +54,48 @@ Footer {
     color: $canvas-text;
 }
 
+/* Textual toasts do not inherit Screen colours, so set both their surface and
+   message ink rather than relying on Textual's default foreground token. */
+Toast {
+    background: $surface-raised;
+    color: $text-primary;
+    border-left: outer $border-strong;
+}
+
+Toast .toast--title {
+    color: $text-primary;
+}
+
+Toast.-information {
+    background: $success-surface;
+    color: $success-text;
+    border-left: outer $success-border;
+}
+
+Toast.-information .toast--title {
+    color: $success-text;
+}
+
+Toast.-warning {
+    background: $warning-surface;
+    color: $warning-text;
+    border-left: outer $warning-border;
+}
+
+Toast.-warning .toast--title {
+    color: $warning-text;
+}
+
+Toast.-error {
+    background: $error-surface;
+    color: $error-text;
+    border-left: outer $error-border;
+}
+
+Toast.-error .toast--title {
+    color: $error-text;
+}
+
 /* Quit and Palette use the same ink as the canvas headings. */
 FooterKey,
 FooterKey .footer-key--key,

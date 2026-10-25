@@ -88,6 +88,46 @@ def testSharedScrollbarContrast():
     asyncio.run(verify())
 
 
+@REQUIRES_TEXTUAL
+def testSharedToastContrast():
+    from textual.app import App, ComposeResult
+    from textual.notifications import Notification
+    from textual.widgets._toast import Toast
+
+    class ThemeApp(App):
+        CSS_PATH = THEME
+
+        def compose(self) -> ComposeResult:
+            yield Toast(Notification("Requirement data is invalid", severity="error"))
+
+    async def verify():
+        async with ThemeApp().run_test() as pilot:
+            toast = pilot.app.query_one(Toast)
+            assert (
+                toast.styles.background.r,
+                toast.styles.background.g,
+                toast.styles.background.b,
+            ) == (
+                68,
+                35,
+                41,
+            )
+            assert (
+                toast.styles.color.r,
+                toast.styles.color.g,
+                toast.styles.color.b,
+            ) == (
+                255,
+                157,
+                167,
+            )
+            assert toast.styles.border[3][1] is not None
+            border = toast.styles.border[3][1]
+            assert (border.r, border.g, border.b) == (123, 57, 67)
+
+    asyncio.run(verify())
+
+
 @pytest.mark.parametrize("name", ["customProject", "clannEolas"])
 def testProjectOwnedStylesPreserved(tmp_path, name):
     project = tmp_path / name

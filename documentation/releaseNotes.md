@@ -17,6 +17,8 @@ Bug fixes and refinements to the 0.9a0 requirement board.
 - pytest runs on `p` instead of `t`. Failures that name the requirement's files
   or its Verification paths are listed on the card. The suite summary stays on
   the strip.
+- `agentSessions --id ROW` now resumes that numbered session directly. Use
+  `--full` to show resume IDs in the listing when needed.
 - See [Requirement board](myBoard.md).
 
 ## 0.9a4
@@ -51,8 +53,8 @@ Scope and acceptance work are tracked in
 
 - New `agentSessions` command, moved from linuxMigration: lists the latest local
   Codex, Claude, Grok and Copilot sessions for the current directory, with
-  titles, `--all`, `--history`, `--search`, `--id` for scripting and `--resume`
-  to pick a session from a menu and resume it. Session stores are never edited.
+  titles, `--all`, `--history`, `--search` and `--resume` to pick a session
+  from a menu and resume it. Session stores are never edited.
 - See [Agent sessions](agentSessions.md).
 
 ### runLinter reporting

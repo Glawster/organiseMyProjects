@@ -243,17 +243,6 @@ def testAgentOrderAndSelectors(sessions, tmp_path, monkeypatch, capsys):
         < output.index("newer-full-resume-id")
         < output.index("older-full-resume-id")
     )
-    for row, expected in (
-        (1, SESSION_ID),
-        (2, "newer-full-resume-id"),
-        (3, "older-full-resume-id"),
-    ):
-        monkeypatch.setattr(sys, "argv", [SCRIPT, "--history", "--id", str(row)])
-        assert sessions.main() == 0
-        assert capsys.readouterr().out == expected + "\n"
-    monkeypatch.setattr(sys, "argv", [SCRIPT, "--id", "2"])
-    assert sessions.main() == 0
-    assert capsys.readouterr().out == "newer-full-resume-id\n"
 
 
 @pytest.mark.parametrize("row", ["0", "-1", "100", "invalid"])
@@ -268,7 +257,7 @@ def testInvalidSelector(sessions, monkeypatch, capsys, row):
 
 
 def testCurrentDirectoryAndAll(sessions, tmp_path, monkeypatch, capsys):
-    """CLI scopes listing and ID retrieval to cwd unless explicitly expanded."""
+    """CLI scopes listings to cwd unless explicitly expanded."""
     for name, cwd in (("here", tmp_path), ("elsewhere", tmp_path / "other")):
         _fixtureWrite(
             tmp_path / f".codex/sessions/rollout-{name}.jsonl",
@@ -284,9 +273,11 @@ def testCurrentDirectoryAndAll(sessions, tmp_path, monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "here-resume-id" in output
     assert "elsewhere-resume-id" not in output
+    resumed = []
     monkeypatch.setattr(sys, "argv", [SCRIPT, "--id", "1"])
+    monkeypatch.setattr(sessions, "sessionResume", lambda row: resumed.append(row) or 0)
     assert sessions.main() == 0
-    assert capsys.readouterr().out == "here-resume-id\n"
+    assert [row["session_id"] for row in resumed] == ["here-resume-id"]
     monkeypatch.setattr(sys, "argv", [SCRIPT, "--all", "--full"])
     assert sessions.main() == 0
     output = capsys.readouterr().out
@@ -393,12 +384,22 @@ def testSearchSelectsMatches(sessions, tmp_path, monkeypatch, capsys):
 
     for options, expected in (
         (["--search", "MIGRATETORAID", "--id", "1"], "newer-match"),
-        (["--search", "migrateToRaid", "--history", "--id", "2"], "older-match"),
-        (["--all", "--search", "migrateToRaid", "--id", "1"], "newest-other"),
+        (
+            ["--search", "migrateToRaid", "--history", "--id", "2"],
+            "older-match",
+        ),
+        (
+            ["--all", "--search", "migrateToRaid", "--id", "1"],
+            "newest-other",
+        ),
     ):
         monkeypatch.setattr(sys, "argv", [SCRIPT, *options])
+        resumed = []
+        monkeypatch.setattr(
+            sessions, "sessionResume", lambda row: resumed.append(row) or 0
+        )
         assert sessions.main() == 0
-        assert capsys.readouterr().out == expected + "\n"
+        assert [row["session_id"] for row in resumed] == [expected]
     monkeypatch.setattr(sys, "argv", [SCRIPT, "--search", "absent"])
     assert sessions.main() == 0
     assert "No local agent sessions found." in capsys.readouterr().out
@@ -536,6 +537,24 @@ def testResumeOption(sessions, tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(sessions, "sessionPick", lambda rows: None)
     assert sessions.main() == 0
     assert capsys.readouterr().out == ""
+
+
+def testIdOptionResumesNumberedRow(sessions, tmp_path, monkeypatch):
+    """--id bypasses the picker and resumes the numbered filtered row."""
+    _fixtureWrite(
+        tmp_path / ".codex/sessions/rollout-direct.jsonl",
+        json.dumps(
+            {
+                "type": "session_meta",
+                "payload": {"id": "direct-id", "cwd": str(tmp_path)},
+            }
+        ),
+    )
+    resumed = []
+    monkeypatch.setattr(sys, "argv", [SCRIPT, "--id", "1"])
+    monkeypatch.setattr(sessions, "sessionResume", lambda row: resumed.append(row) or 7)
+    assert sessions.main() == 7
+    assert [row["session_id"] for row in resumed] == ["direct-id"]
 
 
 @pytest.mark.parametrize("options", [["--resume"], ["--resume", "--id", "1"]])

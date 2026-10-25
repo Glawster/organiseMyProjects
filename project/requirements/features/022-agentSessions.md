@@ -2,7 +2,7 @@
 
 ## Status
 
-InReview
+Completed
 
 ## Outcome
 
@@ -76,3 +76,5 @@ utilities or managed guidance.
 - 2026-10-23: added --resume arrow-key menu and agent launch at user request, moving resumption into scope.
 - 2026-10-25: moved from linuxMigration into OMP as requirement 022 and the
   `agentSessions` console script at the owner's request; history above is kept.
+- 2026-10-25: completed after parser, CLI subprocess and shared-logging
+  verification.

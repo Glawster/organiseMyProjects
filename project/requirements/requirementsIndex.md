@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 023
+Next available number: 026
 
 ## Requirement index
 
@@ -27,4 +27,7 @@ Next available number: 023
 | 019 | [Environment and test configuration consistency](features/019-environmentAndTestConfigConsistency.md) | Keep scaffolded environment, packaging and pytest configuration consistent and make coverage measurable. | ToDo | [Prompt](prompt/019-environmentAndTestConfigConsistency.md) | Not required |
 | 020 | [Documentation completeness checks](features/020-documentationCompletenessChecks.md) | Report guides missing from the README Documentation section and placeholder project instructions. | ToDo | [Prompt](prompt/020-documentationCompletenessChecks.md) | Not required |
 | 021 | [Requirement board](features/021-myBoard.md) | Show and update the requirements of the project the command is run from. | Completed | [Prompt](prompt/021-myBoard.md) | Not required |
-| 022 | [Agent session listing](features/022-agentSessions.md) | List and resume local Codex, Claude, Grok and Copilot sessions with the `agentSessions` command. | InReview | [Prompt](prompt/022-agentSessions.md) | Not required |
+| 022 | [Agent session listing](features/022-agentSessions.md) | List and resume local Codex, Claude, Grok and Copilot sessions with the `agentSessions` command. | Completed | [Prompt](prompt/022-agentSessions.md) | Not required |
+| 023 | [Requirement board editing](features/023-myBoardEditing.md) | Edit requirement metadata and prose safely from the myBoard CLI. | InProgress | [Prompt](prompt/023-myBoardEditing.md) | Not required |
+| 024 | [Requirement board branch versions](features/024-myBoardBranchVersions.md) | Show open branches and their OMP versions in myBoard Git summaries. | InProgress | [Prompt](prompt/024-myBoardBranchVersions.md) | Not required |
+| 025 | [Repository portfolio board](features/025-repositoryPortfolioBoard.md) | Show actionable status across local repositories above individual requirement boards. | ToDo | [Prompt](prompt/025-repositoryPortfolioBoard.md) | Pending |

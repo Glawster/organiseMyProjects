@@ -35,6 +35,7 @@ _HEADING = re.compile(r"(?m)^## ([^\n]+)\n")
 _STATUS_WORD = re.compile(r"(—\s*)(ToDo|InProgress|Completed)\b")
 _RECORD_STATUS = re.compile(r"^## Status\s*\n+([A-Za-z]+)", re.M)
 _RECORD_TITLE = re.compile(r"^# \d{3}:\s*(.+)$")
+_VERSION = re.compile(r'^VERSION\s*=\s*["\']([^"\']+)["\']', re.M)
 
 
 @dataclass(frozen=True)
@@ -122,6 +123,35 @@ class CreateResult:
 
 
 @dataclass(frozen=True)
+class RequirementUpdate:
+    """The editable metadata and prose fields for one requirement."""
+
+    title: str | None = None
+    description: str | None = None
+    outcome: str | None = None
+    context: str | None = None
+    scope: str | None = None
+    excluded: str | None = None
+    acceptance: str | None = None
+    dependencies: str | None = None
+    verification: str | None = None
+
+
+@dataclass(frozen=True)
+class UpdateResult:
+    """The documents an edit would replace."""
+
+    number: str
+    changes: tuple[TextChange, ...]
+    note: str
+
+    @property
+    def changed(self) -> bool:
+        """Return whether any document would differ."""
+        return bool(self.changes)
+
+
+@dataclass(frozen=True)
 class CheckFinding:
     """One read-only check or lint finding."""
 
@@ -129,6 +159,14 @@ class CheckFinding:
     severity: str
     message: str
     path: str
+
+
+@dataclass(frozen=True)
+class BranchVersion:
+    """One unmerged branch and the OMP version stored on it."""
+
+    name: str
+    version: str | None
 
 
 @dataclass(frozen=True)
@@ -143,23 +181,11 @@ class GitContext:
     releaseBranch: str
     aheadRelease: int | None
     behindRelease: int | None
+    openBranches: tuple[BranchVersion, ...] = ()
 
     def summary(self) -> str:
         """Return the one-line strip for this checkout."""
-        if not self.available:
-            return "git unavailable"
-        state = "dirty" if self.dirty else "clean"
-        parts = [f"{self.branch} {state}"]
-        if self.aheadMain is not None and self.behindMain is not None:
-            parts.append(f"main +{self.aheadMain} -{self.behindMain}")
-        if self.releaseBranch:
-            if self.aheadRelease is not None and self.behindRelease is not None:
-                parts.append(
-                    f"{self.releaseBranch} +{self.aheadRelease} -{self.behindRelease}"
-                )
-            else:
-                parts.append(f"{self.releaseBranch} absent")
-        return " | ".join(parts)
+        return " | ".join(gitContextLines(self))
 
 
 @dataclass(frozen=True)
@@ -395,6 +421,29 @@ def requirementCreate(
     return result
 
 
+## edit
+
+
+def requirementUpdate(
+    root: Path,
+    number: str,
+    update: RequirementUpdate,
+    dryRun: bool = True,
+    today: str | None = None,
+) -> UpdateResult:
+    """Plan, and optionally write, editable requirement metadata and prose.
+
+    Requirement identity and lifecycle status deliberately remain outside this
+    operation: use a move to change its column or status.
+    """
+    result = _updatePlan(
+        root, number, _updateCheck(update), today or date.today().isoformat()
+    )
+    if not dryRun:
+        changeApply(result.changes)
+    return result
+
+
 ## move
 
 
@@ -481,7 +530,30 @@ def gitContextLoad(root: Path, release: str = "") -> GitContext:
         releaseBranch=releaseBranch,
         aheadRelease=None if releaseCounts is None else releaseCounts[0],
         behindRelease=None if releaseCounts is None else releaseCounts[1],
+        openBranches=tuple(_openBranches(root)),
     )
+
+
+def gitContextLines(context: GitContext) -> list[str]:
+    """Return one concise display line for each useful Git context item."""
+    if not context.available:
+        return ["Git: unavailable"]
+    state = "dirty" if context.dirty else "clean"
+    lines = [f"Branch: {context.branch} ({state})"]
+    if context.aheadMain is not None and context.behindMain is not None:
+        lines.append(f"main: +{context.aheadMain} -{context.behindMain}")
+    if context.releaseBranch:
+        if context.aheadRelease is None or context.behindRelease is None:
+            lines.append(f"{context.releaseBranch}: unavailable")
+        else:
+            lines.append(
+                f"{context.releaseBranch}: +{context.aheadRelease} -{context.behindRelease}"
+            )
+    lines.extend(
+        f"Open: {item.name} ({item.version or 'version unavailable'})"
+        for item in context.openBranches
+    )
+    return lines
 
 
 def lintSelect(
@@ -656,6 +728,23 @@ def _branchNames(root: Path) -> list[str]:
     ]
 
 
+def _branchVersion(root: Path, branch: str, current: str) -> str | None:
+    """Return the OMP package version stored at one branch revision."""
+    path = root / "organiseMyProjects" / "version.py"
+    if branch == current:
+        try:
+            shown = path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+    else:
+        completed = _gitRun(root, ["show", f"{branch}:organiseMyProjects/version.py"])
+        if completed is None or completed.returncode != 0:
+            return None
+        shown = completed.stdout
+    match = _VERSION.search(shown)
+    return None if match is None else match.group(1)
+
+
 def _branchesContaining(root: Path, revision: str) -> list[str]:
     """Return local branches that contain one commit."""
     listed = _gitRun(
@@ -778,6 +867,20 @@ def _currentBranch(root: Path) -> str:
     return current.stdout.strip()
 
 
+def _openBranches(root: Path) -> list[BranchVersion]:
+    """Return unmerged local and remote-only branches with their versions."""
+    branches = [
+        branch for branch in _branchNames(root) if not _commitIn(root, branch, "main")
+    ]
+    current = _currentBranch(root)
+    if current in branches:
+        branches = [current, *[branch for branch in branches if branch != current]]
+    return [
+        BranchVersion(branch, _branchVersion(root, branch, current))
+        for branch in branches
+    ]
+
+
 def _parseLog(
     completed: subprocess.CompletedProcess[str] | None,
 ) -> list[tuple[str, str]]:
@@ -819,6 +922,32 @@ def _draftCheck(draft: RequirementDraft) -> str:
     if "|" in draft.description or "|" in draft.title:
         raise ValueError("title and description cannot contain '|'")
     return name
+
+
+def _updateCheck(update: RequirementUpdate) -> RequirementUpdate:
+    """Reject an edit without fields or values invalid in index cells."""
+    fields = (
+        "title",
+        "description",
+        "outcome",
+        "context",
+        "scope",
+        "excluded",
+        "acceptance",
+        "dependencies",
+        "verification",
+    )
+    if not any(getattr(update, field) is not None for field in fields):
+        raise ValueError("at least one editable field is required")
+    for field in ("title", "description"):
+        value = getattr(update, field)
+        if value is not None and (not value.strip() or "|" in value):
+            raise ValueError(f"{field} must be non-empty and cannot contain '|'")
+    for field in fields[2:]:
+        value = getattr(update, field)
+        if value is not None and not value.strip():
+            raise ValueError(f"{field} cannot be empty")
+    return update
 
 
 def _createIdentity(root: Path, name: str) -> tuple[str, str]:
@@ -1033,6 +1162,39 @@ def _incrementChange(
     return TextChange(path, text, updated)
 
 
+def _incrementUpdate(
+    root: Path, card: RequirementCard, title: str | None
+) -> TextChange | None:
+    """Keep an existing increment or backlog bullet aligned with a new title."""
+    if title is None:
+        return None
+    path = root / "project" / "currentIncrement.md"
+    if not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8")
+    label = f"[{card.number}: {title.strip()}]"
+    pattern = re.compile(
+        rf"\[{re.escape(card.number)}: [^\]]+\]"
+        rf"(?=\(requirements/features/{re.escape(card.filename)}\))"
+    )
+    preamble, sections = _documentSplit(text)
+    updated = [
+        (
+            heading,
+            (
+                pattern.sub(label, body)
+                if heading in {"Requirements", "Backlog"}
+                else body
+            ),
+        )
+        for heading, body in sections
+    ]
+    updatedText = _documentJoin(preamble, updated)
+    if updatedText == text:
+        return None
+    return TextChange(path, text, updatedText)
+
+
 def _incrementIds(text: str) -> tuple[set[str], set[str]]:
     """Return requirement ids mentioned under Requirements and under Backlog."""
     _, sections = _documentSplit(text)
@@ -1082,6 +1244,35 @@ def _indexChange(root: Path, card: RequirementCard, status: str) -> TextChange |
         cells[3] = status
         ending = "\n" if line.endswith("\n") else ""
         lines[index] = "| " + " | ".join(cells) + " |" + ending
+        return TextChange(path, text, "".join(lines))
+    raise ValueError(f"requirements index has no row for {card.filename}")
+
+
+def _indexUpdate(
+    root: Path, card: RequirementCard, update: RequirementUpdate
+) -> TextChange | None:
+    """Update editable title and description cells in the matching index row."""
+    if update.title is None and update.description is None:
+        return None
+    path = root / "project" / "requirements" / "requirementsIndex.md"
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    needle = f"(features/{card.filename})"
+    for index, line in enumerate(lines):
+        if needle not in line or not line.lstrip().startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        if update.title is not None:
+            cells[1] = f"[{update.title.strip()}](features/{card.filename})"
+        if update.description is not None:
+            cells[2] = update.description.strip()
+        ending = "\n" if line.endswith("\n") else ""
+        updated = "| " + " | ".join(cells) + " |" + ending
+        if updated == line:
+            return None
+        lines[index] = updated
         return TextChange(path, text, "".join(lines))
     raise ValueError(f"requirements index has no row for {card.filename}")
 
@@ -1181,6 +1372,30 @@ def _movePlan(root: Path, number: str, target: str, today: str) -> MoveResult:
     )
 
 
+def _updatePlan(
+    root: Path, number: str, update: RequirementUpdate, today: str
+) -> UpdateResult:
+    """Build the minimum coherent document changes for one requirement edit."""
+    root = root.resolve()
+    board = boardLoad(root)
+    card = board.cardGet(numberNormalise(number))
+    changes = []
+    record = _recordUpdate(root, card, update, today)
+    if record is not None:
+        changes.append(record)
+    index = _indexUpdate(root, card, update)
+    if index is not None:
+        changes.append(index)
+    increment = _incrementUpdate(root, card, update.title)
+    if increment is not None:
+        changes.append(increment)
+    return UpdateResult(
+        number=card.number,
+        changes=tuple(changes),
+        note=f"edit {card.number} {update.title.strip() if update.title else card.title}",
+    )
+
+
 def _nextNumber(text: str) -> str:
     match = _NEXT_NUMBER.search(text)
     if match is None:
@@ -1258,6 +1473,49 @@ def _recordRead(path: Path) -> tuple[str, str, str, str]:
         status,
         _sectionText(text, "Outcome"),
         _sectionText(text, "Verification"),
+    )
+
+
+def _recordUpdate(
+    root: Path, card: RequirementCard, update: RequirementUpdate, today: str
+) -> TextChange | None:
+    """Update selected record sections and append one durable history entry."""
+    path = root / "project" / "requirements" / "features" / card.filename
+    text = path.read_text(encoding="utf-8")
+    preamble, sections = _documentSplit(text)
+    title = update.title.strip() if update.title is not None else card.title
+    replacements = {
+        "Outcome": update.outcome,
+        "Context": update.context,
+        "Scope": update.scope,
+        "Out of scope": update.excluded,
+        "Acceptance criteria": update.acceptance,
+        "Dependencies and decisions": update.dependencies,
+        "Verification": update.verification,
+    }
+    changed = update.title is not None and title != card.title
+    updated = []
+    for heading, body in sections:
+        value = replacements.get(heading)
+        if value is not None:
+            replacement = "\n" + value.strip() + "\n"
+            changed = changed or replacement != body
+            body = replacement
+        updated.append((heading, body))
+    if not changed:
+        return None
+    history = f"- {today}: edited — myBoard.\n"
+    found = False
+    result = []
+    for heading, body in updated:
+        if heading == "Change history":
+            body = _bodyAppend(body, history)
+            found = True
+        result.append((heading, body))
+    if not found:
+        result.append(("Change history", "\n" + history))
+    return TextChange(
+        path, text, _documentJoin(f"# {card.number}: {title}\n\n", result)
     )
 
 

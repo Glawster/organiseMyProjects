@@ -30,6 +30,7 @@ from organiseMyProjects.requirementBoard import (
     changeApply,
     checkFindingsLoad,
     findingsSelect,
+    gitContextLines,
     gitContextLoad,
     lintSelect,
     lintSnapshotLoad,
@@ -214,10 +215,15 @@ class BoardApp(App):
 
     CSS_PATH = _THEME
     CSS = """
-    #board-strip {
-        height: 3;
+    #status-panel {
+        height: 1fr;
         padding: 0 1;
-        color: #60788e;
+        margin: 0 1 1 1;
+        border: solid #263b4e;
+    }
+    .status-line {
+        height: 1;
+        color: #d9e5ef;
     }
     #columns {
         height: 1fr;
@@ -296,12 +302,13 @@ class BoardApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("loading", id="board-strip")
         with Horizontal(id="columns"):
             for column in COLUMNS:
                 with Vertical(classes="column surface"):
                     yield Static(column, classes="column-title", id=f"title-{column}")
                     yield CardList(id=f"list-{column}")
+        with VerticalScroll(id="status-panel", classes="surface"):
+            yield Static("Loading status", classes="status-line")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -552,7 +559,7 @@ class BoardApp(App):
         self.detailRefresh()
 
     def stripRefresh(self) -> None:
-        """Redraw the project strip from the latest signals."""
+        """Redraw the header status panel from the latest signals."""
         if not self.is_mounted:
             return
         failures = warnings = None
@@ -564,13 +571,22 @@ class BoardApp(App):
             if failures is None
             else f"check {failures} failures, {warnings} warnings"
         )
-        parts = [
-            self.gitContext.summary(),
-            checks,
-            self.lintSummary or "lint not run",
-            self.pytestSummary or "pytest not run",
+        panel = self.query_one("#status-panel", VerticalScroll)
+        lines = [
+            f"Project: {self.root.name}",
+            *gitContextLines(self.gitContext),
+            f"Checks: {checks}",
+            f"Lint: {self.lintSummary or 'not run'}",
+            f"Pytest: {self.pytestSummary or 'not run'}",
         ]
-        self.query_one("#board-strip", Static).update(" | ".join(parts))
+
+        async def statusFill() -> None:
+            await panel.remove_children()
+            await panel.mount(
+                *(Static(line, classes="status-line", markup=False) for line in lines)
+            )
+
+        self.run_worker(statusFill, exclusive=True, group="status")
 
     def detailRefresh(self) -> None:
         """Redraw the detail screen when it is the screen in front."""

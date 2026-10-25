@@ -25,6 +25,9 @@ implemented in 0.10.
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — InProgress; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
 - [021: Requirement board](requirements/features/021-myBoard.md) — Completed; myBoard lists each requirement in one column. A confirmed move updates the record, the index and the increment together. The detail shows the linked branch, commits and changed files. Checks, runLinter and pytest run on request, and a pytest failure stays with the requirement it names.
+- [022: Agent session listing](requirements/features/022-agentSessions.md) — Completed; merged into release/0.9 with parser, CLI subprocess and shared-logging evidence.
+- [023: Requirement board editing](requirements/features/023-myBoardEditing.md) — InProgress; edit selected requirement metadata and prose through the confirmed myBoard CLI workflow.
+- [024: Requirement board branch versions](requirements/features/024-myBoardBranchVersions.md) — InProgress; show unmerged local and remote-only branches with their OMP versions.
 
 ## Internal refactor (no requirement)
 
@@ -50,6 +53,7 @@ scheduled within the planned order below.
 - [018: Framework override naming exemptions beyond Textual](requirements/features/018-frameworkOverrideNamingExemptions.md)
 - [019: Environment and test configuration consistency](requirements/features/019-environmentAndTestConfigConsistency.md) — resolves the open question in 014.
 - [020: Documentation completeness checks](requirements/features/020-documentationCompletenessChecks.md)
+- [025: Repository portfolio board](requirements/features/025-repositoryPortfolioBoard.md) — local cross-repository status and attention signals.
 
 ## Planned order
 

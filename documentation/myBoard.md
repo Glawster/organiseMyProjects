@@ -39,6 +39,7 @@ myBoard list --json
 myBoard show 012
 myBoard move 012 InProgress
 myBoard move 012 InProgress --confirm
+myBoard edit 012 --outcome "As a ..." --confirm
 myBoard create --name myBoard --title "Requirement board" \
   --description "One index sentence." --outcome "As a ..." --confirm
 myBoard check
@@ -47,12 +48,21 @@ myBoard lint
 myBoard pytest
 ```
 
-`list`, `show`, `move` and `create` work without Textual. The board itself
-needs the `tui` extra, which is already included in the `dev` extra:
+`list`, `show`, `move`, `create` and `edit` work without Textual. The board
+itself needs the `tui` extra, which is already included in the `dev` extra:
 
 ```bash
 pip install 'organiseMyProjects[tui]'
 ```
+
+## Editing
+
+`myBoard edit NUMBER` updates only fields supplied as options. It can replace
+the title, index description, Outcome, Context, Scope, Out of scope,
+Acceptance criteria, Dependencies and decisions, and Verification sections.
+The command previews the affected documents by default; `--confirm` writes
+them. It preserves the requirement ID and lifecycle status, updates matching
+index and increment titles, and appends a change-history entry.
 
 ## Board keys
 
@@ -68,10 +78,14 @@ pip install 'organiseMyProjects[tui]'
 | `g` | Reload the board and the Git strip |
 | `q` | Quit |
 
-The strip above the columns shows the current branch, whether the work tree is
-dirty, and how far the branch is ahead of or behind `main` and the release
-branch named by the increment. Checks, lint and pytest stay blank until you
-ask for them.
+The lower half of the board is a scrollable status panel. It shows each useful
+status item on its own line: project, current branch and work-tree state,
+divergence from `main` and the increment's release branch, every unmerged local
+or remote-only branch with its OMP version, and checks, lint and pytest
+summaries. `myBoard list` prints the same Git summary before the columns. A
+branch without
+`organiseMyProjects/version.py` reports its version as unavailable. Checks,
+lint and pytest stay blank until you ask for them.
 
 The card shows the branch whose name contains the requirement id, and the
 branch that still holds an unmerged commit for it. Commits from that mention

@@ -359,6 +359,13 @@ Button.-warning,
     border: solid $warning-border;
 }
 
+/* A warning Label inside a list is a compact state marker, not a panel. */
+ListView .warning {
+    height: 1;
+    padding: 0;
+    border: none;
+}
+
 Button.-error,
 .error {
     background: $error-surface;

@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 026
+Next available number: 027
 
 ## Requirement index
 
@@ -31,3 +31,4 @@ Next available number: 026
 | 023 | [Requirement board editing](features/023-myBoardEditing.md) | Edit requirement metadata and prose safely from the myBoard CLI. | InProgress | [Prompt](prompt/023-myBoardEditing.md) | Not required |
 | 024 | [Requirement board branch versions](features/024-myBoardBranchVersions.md) | Show open branches and their OMP versions in myBoard Git summaries. | InProgress | [Prompt](prompt/024-myBoardBranchVersions.md) | Not required |
 | 025 | [Repository portfolio board](features/025-repositoryPortfolioBoard.md) | Show actionable status across local repositories above individual requirement boards. | ToDo | [Prompt](prompt/025-repositoryPortfolioBoard.md) | Pending |
+| 026 | [Shared TUI style mockup](features/026-sharedTuiStyleMockup.md) | Generate a reproducible SVG showing shared Textual styles in regular use. | Completed | [Prompt](prompt/026-sharedTuiStyleMockup.md) | Not required |

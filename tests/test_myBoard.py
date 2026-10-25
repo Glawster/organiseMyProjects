@@ -693,6 +693,19 @@ def testHeaderStatusPanelUsesSeparateRows(tmp_path: Path):
             assert any(line.startswith("Pytest:") for line in lines)
             assert panel.region.y > columns.region.y
             assert panel.region.height >= columns.region.height - 1
+            assert panel.region.x == columns.region.x
+            assert panel.region.width == columns.region.width
+            assert (
+                panel.styles.border[0][1].r,
+                panel.styles.border[0][1].g,
+                panel.styles.border[0][1].b,
+            ) == (38, 59, 78)
+            column = app.query_one(".column")
+            assert (
+                column.styles.border[0][1].r,
+                column.styles.border[0][1].g,
+                column.styles.border[0][1].b,
+            ) == (38, 59, 78)
 
     asyncio.run(verify())
 

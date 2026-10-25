@@ -28,6 +28,7 @@ implemented in 0.10.
 - [022: Agent session listing](requirements/features/022-agentSessions.md) — Completed; merged into release/0.9 with parser, CLI subprocess and shared-logging evidence.
 - [023: Requirement board editing](requirements/features/023-myBoardEditing.md) — InProgress; edit selected requirement metadata and prose through the confirmed myBoard CLI workflow.
 - [024: Requirement board branch versions](requirements/features/024-myBoardBranchVersions.md) — InProgress; show unmerged local and remote-only branches with their OMP versions.
+- [026: Shared TUI style mockup](requirements/features/026-sharedTuiStyleMockup.md) — Completed; generate an SVG from the shared Textual stylesheet.
 
 ## Internal refactor (no requirement)
 

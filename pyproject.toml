@@ -40,6 +40,7 @@ runLinter = "organiseMyProjects.runLinter:main"
 fixMarkup = "organiseMyProjects.fixMarkup:main"
 myBoard = "organiseMyProjects.myBoard:main"
 agentSessions = "organiseMyProjects.agentSessions:entryRun"
+styleMockup = "organiseMyProjects.styleMockup:main"
 
 [tool.setuptools]
 include-package-data = true

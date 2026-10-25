@@ -198,6 +198,13 @@ Short style fragments (<10 lines) are acceptable.
 
 Application themes belong in dedicated style resources.
 
+Textual applications must load `myStyles.css` through `App.CSS_PATH`. Keep
+Textual layout, presentation and colour rules in that stylesheet; use inline
+`App.CSS` only for a short, documented exception that cannot be shared.
+An intentional project-specific Textual theme must be stored at
+`styles/projectStyles.css` and loaded through `App.CSS_PATH`; do not place a
+project-owned override at the repository root.
+
 #### Sample Data
 
 Prototype or demonstration data must never be embedded in production views.

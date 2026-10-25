@@ -214,67 +214,6 @@ class BoardApp(App):
     """Four-column board for the project root it was given."""
 
     CSS_PATH = _THEME
-    CSS = """
-    #status-panel {
-        height: 1fr;
-        padding: 0 1;
-        margin: 0 1 1 1;
-        border: solid #263b4e;
-    }
-    .status-line {
-        height: 1;
-        color: #d9e5ef;
-    }
-    #columns {
-        height: 1fr;
-    }
-    .column {
-        width: 1fr;
-        height: 1fr;
-    }
-    .column-title {
-        height: 1;
-        padding: 0 1;
-        text-style: bold;
-    }
-    .column ListView {
-        height: 1fr;
-        border: none;
-    }
-    ConfirmMove {
-        align: center middle;
-    }
-    #confirm-box {
-        width: 72;
-        height: auto;
-        padding: 1 2;
-    }
-    #detail-scroll {
-        height: 1fr;
-    }
-    #detail-lines {
-        height: auto;
-        padding: 0 2 1 2;
-    }
-    .detail-row {
-        height: 1;
-        width: 1fr;
-    }
-    .detail-label,
-    .detail-hash {
-        width: 14;
-        height: 1;
-    }
-    .detail-value {
-        width: 1fr;
-        height: 1;
-    }
-    .detail-file {
-        height: 1;
-        width: 1fr;
-        padding: 0 2;
-    }
-    """
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("left", "focus_left", "Left", show=False),

@@ -236,6 +236,15 @@ agentSessions --all --search raid
 agentSessions --resume
 ```
 
+### Generate the shared TUI style mockup
+
+`styleMockup` renders the canonical Textual stylesheet to a reproducible SVG.
+See [Shared TUI Styling](documentation/tuiStyling.md).
+
+```bash
+styleMockup
+```
+
 ### Run Python and GUI naming checks
 
 With no arguments, `runLinter` discovers the project package from

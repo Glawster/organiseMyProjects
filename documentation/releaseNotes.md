@@ -16,6 +16,14 @@ Scope and acceptance work are tracked in
   run when requested.
 - See [Requirement board](myBoard.md).
 
+### Agent sessions
+
+- New `agentSessions` command, moved from linuxMigration: lists the latest local
+  Codex, Claude, Grok and Copilot sessions for the current directory, with
+  titles, `--all`, `--history`, `--search`, `--id` for scripting and `--resume`
+  to pick a session from a menu and resume it. Session stores are never edited.
+- See [Agent sessions](agentSessions.md).
+
 ### runLinter reporting
 
 - `runLinter` reports pytest-style: relative `path:line:` locations, a stable

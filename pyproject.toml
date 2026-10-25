@@ -39,6 +39,7 @@ updateProject = "organiseMyProjects.manageProject:main"
 runLinter = "organiseMyProjects.runLinter:main"
 fixMarkup = "organiseMyProjects.fixMarkup:main"
 myBoard = "organiseMyProjects.myBoard:main"
+agentSessions = "organiseMyProjects.agentSessions:entryRun"
 
 [tool.setuptools]
 include-package-data = true

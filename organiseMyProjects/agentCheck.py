@@ -14,7 +14,27 @@ from pathlib import Path
 from typing import Optional
 
 from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
+from organiseMyProjects.requirementLayout import (
+    pathGenerated,
+    requirementFilenameSuggest,
+    requirementNumber,
+)
+from organiseMyProjects.requirementsPromptIndex import promptFilesList
 from organiseMyProjects.version import VERSION
+
+# Requirement records follow documentation/requirementsManagement.md.
+_REQUIREMENT_FILENAME = re.compile(r"\d{3}-[a-z][A-Za-z0-9]*\.md")
+_REQUIREMENT_SECTIONS = (
+    "Status",
+    "Outcome",
+    "Context",
+    "Scope",
+    "Out of scope",
+    "Acceptance criteria",
+    "Dependencies and decisions",
+    "Verification",
+    "Change history",
+)
 
 
 def _repositoryRootResolve(projectRoot: Path) -> Path:
@@ -239,6 +259,19 @@ class AgentCheckValidator:
     # -----------------------------------------------------------------------
 
     def _checkDocumentation(self) -> None:
+        # DOC-005: README.md is reserved for the repository root (requirement 004).
+        for nestedReadme in self.rootPath.rglob("README.md"):
+            if nestedReadme == self.rootPath / "README.md" or pathGenerated(
+                nestedReadme
+            ):
+                continue
+            self.report.add(
+                "DOC-005",
+                Severity.FAILURE,
+                "README.md is reserved for the repository root; directory indexes use <folderName>Index.md",
+                nestedReadme,
+            )
+
         readme = self.rootPath / "README.md"
         if not readme.exists():
             self.report.add(
@@ -463,111 +496,276 @@ class AgentCheckValidator:
     # Rule Family: REQ (Requirements & ADR Traceability)
     # -----------------------------------------------------------------------
 
+    def _checkPromptListing(self) -> None:
+        """REQ-006: every flat prompt file is listed in requirementsIndex.md."""
+        namedIndex = self.rootPath / "project" / "requirements" / "requirementsIndex.md"
+        try:
+            namedText = namedIndex.read_text(encoding="utf-8")
+        except OSError:
+            return
+        for promptPath in promptFilesList(self.rootPath):
+            if f"prompt/{promptPath.name}" not in namedText:
+                self.report.add(
+                    "REQ-006",
+                    Severity.FAILURE,
+                    f"Requirement prompt '{promptPath.name}' is not listed in requirementsIndex.md",
+                    promptPath,
+                )
+
+    def _checkRequirementRecords(
+        self, featureFiles: dict[str, Path], indexText: str, indexPath: Path
+    ) -> None:
+        """REQ-007 to REQ-012: records, index rows and prompts follow the guide.
+
+        Anything that cannot be parsed is reported rather than skipped, so the
+        older status and prompt checks cannot pass by not recognising a form.
+        """
+        indexRel = indexPath.relative_to(self.rootPath).as_posix()
+
+        for featName, featPath in sorted(featureFiles.items()):
+            # REQ-007: <nnn>-<camelCaseName>.md with no prefix or hyphenated name.
+            if not _REQUIREMENT_FILENAME.fullmatch(featName):
+                suggested = requirementFilenameSuggest(featName)
+                self.report.add(
+                    "REQ-007",
+                    Severity.FAILURE,
+                    f"Requirement filename '{featName}' should be "
+                    + (f"'{suggested}'" if suggested else "<nnn>-<camelCaseName>.md"),
+                    featPath,
+                )
+            try:
+                featText = featPath.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            self._checkRequirementHeading(featName, featPath, featText)
+            self._checkRequirementSections(featPath, featText)
+
+        self._checkRequirementIndexRows(featureFiles, indexText, indexPath)
+        self._checkPromptLocations(indexText, indexPath)
+
+        # REQ-012: the index must not declare a convention the guide forbids.
+        preamble = indexText.split("\n|", 1)[0]
+        if re.search(r"\bprefix\b", preamble, re.IGNORECASE):
+            self.report.add(
+                "REQ-012",
+                Severity.WARNING,
+                f"{indexRel} declares a requirement prefix; repository prefixes "
+                "are not used in filenames, headings or index IDs "
+                "(documentation/requirementsManagement.md)",
+                indexPath,
+            )
+
+    def _checkRequirementHeading(
+        self, featName: str, featPath: Path, featText: str
+    ) -> None:
+        """REQ-008: the first line is '# <nnn>: <Title>' for the file's number."""
+        number = requirementNumber(featName)
+        firstLine = featText.split("\n", 1)[0].strip()
+        match = re.fullmatch(r"# (\d{3}): (\S.*)", firstLine)
+        if match and match.group(1) == number:
+            return
+        # Suggest the corrected heading from whatever title text is present.
+        title = re.sub(r"^#\s*(?:[A-Za-z]+-)?\d{3}(?::|\s+-)?\s*", "", firstLine)
+        expected = f"# {number or 'nnn'}: {title or 'Title'}"
+        self.report.add(
+            "REQ-008",
+            Severity.FAILURE,
+            f"Requirement heading '{firstLine}' should be '{expected}'",
+            featPath,
+            1,
+        )
+
+    def _checkRequirementIndexRows(
+        self, featureFiles: dict[str, Path], indexText: str, indexPath: Path
+    ) -> None:
+        """REQ-010: each index row's Req ID is the number of the file it links."""
+        for lineNumber, rowText in enumerate(indexText.splitlines(), start=1):
+            if not rowText.lstrip().startswith("|"):
+                continue
+            linked = re.search(r"\]\(features/([^)]+\.md)\)", rowText)
+            if not linked:
+                continue
+            featName = linked.group(1)
+            cells = [cell.strip() for cell in rowText.strip().strip("|").split("|")]
+            reqId = cells[0] if cells else ""
+            number = requirementNumber(featName)
+            if number and reqId == number:
+                continue
+            self.report.add(
+                "REQ-010",
+                Severity.FAILURE,
+                f"Index Req ID '{reqId}' should be '{number or 'nnn'}' for "
+                f"features/{featName}",
+                indexPath,
+                lineNumber,
+            )
+
+    def _checkRequirementSections(self, featPath: Path, featText: str) -> None:
+        """REQ-009: the record has the template sections; Status is mandatory."""
+        present = {
+            heading.strip().casefold()
+            for heading in re.findall(r"(?m)^## (.+)$", featText)
+        }
+        missing = [
+            section
+            for section in _REQUIREMENT_SECTIONS
+            if section.casefold() not in present
+        ]
+        if "Status" in missing:
+            self.report.add(
+                "REQ-009",
+                Severity.FAILURE,
+                "Requirement has no '## Status' section, so its status cannot "
+                "be compared with the index",
+                featPath,
+            )
+            missing.remove("Status")
+        if missing:
+            self.report.add(
+                "REQ-009",
+                Severity.WARNING,
+                "Requirement is missing template sections: " + ", ".join(missing),
+                featPath,
+            )
+
+    def _checkPromptLocations(self, indexText: str, indexPath: Path) -> None:
+        """REQ-011: prompts live only in project/requirements/prompt/."""
+        promptsDir = self.rootPath / "project" / "requirements" / "prompt"
+        for link in re.findall(r"\]\(([^)\s]*prompts?/[^)\s]+\.md)\)", indexText):
+            if link.startswith("prompt/"):
+                continue
+            self.report.add(
+                "REQ-011",
+                Severity.FAILURE,
+                f"Prompt link '{link}' should point to "
+                f"prompt/{Path(link).name} in project/requirements/prompt/",
+                indexPath,
+            )
+        projectDir = self.rootPath / "project"
+        if not projectDir.is_dir():
+            return
+        for promptPath in sorted(projectDir.rglob("*.md")):
+            parent = promptPath.parent
+            if parent.name not in ("prompt", "prompts") or parent == promptsDir:
+                continue
+            if pathGenerated(promptPath.relative_to(self.rootPath)):
+                continue
+            self.report.add(
+                "REQ-011",
+                Severity.FAILURE,
+                f"Prompt file is outside project/requirements/prompt/; move it to "
+                f"project/requirements/prompt/{promptPath.name}",
+                promptPath,
+            )
+
     def _checkRequirementsAndAdrs(self) -> None:
+        self._checkPromptListing()
+
         reqDir = self.rootPath / "project" / "requirements"
         featuresDir = reqDir / "features"
-        reqReadme = reqDir / "README.md"
+        namedIndex = reqDir / "requirementsIndex.md"
 
-        if not featuresDir.exists() or not featuresDir.is_dir():
+        if not featuresDir.is_dir():
+            return
+
+        # A legacy README index is still validated until update migrates it;
+        # the mistaken 0.6 folderIndex.md form is left for migration alone.
+        legacyReadme = reqDir / "README.md"
+        if legacyReadme.exists():
+            indexPath = legacyReadme
+        elif (reqDir / "folderIndex.md").exists():
+            return
+        elif namedIndex.exists():
+            indexPath = namedIndex
+        else:
             return
 
         featureFiles = {f.name: f for f in featuresDir.glob("*.md")}
         promptsDir = reqDir / "prompt"
+        indexRel = indexPath.relative_to(self.rootPath).as_posix()
 
-        if reqReadme.exists():
+        try:
+            indexText = indexPath.read_text(encoding="utf-8")
+        except OSError:
+            return
+
+        self._checkRequirementRecords(featureFiles, indexText, indexPath)
+
+        for featName, featPath in featureFiles.items():
+            # REQ-001: every feature file is listed in the requirements index.
+            if featName not in indexText:
+                self.report.add(
+                    "REQ-001",
+                    Severity.FAILURE,
+                    f"Requirement '{featName}' is not listed in {indexRel} index",
+                    featPath,
+                )
+
+            # REQ-002: record and index status agree.
             try:
-                readmeContent = reqReadme.read_text(encoding="utf-8")
-                # REQ-001: Every feature file should be mentioned in requirements README
-                for featName, featPath in featureFiles.items():
-                    if featName not in readmeContent:
-                        self.report.add(
-                            "REQ-001",
-                            Severity.FAILURE,
-                            f"Requirement '{featName}' is not listed in project/requirements/README.md index",
-                            featPath,
-                        )
-
-                # REQ-005: a single prompt has exactly the requirement filename;
-                # letter suffixes are reserved for genuinely distinct prompts.
-                promptLinks = re.findall(r"\]\(prompt/([^)]+\.md)\)", readmeContent)
-                for promptName in promptLinks:
-                    if ".prompt.md" in promptName:
-                        self.report.add(
-                            "REQ-005",
-                            Severity.FAILURE,
-                            f"Prompt '{promptName}' uses the obsolete .prompt infix",
-                            reqReadme,
-                        )
-                    baseName = re.sub(r"^(\d{3})[a-z]-", r"\1-", promptName)
-                    if baseName not in featureFiles:
-                        self.report.add(
-                            "REQ-005",
-                            Severity.FAILURE,
-                            f"Prompt '{promptName}' has no deterministic requirement filename match",
-                            reqReadme,
-                        )
-                    if promptsDir.is_dir() and not (promptsDir / promptName).exists():
-                        self.report.add(
-                            "REQ-005",
-                            Severity.FAILURE,
-                            f"Prompt '{promptName}' linked from the index does not exist",
-                            reqReadme,
-                        )
-
-                # REQ-002: Status consistency
-                for featName, featPath in featureFiles.items():
-                    try:
-                        featText = featPath.read_text(encoding="utf-8")
-                        featStatusMatch = re.search(
-                            r"## Status\s*\n+([A-Za-z]+)", featText
-                        )
-                        featStatus = (
-                            featStatusMatch.group(1).strip() if featStatusMatch else ""
-                        )
-
-                        # Look for row in README table
-                        tableRowMatch = re.search(
-                            rf"\|\s*\d+\s*\|\s*\[.*?\]\(features/{re.escape(featName)}\)\s*\|\s*.*?\s*\|\s*([A-Za-z]+)\s*\|",
-                            readmeContent,
-                        )
-                        if tableRowMatch:
-                            tableStatus = tableRowMatch.group(1).strip()
-                            if (
-                                featStatus
-                                and tableStatus
-                                and featStatus.casefold() != tableStatus.casefold()
-                            ):
-                                self.report.add(
-                                    "REQ-002",
-                                    Severity.FAILURE,
-                                    f"Status mismatch for {featName}: README index states '{tableStatus}' but record states '{featStatus}'",
-                                    featPath,
-                                )
-
-                    except OSError:
-                        pass
+                featText = featPath.read_text(encoding="utf-8")
             except OSError:
-                pass
+                continue
+            featStatusMatch = re.search(r"## Status\s*\n+([A-Za-z]+)", featText)
+            featStatus = featStatusMatch.group(1).strip() if featStatusMatch else ""
+            tableRowMatch = re.search(
+                rf"\|\s*\d+\s*\|\s*\[.*?\]\(features/{re.escape(featName)}\)\s*\|\s*.*?\s*\|\s*([A-Za-z]+)\s*\|",
+                indexText,
+            )
+            if tableRowMatch:
+                tableStatus = tableRowMatch.group(1).strip()
+                if featStatus.casefold() != tableStatus.casefold():
+                    self.report.add(
+                        "REQ-002",
+                        Severity.FAILURE,
+                        f"Status mismatch for {featName}: requirements index states '{tableStatus}' but record states '{featStatus}'",
+                        featPath,
+                    )
 
-        # ADR Reference Check
+        # REQ-005: a single prompt has exactly the requirement filename;
+        # letter suffixes are reserved for genuinely distinct prompts.
+        for promptName in re.findall(r"\]\(prompt/([^)]+\.md)\)", indexText):
+            if ".prompt.md" in promptName:
+                self.report.add(
+                    "REQ-005",
+                    Severity.FAILURE,
+                    f"Prompt '{promptName}' uses the obsolete .prompt infix",
+                    indexPath,
+                )
+            baseName = re.sub(r"^(\d{3})[a-z]-", r"\1-", promptName)
+            if baseName not in featureFiles:
+                self.report.add(
+                    "REQ-005",
+                    Severity.FAILURE,
+                    f"Prompt '{promptName}' has no deterministic requirement filename match",
+                    indexPath,
+                )
+            if promptsDir.is_dir() and not (promptsDir / promptName).exists():
+                self.report.add(
+                    "REQ-005",
+                    Severity.FAILURE,
+                    f"Prompt '{promptName}' linked from the index does not exist",
+                    indexPath,
+                )
+
+        # REQ-003: referenced ADRs exist.
         adrDir = self.rootPath / "project" / "adr"
-        if adrDir.exists() and adrDir.is_dir():
+        if adrDir.is_dir():
             for featPath in featureFiles.values():
                 try:
                     featText = featPath.read_text(encoding="utf-8")
-                    adrMatches = re.findall(
-                        r"project/adr/(\d{3}-[A-Za-z0-9_-]+\.md)", featText
-                    )
-                    for adrName in adrMatches:
-                        if not (adrDir / adrName).exists():
-                            self.report.add(
-                                "REQ-003",
-                                Severity.FAILURE,
-                                f"Requirement '{featPath.name}' references non-existent ADR 'project/adr/{adrName}'",
-                                featPath,
-                            )
                 except OSError:
-                    pass
+                    continue
+                for adrName in re.findall(
+                    r"project/adr/(\d{3}-[A-Za-z0-9_-]+\.md)", featText
+                ):
+                    if not (adrDir / adrName).exists():
+                        self.report.add(
+                            "REQ-003",
+                            Severity.FAILURE,
+                            f"Requirement '{featPath.name}' references non-existent ADR 'project/adr/{adrName}'",
+                            featPath,
+                        )
 
 
 # ---------------------------------------------------------------------------

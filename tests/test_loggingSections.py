@@ -5,7 +5,7 @@ import ast
 import pytest
 
 from organiseMyProjects.guiNamingLinter import loggingSectionsCheck
-from organiseMyProjects.runLinter import _lintTarget
+from organiseMyProjects.runLinter import lintTargetsCollect
 
 
 def _sourceBuild(start="runStart()", headerLine="line()", summaryLine="line()"):
@@ -93,13 +93,13 @@ def testHelpersTestsAndDelegatingDispatcherAreExcluded():
     )
 
 
-def testRunLinterReportsSectionViolations(tmp_path, capsys):
+def testRunLinterReportsSectionViolations(tmp_path):
     target = tmp_path / "main.py"
     target.write_text(_sourceBuild("", "", ""))
-    _lintTarget(str(target))
-    output = capsys.readouterr().out
+    result = lintTargetsCollect([str(target)])
+    ruleIds = {finding.ruleId for finding in result.findings}
     for code in ("LOG-SEC-001", "LOG-SEC-002", "LOG-SEC-003"):
-        assert code in output
+        assert code in ruleIds
 
 
 def testConditionalFailureThenSuccessSummary():

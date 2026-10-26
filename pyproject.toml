@@ -28,6 +28,9 @@ dev = [
     "ruff",
     "textual>=8.2,<9",
 ]
+tui = [
+    "textual>=8.2,<9",
+]
 
 [project.scripts]
 manageProject = "organiseMyProjects.manageProjectCli:main"
@@ -35,6 +38,9 @@ createProject = "organiseMyProjects.manageProject:main"
 updateProject = "organiseMyProjects.manageProject:main"
 runLinter = "organiseMyProjects.runLinter:main"
 fixMarkup = "organiseMyProjects.fixMarkup:main"
+myBoard = "organiseMyProjects.myBoard:main"
+agentSessions = "organiseMyProjects.agentSessions:entryRun"
+styleMockup = "organiseMyProjects.styleMockup:main"
 
 [tool.setuptools]
 include-package-data = true

@@ -2,6 +2,8 @@
 Tests for runLinter.py functionality.
 """
 
+import os
+import re
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -11,152 +13,158 @@ import pytest
 # Add the parent directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from organiseMyProjects.runLinter import _lintTarget, lintTargetsDiscover, main
+from organiseMyProjects.guiNamingLinter import findingDescribe
+from organiseMyProjects.runLinter import (
+    lintTargetsCollect,
+    lintTargetsDiscover,
+    main,
+)
 
 
 class TestRunLinter:
     """Test cases for runLinter functionality."""
 
-    def testLintTargetFile(self, mockPythonFile, capsys):
-        """The file header is separated from real lint results."""
-        _lintTarget(str(mockPythonFile))
-        output = capsys.readouterr().out.splitlines()
-        assert output[0] == f"Linting: {mockPythonFile}"
-        assert output[1] == "-" * 80
-        assert len(output) > 2
-
-    def testLintTargetDirectory(self, tempDir, capsys):
-        """Directory results follow the shared separator."""
-        (tempDir / "example.py").write_text("VALUE = 1\n")
-        _lintTarget(str(tempDir))
-        output = capsys.readouterr().out
-        assert f"Checking GUI naming in: {tempDir}\n" + "-" * 80 in output
-        assert output.rstrip().endswith("example.py: OK")
-
-    def testMainWithTargets(self, testFilePath):
-        """Test main function with specific targets."""
-        testArgs = ["runLinter.py", str(testFilePath)]
-
-        with patch("sys.argv", testArgs):
-            with patch(
-                "organiseMyProjects.runLinter._violationsFiltered"
-            ) as mockLintFile:
+    def _mainExitCode(self, *args) -> int:
+        with patch("sys.argv", ["runLinter.py", *args]):
+            with pytest.raises(SystemExit) as exc:
                 main()
-                mockLintFile.assert_called_once_with(str(testFilePath))
+        return exc.value.code
+
+    def testFindingFormatDistinguishesSameBasename(self, tempDir, monkeypatch):
+        """Requirement 013 criterion 1: relative path, line, rule ID, message."""
+        for package in ("alpha", "beta"):
+            (tempDir / package).mkdir()
+            (tempDir / package / "__init__.py").write_text(
+                "def bad_name():\n    pass\n"
+            )
+        monkeypatch.chdir(tempDir)
+
+        result = lintTargetsCollect(["."])
+        rendered = sorted(finding.render() for finding in result.findings)
+
+        assert rendered == [
+            f"alpha{os.sep}__init__.py:1: NAM-003 function 'bad_name' should be domainAction camelCase",
+            f"beta{os.sep}__init__.py:1: NAM-003 function 'bad_name' should be domainAction camelCase",
+        ]
+
+    def testRuleSpecificMessages(self):
+        """Criterion 2: non-naming rules do not use the generic naming template."""
+        ruleId, message = findingDescribe(
+            "line", "LOG-SEC-002: call line() immediately after the application header"
+        )
+        assert ruleId == "LOG-SEC-002"
+        assert message == "call line() immediately after the application header"
+        ruleId, message = findingDescribe("Already done", "Logging (info)")
+        assert ruleId == "LOG-CASE-001"
+        assert "should follow naming rule" not in message
+
+    def testSummaryCountsFindingsFilesAndTime(self, tempDir, monkeypatch, capsys):
+        """Criterion 3: summary reports findings, affected and passed files, time."""
+        (tempDir / "good.py").write_text("VALUE = 1\n")
+        (tempDir / "bad.py").write_text(
+            "def bad_name():\n    pass\n\n\ndef worse():\n    pass\n"
+        )
+        monkeypatch.chdir(tempDir)
+
+        assert self._mainExitCode(".") == 1
+        summary = [
+            row for row in capsys.readouterr().out.splitlines() if " in " in row
+        ][-1]
+        assert re.search(
+            r"=+ 2 findings in 1 file, 1 file passed in \d+\.\d\ds =+", summary
+        )
+
+    def testProgressMarksPassedAndFailedFiles(self, tempDir, monkeypatch, capsys):
+        (tempDir / "good.py").write_text("VALUE = 1\n")
+        (tempDir / "bad.py").write_text("def bad_name():\n    pass\n")
+        monkeypatch.chdir(tempDir)
+
+        self._mainExitCode(".")
+        output = capsys.readouterr().out.splitlines()
+        assert "bad.py FAILED" in output
+        assert "good.py PASSED" in output
+
+    def testCleanProjectExitsZero(self, tempDir, monkeypatch, capsys):
+        """Criterion 4."""
+        (tempDir / "good.py").write_text("VALUE = 1\n")
+        monkeypatch.chdir(tempDir)
+
+        assert self._mainExitCode(".") == 0
+        assert re.search(r"=+ 1 file passed in \d+\.\d\ds =+", capsys.readouterr().out)
+
+    def testFindingsExitOne(self, testFilePath):
+        """Criterion 5."""
+        (testFilePath.parent / "bad.py").write_text("def bad_name():\n    pass\n")
+        assert self._mainExitCode(str(testFilePath.parent / "bad.py")) == 1
+
+    def testMainLintsSuppliedTarget(self, testFilePath):
+        with patch("organiseMyProjects.runLinter._violationsFiltered") as mockLint:
+            mockLint.return_value = []
+            assert self._mainExitCode(str(testFilePath)) == 0
+        mockLint.assert_called_once_with(str(testFilePath))
 
     def testMainNonexistentTarget(self, tempDir, capsys):
-        """Test main function with non-existent target."""
-        nonexistent = tempDir / "nonexistent.py"
-        testArgs = ["runLinter.py", str(nonexistent)]
-
-        with patch("sys.argv", testArgs):
-            main()
-
-        captured = capsys.readouterr()
-        assert "does not exist" in captured.out
-        assert "Skipping" in captured.out
+        """Criterion 6: missing target."""
+        assert self._mainExitCode(str(tempDir / "nonexistent.py")) == 2
+        assert "does not exist" in capsys.readouterr().out
 
     def testMainNonPythonTarget(self, tempDir, capsys):
-        """Test main function with non-Python file target."""
+        """Criterion 6: non-Python target."""
         textFile = tempDir / "readme.txt"
         textFile.write_text("This is not Python")
-
-        testArgs = ["runLinter.py", str(textFile)]
-
-        with patch("sys.argv", testArgs):
-            main()
-
-        captured = capsys.readouterr()
-        assert "not a Python file" in captured.out
-        assert "Skipping" in captured.out
+        assert self._mainExitCode(str(textFile)) == 2
+        assert "not a Python file" in capsys.readouterr().out
 
     def testMainUnreadableTarget(self, tempDir, capsys):
-        """Test main function with unreadable target."""
+        """Criterion 6: unreadable target."""
         pythonFile = tempDir / "test.py"
         pythonFile.write_text("# Python file")
+        with patch("organiseMyProjects.runLinter.os.access", return_value=False):
+            assert self._mainExitCode(str(pythonFile)) == 2
+        assert "not readable" in capsys.readouterr().out
 
-        testArgs = ["runLinter.py", str(pythonFile)]
+    def testTargetErrorTakesPrecedenceOverFindings(self, tempDir):
+        bad = tempDir / "bad.py"
+        bad.write_text("def bad_name():\n    pass\n")
+        assert self._mainExitCode(str(bad), str(tempDir / "missing.py")) == 2
 
-        # Mock os.access to return False for read permission
-        with patch("sys.argv", testArgs):
-            with patch("organiseMyProjects.runLinter.os.access", return_value=False):
-                main()
+    def testNoPythonFilesExitsFive(self, tempDir, capsys):
+        """Criterion 7."""
+        (tempDir / "notes.txt").write_text("text")
+        assert self._mainExitCode(str(tempDir)) == 5
+        assert "no Python files linted" in capsys.readouterr().out
 
-        captured = capsys.readouterr()
-        assert "not readable" in captured.out
-        assert "Skipping" in captured.out
+    def testUnparseableFileIsReportedAsFinding(self, tempDir):
+        broken = tempDir / "broken.py"
+        broken.write_text("def broken(:\n")
+        result = lintTargetsCollect([str(broken)])
+        assert [finding.ruleId for finding in result.findings] == ["LINT-001"]
+        assert result.exitCode == 1
 
-    def testMainNoTargetsWithProjectDirs(self, tempDir, capsys):
-        """Test main function with no targets but project directories exist."""
-        # Create project directories
-        (tempDir / "src").mkdir()
-        (tempDir / "ui").mkdir()
-        (tempDir / "tests").mkdir()
+    def testMainNoTargetsLintsDiscoveredDirectories(self, tempDir, monkeypatch):
+        """With no targets, discovered project directories are linted."""
+        for name in ("src", "ui", "tests"):
+            (tempDir / name).mkdir()
+        monkeypatch.chdir(tempDir)
 
-        testArgs = ["runLinter.py"]
+        with patch(
+            "organiseMyProjects.runLinter.lintTargetsCollect",
+            wraps=lintTargetsCollect,
+        ) as mockCollect:
+            self._mainExitCode()
 
-        # Change to temp directory and run test
-        import os
+        assert mockCollect.call_args.args[0] == ["src", "ui", "tests"]
 
-        originalCwd = os.getcwd()
-        try:
-            os.chdir(tempDir)
+    def testMainNoTargetsFallsBackToCurrentDirectory(self, tempDir, monkeypatch):
+        monkeypatch.chdir(tempDir)
 
-            # Verify directories exist before test
-            assert os.path.isdir("src"), "src directory should exist"
-            assert os.path.isdir("ui"), "ui directory should exist"
-            assert os.path.isdir("tests"), "tests directory should exist"
+        with patch(
+            "organiseMyProjects.runLinter.lintTargetsCollect",
+            wraps=lintTargetsCollect,
+        ) as mockCollect:
+            assert self._mainExitCode() == 5
 
-            with patch("sys.argv", testArgs):
-                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
-                    main()
-
-                    # Debug output for troubleshooting
-                    actualCalls = [call.args[0] for call in mockLintGui.call_args_list]
-
-                    # Should lint each project directory
-                    assert (
-                        mockLintGui.call_count == 3
-                    ), f"Expected 3 calls but got {mockLintGui.call_count}. Calls: {actualCalls}"
-                    mockLintGui.assert_any_call("src")
-                    mockLintGui.assert_any_call("ui")
-                    mockLintGui.assert_any_call("tests")
-        finally:
-            os.chdir(originalCwd)
-
-        captured = capsys.readouterr()
-        assert "No target supplied" in captured.out
-
-    def testMainNoTargetsNoProjectDirs(self, tempDir, capsys):
-        """Test main function with no targets and no project directories."""
-        testArgs = ["runLinter.py"]
-
-        # Change to temp directory and run test
-        import os
-
-        originalCwd = os.getcwd()
-        try:
-            os.chdir(tempDir)
-
-            # Verify no project directories exist
-            assert not os.path.isdir("src"), "src directory should not exist"
-            assert not os.path.isdir("ui"), "ui directory should not exist"
-            assert not os.path.isdir("tests"), "tests directory should not exist"
-
-            with patch("sys.argv", testArgs):
-                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
-                    main()
-
-                    # Should lint current directory since no project dirs found
-                    assert (
-                        mockLintGui.call_count == 1
-                    ), f"Expected 1 call but got {mockLintGui.call_count}"
-                    mockLintGui.assert_called_once_with(".")
-        finally:
-            os.chdir(originalCwd)
-
-        captured = capsys.readouterr()
-        assert "No target supplied" in captured.out
+        assert mockCollect.call_args.args[0] == ["."]
 
     def testMainWithMarkupCheck(self):
         """Test running markup lint in check mode."""
@@ -166,7 +174,9 @@ class TestRunLinter:
             with patch(
                 "organiseMyProjects.runLinter.markupFix", return_value=0
             ) as mockMarkupFix:
-                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
+                with patch(
+                    "organiseMyProjects.runLinter.lintTargetsCollect"
+                ) as mockLintGui:
                     with patch(
                         "organiseMyProjects.runLinter._violationsFiltered"
                     ) as mockLintFile:
@@ -184,7 +194,9 @@ class TestRunLinter:
             with patch(
                 "organiseMyProjects.runLinter.markupFix", return_value=0
             ) as mockMarkupFix:
-                with patch("organiseMyProjects.runLinter._lintTarget") as mockLintGui:
+                with patch(
+                    "organiseMyProjects.runLinter.lintTargetsCollect"
+                ) as mockLintGui:
                     with patch(
                         "organiseMyProjects.runLinter._violationsFiltered"
                     ) as mockLintFile:
@@ -339,7 +351,9 @@ class TestLintTargetsDiscover:
                 with patch(
                     "organiseMyProjects.runLinter._violationsFiltered"
                 ) as mockLintFile:
-                    main()
+                    mockLintFile.return_value = []
+                    with pytest.raises(SystemExit):
+                        main()
                     mockDiscover.assert_not_called()
                     mockLintFile.assert_called_once_with(str(testFilePath))
 
@@ -382,12 +396,14 @@ class TestGUI:
         testArgs = ["runLinter.py", str(pythonFile)]
 
         with patch("sys.argv", testArgs):
-            main()
+            with pytest.raises(SystemExit) as exc:
+                main()
 
         captured = capsys.readouterr()
 
-        # Verify that violations were detected and reported
-        assert str(pythonFile) in captured.out
+        # Verify that violations were detected, reported and enforced
+        assert exc.value.code == 1
+        assert "gui_test.py:" in captured.out
         assert "save_button" in captured.out or "status_label" in captured.out
 
     def testDirectoryLintingWorkflow(self, tempDir, capsys):
@@ -417,12 +433,15 @@ class MainFrame:
         testArgs = ["runLinter.py", str(tempDir)]
 
         with patch("sys.argv", testArgs):
-            main()
+            with pytest.raises(SystemExit):
+                main()
 
         captured = capsys.readouterr()
 
-        # Verify output contains information about the directory scan
-        assert f"Linting: {tempDir}" in captured.out
+        # Verify output identifies the target and each nested file
+        assert f"targets: {tempDir}" in captured.out
+        assert "utils.py" in captured.out
+        assert "main_frame.py" in captured.out
 
 
 def testCommandHeaderSeparator(tmp_path, monkeypatch, capsys):
@@ -433,7 +452,9 @@ def testCommandHeaderSeparator(tmp_path, monkeypatch, capsys):
     target = tmp_path / "example.py"
     target.write_text("VALUE = 1\n")
     monkeypatch.setattr(sys, "argv", ["runLinter", str(target)])
-    main()
+    with pytest.raises(SystemExit) as exc:
+        main()
+    assert exc.value.code == 0
 
     output = capsys.readouterr().out.splitlines()
     assert output[:3] == ["", ">" + "-" * 80 + "<", ""]

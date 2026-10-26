@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from organiseMyProjects.requirementLayout import layoutMigrate
+import pytest
+
+from organiseMyProjects.requirementLayout import (
+    layoutMigrate,
+    requirementFilenameSuggest,
+)
 
 
 class _Logger:
@@ -20,7 +25,7 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def test_indexReadmeMigratesToRequirementsIndex(tmp_path):
+def testIndexReadmeMigratesToRequirementsIndex(tmp_path):
     source = tmp_path / "project/requirements/README.md"
     destination = tmp_path / "project/requirements/requirementsIndex.md"
     _write(
@@ -34,7 +39,7 @@ def test_indexReadmeMigratesToRequirementsIndex(tmp_path):
     assert destination.exists()
 
 
-def test_historicalRequirementsReadmeMigrates(tmp_path):
+def testHistoricalRequirementsReadmeMigrates(tmp_path):
     source = tmp_path / "project/requirements/README.md"
     destination = tmp_path / "project/requirements/requirementsIndex.md"
     _write(
@@ -51,7 +56,7 @@ def test_historicalRequirementsReadmeMigrates(tmp_path):
     assert destination.exists()
 
 
-def test_historicalAdrReadmeMigrates(tmp_path):
+def testHistoricalAdrReadmeMigrates(tmp_path):
     source = tmp_path / "project/adr/README.md"
     destination = tmp_path / "project/adr/adrIndex.md"
     _write(
@@ -67,7 +72,7 @@ def test_historicalAdrReadmeMigrates(tmp_path):
     assert destination.exists()
 
 
-def test_mistakenFolderIndexesMigrateToNamedIndexes(tmp_path):
+def testMistakenFolderIndexesMigrateToNamedIndexes(tmp_path):
     reqSource = tmp_path / "project/requirements/folderIndex.md"
     adrSource = tmp_path / "project/adr/folderIndex.md"
     _write(
@@ -87,7 +92,7 @@ def test_mistakenFolderIndexesMigrateToNamedIndexes(tmp_path):
     assert (tmp_path / "project/adr/adrIndex.md").exists()
 
 
-def test_canonicalNamedIndexesArePreserved(tmp_path):
+def testCanonicalNamedIndexesArePreserved(tmp_path):
     reqIndex = tmp_path / "project/requirements/requirementsIndex.md"
     adrIndex = tmp_path / "project/adr/adrIndex.md"
     _write(
@@ -105,7 +110,7 @@ def test_canonicalNamedIndexesArePreserved(tmp_path):
     assert adrIndex.exists()
 
 
-def test_indexMigrationDryRunDoesNotChangeFiles(tmp_path):
+def testIndexMigrationDryRunDoesNotChangeFiles(tmp_path):
     source = tmp_path / "project/requirements/README.md"
     _write(
         source,
@@ -120,7 +125,7 @@ def test_indexMigrationDryRunDoesNotChangeFiles(tmp_path):
     assert any("would rename" in message for message in logger.actions)
 
 
-def test_unrecognisedNestedReadmeIsPreserved(tmp_path):
+def testUnrecognisedNestedReadmeIsPreserved(tmp_path):
     source = tmp_path / "documentation/topic/README.md"
     _write(source, "# User documentation\n")
 
@@ -129,7 +134,7 @@ def test_unrecognisedNestedReadmeIsPreserved(tmp_path):
     assert source.exists()
 
 
-def test_indexCollisionPreservesDifferentContent(tmp_path):
+def testIndexCollisionPreservesDifferentContent(tmp_path):
     source = tmp_path / "project/requirements/README.md"
     destination = tmp_path / "project/requirements/requirementsIndex.md"
     _write(
@@ -144,7 +149,7 @@ def test_indexCollisionPreservesDifferentContent(tmp_path):
     assert destination.read_text(encoding="utf-8") == "# Requirements\ncanonical\n"
 
 
-def test_requirementDirectoryMigratesToFlatSpecification(tmp_path):
+def testRequirementDirectoryMigratesToFlatSpecification(tmp_path):
     source = tmp_path / "project/requirements/features/003-viewManagement/README.md"
     destination = tmp_path / "project/requirements/features/003-viewManagement.md"
     _write(source, "# 003: View management\n\n## Status\n\nToDo\n")
@@ -156,7 +161,7 @@ def test_requirementDirectoryMigratesToFlatSpecification(tmp_path):
     assert not source.parent.exists()
 
 
-def test_requirementDirectoryWithExtraContentIsPreserved(tmp_path):
+def testRequirementDirectoryWithExtraContentIsPreserved(tmp_path):
     source = tmp_path / "project/requirements/features/003-viewManagement/README.md"
     extra = source.parent / "notes.md"
     _write(source, "# 003: View management\n")
@@ -171,7 +176,7 @@ def test_requirementDirectoryWithExtraContentIsPreserved(tmp_path):
     ).exists()
 
 
-def test_promptDirectoryMigratesWhenRequirementExists(tmp_path):
+def testPromptDirectoryMigratesWhenRequirementExists(tmp_path):
     feature = tmp_path / "project/requirements/features/003-viewManagement.md"
     source = tmp_path / "project/requirements/prompt/003-viewManagement/README.md"
     destination = tmp_path / "project/requirements/prompt/003-viewManagement.md"
@@ -184,7 +189,7 @@ def test_promptDirectoryMigratesWhenRequirementExists(tmp_path):
     assert not source.parent.exists()
 
 
-def test_historicalSinglePromptFileMigrates(tmp_path):
+def testHistoricalSinglePromptFileMigrates(tmp_path):
     feature = tmp_path / "project/requirements/features/001-handbookFoundation.md"
     source = tmp_path / "project/requirements/prompt/001-handbookFoundation/refine.md"
     destination = tmp_path / "project/requirements/prompt/001-handbookFoundation.md"
@@ -197,7 +202,7 @@ def test_historicalSinglePromptFileMigrates(tmp_path):
     assert not source.parent.exists()
 
 
-def test_historicalMultiPromptDirectoryIsPreserved(tmp_path):
+def testHistoricalMultiPromptDirectoryIsPreserved(tmp_path):
     feature = tmp_path / "project/requirements/features/001-handbookFoundation.md"
     refine = tmp_path / "project/requirements/prompt/001-handbookFoundation/refine.md"
     review = tmp_path / "project/requirements/prompt/001-handbookFoundation/review.md"
@@ -214,7 +219,7 @@ def test_historicalMultiPromptDirectoryIsPreserved(tmp_path):
     ).exists()
 
 
-def test_promptDirectoryWithoutRequirementIsPreserved(tmp_path):
+def testPromptDirectoryWithoutRequirementIsPreserved(tmp_path):
     source = tmp_path / "project/requirements/prompt/003-viewManagement/README.md"
     _write(source, "Requirement: 003\nRole: implement\n")
 
@@ -224,7 +229,7 @@ def test_promptDirectoryWithoutRequirementIsPreserved(tmp_path):
     assert not (tmp_path / "project/requirements/prompt/003-viewManagement.md").exists()
 
 
-def test_referencePathsAreUpdated(tmp_path):
+def testReferencePathsAreUpdated(tmp_path):
     document = tmp_path / "README.md"
     _write(
         document,
@@ -239,7 +244,7 @@ def test_referencePathsAreUpdated(tmp_path):
     assert "project/adr/adrIndex.md" in text
 
 
-def test_migrationIsIdempotent(tmp_path):
+def testMigrationIsIdempotent(tmp_path):
     source = tmp_path / "project/requirements/README.md"
     _write(
         source,
@@ -258,15 +263,13 @@ def test_migrationIsIdempotent(tmp_path):
     assert first == second
 
 
-def test_generatedCacheReadmeIsIgnoredByDocumentationCheck(tmp_path):
+def testGeneratedCacheReadmeIsIgnoredByDocumentationCheck(tmp_path):
     """Generated cache README files must not trigger DOC-005."""
     from organiseMyProjects import agentCheck
-    from organiseMyProjects.requirementLayout import agentCheckPatchesInstall
 
     _write(tmp_path / "README.md", "# Project\n")
     _write(tmp_path / ".pytest_cache/README.md", "# pytest cache\n")
 
-    agentCheckPatchesInstall(agentCheck)
     validator = agentCheck.AgentCheckValidator(tmp_path)
     validator._checkDocumentation()
 
@@ -276,3 +279,94 @@ def test_generatedCacheReadmeIsIgnoredByDocumentationCheck(tmp_path):
         if getattr(item, "ruleId", None) == "DOC-005"
     ]
     assert failures == []
+
+
+def _scaffoldCreate(tmp_path: Path) -> Path:
+    from unittest.mock import patch
+
+    from organiseMyProjects.manageProject import createProject
+
+    project = tmp_path / "layoutProject"
+    with patch("organiseMyProjects.manageProject.subprocess.run"):
+        createProject(str(project))
+    return project
+
+
+def testNewScaffoldUsesNamedIndexesWithoutNestedReadmes(tmp_path):
+    """Requirement 004 criteria 3 and 4 on a real createProject scaffold."""
+    project = _scaffoldCreate(tmp_path)
+
+    assert (project / "project/requirements/requirementsIndex.md").is_file()
+    assert (project / "project/adr/adrIndex.md").is_file()
+    assert list(project.rglob("folderIndex.md")) == []
+    assert [path for path in project.rglob("README.md")] == [project / "README.md"]
+
+
+def testNewScaffoldPassesLayoutChecks(tmp_path):
+    """Requirement 004 criterion 16: check accepts a fresh scaffold's named indexes."""
+    from organiseMyProjects.agentCheck import AgentCheckValidator
+
+    project = _scaffoldCreate(tmp_path)
+    report = AgentCheckValidator(project).runAll()
+
+    assert report.failures == []
+
+
+def testNewScaffoldRequirementListingIsCheckedAgainstNamedIndex(tmp_path):
+    """Check reads requirementsIndex.md when matching requirement files."""
+    from organiseMyProjects.agentCheck import AgentCheckValidator
+
+    project = _scaffoldCreate(tmp_path)
+    requirements = project / "project/requirements"
+    _write(requirements / "features/001-listedThing.md", "# 001\n\n## Status\n\nToDo\n")
+    _write(
+        requirements / "features/002-unlistedThing.md", "# 002\n\n## Status\n\nToDo\n"
+    )
+    index = requirements / "requirementsIndex.md"
+    index.write_text(
+        index.read_text(encoding="utf-8")
+        + "| 001 | [Listed](features/001-listedThing.md) | Listed. | ToDo |"
+        " Not required | Not required |\n",
+        encoding="utf-8",
+    )
+
+    report = AgentCheckValidator(project).runAll()
+    unlisted = [
+        finding.filePath.name
+        for finding in report.failures
+        if finding.ruleId == "REQ-001"
+    ]
+
+    assert unlisted == ["002-unlistedThing.md"]
+
+
+def testNewScaffoldNestedReadmeIsReported(tmp_path):
+    """Check reports an OMPR-owned nested README mistake in a fresh scaffold."""
+    from organiseMyProjects.agentCheck import AgentCheckValidator
+
+    project = _scaffoldCreate(tmp_path)
+    _write(
+        project / "project/requirements/features/003-viewManagement/README.md",
+        "# 003\n",
+    )
+
+    report = AgentCheckValidator(project).runAll()
+
+    assert any(finding.ruleId == "DOC-005" for finding in report.failures)
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("009-read-inbox-filing.md", "009-readInboxFiling.md"),
+        ("MA-012-rolling-imap-retention.md", "012-rollingImapRetention.md"),
+        ("MA-011-sessionCredentialCache.md", "011-sessionCredentialCache.md"),
+        (
+            "004-requirementDocumentationLayout.md",
+            "004-requirementDocumentationLayout.md",
+        ),
+        ("notARequirement.md", None),
+    ],
+)
+def testRequirementFilenameSuggest(name, expected):
+    assert requirementFilenameSuggest(name) == expected

@@ -1,4 +1,4 @@
-# 004: Requirement, prompt and folder-index layout — implementation prompt
+# 004: Requirement, prompt and directory-index layout — implementation prompt
 
 Requirement: `project/requirements/features/004-requirementDocumentationLayout.md`
 
@@ -12,7 +12,8 @@ Make the OMP scaffold, managed guidance and update/check behaviour consistently
 follow these rules:
 
 - `README.md` is reserved for repository root;
-- directory indexes or directory-specific instructions use `folderIndex.md`
+- directory indexes or directory-specific instructions use
+  `<folderName>Index.md`, such as `requirementsIndex.md` and `adrIndex.md`,
   only when an index is genuinely needed;
 - requirements use flat
   `project/requirements/features/<nnn>-<requirementName>.md` files;
@@ -43,7 +44,8 @@ minimum:
 - Only migrate a nested README/index where OMP ownership or a deterministic
   scaffold relationship can be established.
 - Preserve source and destination on ambiguous collisions.
-- Do not create `folderIndex.md` in directories that do not need an index.
+- Do not create a `<folderName>Index.md` in directories that do not need an
+  index.
 - Do not flatten genuine multi-file project directories.
 - Dry-run must describe all intended changes without modifying the working tree.
 - Confirmed migrations must be idempotent.

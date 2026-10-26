@@ -4,8 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from organiseMyProjects import runLinter
-from organiseMyProjects.guiNamingLinter import fileCheck
-from organiseMyProjects.linter08 import LOGGING_CASE_WHITELIST
+from organiseMyProjects.guiNamingLinter import LOGGING_CASE_WHITELIST, fileCheck
 from organiseMyProjects.manageProject import createProject, updateProject
 
 

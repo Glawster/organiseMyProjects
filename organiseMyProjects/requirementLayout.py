@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Callable
 
 _INDEX_MIGRATIONS = (
     (
@@ -49,6 +48,8 @@ _REFERENCE_REPLACEMENTS = (
 )
 
 _REQUIREMENT_DIR_RE = re.compile(r"^(\d{3})-([A-Za-z][A-Za-z0-9_-]*)$")
+# Any record name with a three-digit number, optionally behind a project prefix.
+_REQUIREMENT_NAME_RE = re.compile(r"(?:[A-Za-z]+-)?(\d{3})-(.+)\.md")
 _PROMPT_DIR_RE = re.compile(r"^(\d{3}[a-z]?)-([A-Za-z][A-Za-z0-9_-]*)$")
 
 _IGNORED_GENERATED_DIRECTORIES = frozenset(
@@ -106,14 +107,41 @@ def _indexRecognised(path: Path, markers: tuple[str, ...]) -> bool:
     return False
 
 
-def _pathGenerated(path: Path) -> bool:
+def requirementFilenameSuggest(name: str) -> str | None:
+    """Return the conforming ``<nnn>-<camelCaseName>.md`` form of a record name.
+
+    A leading project prefix such as ``MA-`` is dropped and a hyphenated or
+    underscored name becomes camelCase. ``None`` means no number was found.
+    """
+    match = _REQUIREMENT_NAME_RE.fullmatch(name)
+    if not match:
+        return None
+    number, words = match.group(1), re.split(r"[-_\s]+", match.group(2))
+    words = [word for word in words if word]
+    if not words:
+        return None
+    camel = (
+        words[0][:1].lower()
+        + words[0][1:]
+        + "".join(word[:1].upper() + word[1:] for word in words[1:])
+    )
+    return f"{number}-{camel}.md"
+
+
+def requirementNumber(name: str) -> str | None:
+    """Return the three-digit number of a record name, ignoring any prefix."""
+    match = _REQUIREMENT_NAME_RE.fullmatch(name)
+    return match.group(1) if match else None
+
+
+def pathGenerated(path: Path) -> bool:
     """Return whether a path is inside generated or transient project state."""
     return any(part in _IGNORED_GENERATED_DIRECTORIES for part in path.parts)
 
 
 def _referencePathsIterate(basePath: Path):
     for path in basePath.rglob("*.md"):
-        if _pathGenerated(path):
+        if pathGenerated(path):
             continue
         yield path
 
@@ -288,185 +316,3 @@ def layoutMigrate(basePath: Path | str, dryRun: bool = False, logger=None) -> No
         promptMode=True,
     )
     _referencesUpdate(root, dryRun, logger)
-
-
-def _projectPathResolve(args, kwargs) -> Path | str | None:
-    if args:
-        return args[0]
-    return kwargs.get("projectName")
-
-
-def _dryRunResolve(args, kwargs) -> bool:
-    if "dryRun" in kwargs:
-        return bool(kwargs["dryRun"])
-    if len(args) > 1:
-        return bool(args[1])
-    return False
-
-
-def manageProjectPatchesInstall(manageProjectModule) -> None:
-    """Wrap project-management entry points with requirement 004 migration."""
-    if getattr(manageProjectModule, "_requirement004Patched", False):
-        return
-
-    originalCreate: Callable = manageProjectModule.createProject
-    originalMigrate: Callable = manageProjectModule.migrateProject
-    originalUpdate: Callable = manageProjectModule.updateProject
-
-    def createProject(*args, **kwargs):
-        result = originalCreate(*args, **kwargs)
-        projectPath = _projectPathResolve(args, kwargs)
-        if projectPath is not None:
-            layoutMigrate(
-                projectPath,
-                dryRun=_dryRunResolve(args, kwargs),
-                logger=manageProjectModule.logger,
-            )
-        return result
-
-    def migrateProject(*args, **kwargs):
-        result = originalMigrate(*args, **kwargs)
-        projectPath = _projectPathResolve(args, kwargs)
-        if projectPath is not None:
-            layoutMigrate(
-                projectPath,
-                dryRun=_dryRunResolve(args, kwargs),
-                logger=manageProjectModule.logger,
-            )
-        return result
-
-    def updateProject(*args, **kwargs):
-        result = originalUpdate(*args, **kwargs)
-        projectPath = _projectPathResolve(args, kwargs)
-        if projectPath is not None:
-            layoutMigrate(
-                projectPath,
-                dryRun=_dryRunResolve(args, kwargs),
-                logger=manageProjectModule.logger,
-            )
-        return result
-
-    manageProjectModule.createProject = createProject
-    manageProjectModule.migrateProject = migrateProject
-    manageProjectModule.updateProject = updateProject
-    manageProjectModule._requirement004Patched = True
-
-
-def agentCheckPatchesInstall(agentCheckModule) -> None:
-    """Teach agent readiness checks about named directory indexes and nested README policy."""
-    validator = agentCheckModule.AgentCheckValidator
-    if getattr(validator, "_requirement004Patched", False):
-        return
-
-    originalDocumentation = validator._checkDocumentation
-    originalRequirements = validator._checkRequirementsAndAdrs
-
-    def _checkDocumentation(self):
-        originalDocumentation(self)
-        for readme in self.rootPath.rglob("README.md"):
-            if readme == self.rootPath / "README.md" or _pathGenerated(readme):
-                continue
-            self.report.add(
-                "DOC-005",
-                agentCheckModule.Severity.FAILURE,
-                "README.md is reserved for the repository root; directory indexes use <folderName>Index.md",
-                readme,
-            )
-
-    def _checkRequirementsAndAdrs(self):
-        reqDir = self.rootPath / "project" / "requirements"
-        indexPath = reqDir / "requirementsIndex.md"
-        legacyPaths = (reqDir / "README.md", reqDir / "folderIndex.md")
-        existingLegacy = next((path for path in legacyPaths if path.exists()), None)
-        if existingLegacy is not None:
-            if existingLegacy.name == "README.md":
-                originalRequirements(self)
-            return
-        if not indexPath.exists():
-            return
-
-        featuresDir = reqDir / "features"
-        if not featuresDir.is_dir():
-            return
-        featureFiles = {path.name: path for path in featuresDir.glob("*.md")}
-        promptsDir = reqDir / "prompt"
-        try:
-            indexText = indexPath.read_text(encoding="utf-8")
-        except OSError:
-            return
-
-        for featureName, featurePath in featureFiles.items():
-            if featureName not in indexText:
-                self.report.add(
-                    "REQ-001",
-                    agentCheckModule.Severity.FAILURE,
-                    f"Requirement '{featureName}' is not listed in project/requirements/requirementsIndex.md index",
-                    featurePath,
-                )
-            try:
-                featureText = featurePath.read_text(encoding="utf-8")
-            except OSError:
-                continue
-            statusMatch = re.search(r"## Status\s*\n+([A-Za-z]+)", featureText)
-            featureStatus = statusMatch.group(1).strip() if statusMatch else ""
-            rowMatch = re.search(
-                rf"\|\s*\d+\s*\|\s*\[.*?\]\(features/{re.escape(featureName)}\)\s*\|\s*.*?\s*\|\s*([A-Za-z]+)\s*\|",
-                indexText,
-            )
-            if (
-                rowMatch
-                and featureStatus.casefold() != rowMatch.group(1).strip().casefold()
-            ):
-                self.report.add(
-                    "REQ-002",
-                    agentCheckModule.Severity.FAILURE,
-                    f"Status mismatch for {featureName}: requirements index states '{rowMatch.group(1).strip()}' but record states '{featureStatus}'",
-                    featurePath,
-                )
-
-        promptLinks = re.findall(r"\]\(prompt/([^)]+\.md)\)", indexText)
-        for promptName in promptLinks:
-            if ".prompt.md" in promptName:
-                self.report.add(
-                    "REQ-005",
-                    agentCheckModule.Severity.FAILURE,
-                    f"Prompt '{promptName}' uses the obsolete .prompt infix",
-                    indexPath,
-                )
-            baseName = re.sub(r"^(\d{3})[a-z]-", r"\1-", promptName)
-            if baseName not in featureFiles:
-                self.report.add(
-                    "REQ-005",
-                    agentCheckModule.Severity.FAILURE,
-                    f"Prompt '{promptName}' has no deterministic requirement filename match",
-                    indexPath,
-                )
-            if promptsDir.is_dir() and not (promptsDir / promptName).exists():
-                self.report.add(
-                    "REQ-005",
-                    agentCheckModule.Severity.FAILURE,
-                    f"Prompt '{promptName}' linked from the index does not exist",
-                    indexPath,
-                )
-
-        adrDir = self.rootPath / "project" / "adr"
-        if adrDir.is_dir():
-            for featurePath in featureFiles.values():
-                try:
-                    featureText = featurePath.read_text(encoding="utf-8")
-                except OSError:
-                    continue
-                for adrName in re.findall(
-                    r"project/adr/(\d{3}-[A-Za-z0-9_-]+\.md)", featureText
-                ):
-                    if not (adrDir / adrName).exists():
-                        self.report.add(
-                            "REQ-003",
-                            agentCheckModule.Severity.FAILURE,
-                            f"Requirement '{featurePath.name}' references non-existent ADR 'project/adr/{adrName}'",
-                            featurePath,
-                        )
-
-    validator._checkDocumentation = _checkDocumentation
-    validator._checkRequirementsAndAdrs = _checkRequirementsAndAdrs
-    validator._requirement004Patched = True

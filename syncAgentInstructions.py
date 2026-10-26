@@ -23,7 +23,7 @@ from typing import Optional
 
 import requests
 
-from organiseMyProjects.logUtils import getLogger, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.managedContent import (
     managedContentBuild,
 )
@@ -507,9 +507,11 @@ def main() -> None:
     thisApplication = "syncAgentInstructions"
     setApplication(thisApplication)
     logger = getLogger(includeConsole=True, dryRun=dryRun)
+    runStart()
     logger.doing("starting")
     logger.value("OMP version", VERSION)
     logger.value("dryRun", dryRun)
+    line()
 
     syncBranch = f"sync/instructions-{datetime.date.today().strftime('%Y%m%d')}"
     logger.value("sync branch", syncBranch)
@@ -628,6 +630,7 @@ def main() -> None:
             else:
                 logger.error(f"Failed to create or merge a pull request in {repo}")
 
+    line()
     logger.action(
         f"summary updated={counts['updated']} ready={counts['ready']} "
         f"skipped={counts['skipped']} failed={counts['failed']}"
@@ -638,11 +641,11 @@ def main() -> None:
             f"already_merged={mergeCounts['already_merged']} "
             f"conflicts={mergeCounts['conflict']} failed={mergeCounts['failed']}"
         )
-        if manualReviewRepos:
-            logger.warning(
-                f"manual review required for {len(manualReviewRepos)} repositories: "
-                f"{', '.join(manualReviewRepos)}"
-            )
+    if args.merge and manualReviewRepos:
+        logger.warning(
+            f"manual review required for {len(manualReviewRepos)} repositories: "
+            f"{', '.join(manualReviewRepos)}"
+        )
     logger.done("finished")
 
 

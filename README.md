@@ -19,10 +19,14 @@ The living guides are:
 - [Release Notes](documentation/releaseNotes.md)
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
+- [Requirement Board](documentation/myBoard.md)
+- [Agent Sessions](documentation/agentSessions.md)
 - [Shared TUI Styling](documentation/tuiStyling.md)
 - [Testing Process](documentation/testingProcess.md)
+- [List Editing Interaction Standard](documentation/listEditingInteraction.md)
 - [Agent Implementation Workflow](documentation/agentImplementationWorkflow.md)
 - [AI Agent Portability Design](documentation/agentPortabilityDesign.md)
+- [Linter Guide](documentation/linter.md)
 - [GUI Naming Linter Help](organiseMyProjects/HELP.md)
 - [Master Agent Instructions](.github/agent-instructions.md)
 - [Repository Agent Notes](.github/additional-instructions.md)
@@ -84,12 +88,13 @@ and
 [requirement 004](project/requirements/features/004-requirementDocumentationLayout.md)
 for the governing 0.6 behaviour.
 
-## OMP 0.8
+## OMP 0.9
 
-The current release centralises the installed linter, adds repository-aware
-checks for nested projects, and supplies shared Textual palette and button
-styling. See the [release notes](documentation/releaseNotes.md) and
-[styling guide](documentation/tuiStyling.md).
+The current release adds the `myBoard` requirement board and the
+`agentSessions` command, and makes `runLinter` report and exit like pytest.
+See the [release notes](documentation/releaseNotes.md), the
+[requirement board guide](documentation/myBoard.md) and the
+[agent sessions guide](documentation/agentSessions.md).
 
 ## Features
 
@@ -207,6 +212,42 @@ manageProject check --project myExistingProject
 The check operation is read-only and validates the applicable OMP repository,
 documentation and agent conventions, including the one-root-README rule and
 canonical named directory indexes.
+
+### Review requirements on the board
+
+`myBoard` reads the nearest `project/requirements/` tree and shows Backlog,
+ToDo, InProgress and Completed. Moves stay as a dry-run until `--confirm`.
+The Textual board needs the `tui` extra. See the
+[requirement board guide](documentation/myBoard.md).
+
+```bash
+myBoard
+myBoard list
+myBoard move 012 InProgress --confirm
+```
+
+### List and resume agent sessions
+
+`agentSessions` lists local Codex, Claude, Grok and Copilot sessions for the
+current directory, or for chosen agents everywhere, and can resume one chosen
+from a menu. It never edits session stores. See the
+[agent sessions guide](documentation/agentSessions.md).
+
+```bash
+agentSessions
+agentSessions --all --search raid
+agentSessions --claude
+agentSessions --resume
+```
+
+### Generate the shared TUI style mockup
+
+`styleMockup` renders the canonical Textual stylesheet to a reproducible SVG.
+See [Shared TUI Styling](documentation/tuiStyling.md).
+
+```bash
+styleMockup
+```
 
 ### Run Python and GUI naming checks
 

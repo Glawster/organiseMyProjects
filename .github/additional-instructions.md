@@ -35,6 +35,18 @@ runLinter
 runLinter <file_or_dir>
 ```
 
+### Review requirements on the board
+
+`myBoard` uses the requirements of the project it is run from. With no
+subcommand it opens the board. `list`, `show`, `move` and `create` run
+without Textual. See `documentation/myBoard.md`.
+
+```bash
+myBoard
+myBoard list
+myBoard move 012 InProgress --confirm
+```
+
 ### Sync Agent instructions to other repos
 ```bash
 # Preview what would change (dry-run, default)
@@ -87,6 +99,9 @@ organiseMyProjects/
 ├── organiseMyProjects/                    # Main package
 │   ├── __init__.py                       # [PACKAGE] Package initialization with public API
 │   ├── manageProject.py                   # [PACKAGE] Project scaffolding tool
+│   ├── requirementBoard.py                # [PACKAGE] Requirement board model
+│   ├── myBoard.py                         # [PACKAGE] Requirement board command
+│   ├── myBoardTui.py                      # [PACKAGE] Requirement board Textual view
 │   ├── logUtils.py                       # [PACKAGE] Centralized logging utility
 │   ├── globalVars.py                     # [TEMPLATE] Global constants
 │   ├── HELP.md                           # [PACKAGE] GUI linter documentation
@@ -111,7 +126,7 @@ organiseMyProjects/
 ├── syncAgentInstructions.py               # Shared-instruction sync utility
 ├── pyproject.toml                         # Authoritative package/tool configuration
 ├── setup.py                               # Legacy packaging compatibility shim
-├── environment.yml                       # Preferred Conda environment
+├── organiseMyProjectsEnvironment.yml     # Conda `ompr` development/test environment
 ├── MANIFEST.in                            # Distribution files
 └── .github/workflows/validate.yml         # Release-branch validation
 ```
@@ -234,6 +249,7 @@ The package contains two types of files:
 ### Entry Points
 - `createProject` - Command to create/update projects
 - `runLinter` - Command to run GUI naming linter
+- `myBoard` - Requirement board for the project the command is run from
 
 ### Resource Access Pattern
 ```python

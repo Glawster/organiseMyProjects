@@ -11,6 +11,34 @@ copy of the canonical theme can be adopted automatically. To adopt from a custom
 theme, review and replace it with the canonical theme first; update adds provenance.
 `clannEolas` is exempt and its stylesheet is never deployed or refreshed.
 
+An application that deliberately owns its Textual theme must place it at
+`styles/projectStyles.css` and load that path through `App.CSS_PATH`. This path
+is the sole project-specific override location: do not use a root-level
+`myStyles.css` as an override, because that name is reserved for the deployed
+shared theme.
+
+## Where colour lives
+
+`myStyles.css` owns colour: the canvas, surfaces, the cursor, and the `Label`
+and `Static` ink on those surfaces. Its leading Textual `$` variables are the
+single source for palette values; component rules must use semantic variables
+rather than repeat hex values. Application CSS owns layout only: size, padding,
+alignment, and which regions use
+`classes="surface"`.
+
+The light canvas is the chrome: the screen, header, footer, tabs, and a one-line
+status strip. The working frame is the dark surface. Panels, columns and dialogs
+use the neutral border. Tables, lists and entry controls use the selected-list
+text colour for their border. A highlighted list row uses the same cursor
+colours as a table, and the label inside that row uses the cursor text colour.
+
+Scrollbars use the muted canvas colour for their thumb, becoming lighter on
+hover and active drag, against the dark-surface track.
+
+A dark surface sets the colour of its own `Label` and `Static` children. A colour
+on the container does not reach them. Detail headings and commit hashes use the
+accent on the light canvas. Each changed file is its own line.
+
 ## Buttons and groups
 
 Standard buttons occupy exactly one terminal row, with no border and no vertical
@@ -53,3 +81,20 @@ OMP core remains independent of it.
 OMS, OMV and OMP can adopt the theme if they introduce conforming Textual UIs;
 their Qt/Tkinter interfaces need no changes. OMPR owns the canonical theme and
 its deployment. Existing downstream custom themes require explicit adoption.
+
+## SVG mockup
+
+Generate a reproducible rendering of the shared theme's ordinary panels, list,
+table, inputs, buttons and semantic states:
+
+```bash
+styleMockup
+```
+
+The generator finds the nearest Git repository root and writes its output there,
+derived from the selected stylesheet name. It uses
+`styles/projectStyles.css` when present, producing `output/projectStyles.svg`;
+otherwise it uses OMP's canonical stylesheet and produces
+`output/myStyles.svg`. The generator runs Textual headlessly at a fixed size, so
+re-running it after a stylesheet change produces a directly comparable SVG
+without opening a terminal UI.

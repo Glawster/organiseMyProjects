@@ -32,6 +32,13 @@ Migrate
 Check
   Read-only validation of repository and agent readiness.
 
+#### `myBoard`
+
+`myBoard` is the requirement board for the project it is run from. The domain
+module is `requirementBoard.py`. `myBoard.py` is the command, and
+`myBoardTui.py` is the Textual view. Textual is loaded only when the board
+opens. See [Requirement board](myBoard.md).
+
 Role detection
   Classifies standalone applications, packaged CLIs and libraries from
   `main.py`, `pyproject.toml`, `setup.cfg`, `setup.py` and `src/` without
@@ -420,18 +427,28 @@ def test_file_creation(temp_dir):
 
 ### Setting Up Development Environment
 
-1. Clone the repository
-2. Install development dependencies:
+OMPR is installed as a tool in many Conda environments, but its own tests run
+in the dedicated `ompr` environment, which installs OMPR in editable mode with
+every `dev` extra, including `textual` for the shared-style rendering tests.
+
+1. Clone the repository.
+2. Create the environment, or update it after dependency changes:
 
    ```bash
-   pip install pytest black ruff
+   conda env create -f organiseMyProjectsEnvironment.yml
+   conda env update -n ompr -f organiseMyProjectsEnvironment.yml --prune
    ```
 
-3. Install the package in development mode:
+3. Run the tests from that environment:
 
    ```bash
-   pip install -e .
+   conda activate ompr
+   pytest -rs
    ```
+
+Running `pytest` from another environment is supported, but tests needing a
+missing optional dependency are skipped. Release validation must use `ompr`
+with no dependency-related skips.
 
 ### Code Quality Standards
 
@@ -486,15 +503,18 @@ repos:
 
 ### Release Process
 
-1. Update `VERSION` in `organiseMyProjects/version.py`
-2. Update `documentation/releaseNotes.md` and other affected living guides
-3. Run full test suite: `pytest`
-4. Run linter: `runLinter .`
-5. Format code: `black .`
-6. Run static checks: `ruff check .`
-7. Build package: `python -m build`
-8. Test installation from the generated wheel
-9. Tag the commit as `v<VERSION>` (for example, `v0.5`)
+Follow the [release guide](howToRelease.md) for version numbering, branch
+integration, validation, merge and tagging. `main` holds the current final
+release; development branches use the next release's alpha versions, such as
+`1.4a1` and `1.4a2` while `main` is `1.3`. OMP's authoritative version source
+is `organiseMyProjects/version.py`. Update it as the first change whenever
+creating a new development branch, before implementation work, using the next
+alpha version that no tag or other branch holds. Tag each branch's work with
+its alpha version, such as `v1.4a2`, when it is integrated, and tag the
+released commit on `main` with the matching final Git tag, such as `v1.4`.
+
+For OMP, also build the package with `python -m build` and test installation
+from the generated wheel before merging the final release into `main`.
 
 ## Extending the Package
 

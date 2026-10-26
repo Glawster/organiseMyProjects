@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+InProgress
 
 ## Objective
 
@@ -210,3 +210,4 @@ projects beyond synchronisation.
 
 - 2026-08-31: a sibling `omp/` package was reverted; runtime remains in
   `organiseMyProjects`.
+- 2026-10-22: status ToDo -> InProgress — myBoard.

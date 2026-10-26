@@ -88,12 +88,13 @@ and
 [requirement 004](project/requirements/features/004-requirementDocumentationLayout.md)
 for the governing 0.6 behaviour.
 
-## OMP 0.8
+## OMP 0.9
 
-The current release centralises the installed linter, adds repository-aware
-checks for nested projects, and supplies shared Textual palette and button
-styling. See the [release notes](documentation/releaseNotes.md) and
-[styling guide](documentation/tuiStyling.md).
+The current release adds the `myBoard` requirement board and the
+`agentSessions` command, and makes `runLinter` report and exit like pytest.
+See the [release notes](documentation/releaseNotes.md), the
+[requirement board guide](documentation/myBoard.md) and the
+[agent sessions guide](documentation/agentSessions.md).
 
 ## Features
 

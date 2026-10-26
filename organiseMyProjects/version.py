@@ -1,3 +1,3 @@
 """Release metadata shared by packaging and scaffold deployment."""
 
-VERSION = "0.9a9"
+VERSION = "0.9"

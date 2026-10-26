@@ -7,8 +7,9 @@ runtime architecture decision
 
 ## Status
 
-In progress — 004, 012, 013, 014, 021 and the patch-removal refactor done; 002
-and release checks remain.
+Released as 0.9 on 2026-10-26 — 004, 012, 013, 014, 021, 022, 023, 026 and
+the patch-removal refactor done. 002 and 024 are deferred to 0.10 and stay
+InProgress.
 
 ## Objective
 
@@ -23,11 +24,11 @@ implemented in 0.10.
 - [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — Completed; style tests run in the `ompr` environment. `mailAgent` adopted the shared `button-group` on both execute rows in `f75f694`, removing local width/height/padding overrides; headless render tests measure one-row buttons, equal widths, one-column gaps and one free row around each group.
 - [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — Completed; downstream projects with findings now fail `runLinter` (for example `mailAgent`: one `NAM-003`).
 - [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
-- [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — InProgress; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
+- [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — InProgress; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. The ADR and implementation are deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
 - [021: Requirement board](requirements/features/021-myBoard.md) — Completed; myBoard lists each requirement in one column. A confirmed move updates the record, the index and the increment together. The detail shows the linked branch, commits and changed files. Checks, runLinter and pytest run on request, and a pytest failure stays with the requirement it names.
 - [022: Agent session listing](requirements/features/022-agentSessions.md) — Completed; merged into release/0.9 with parser, CLI subprocess and shared-logging evidence.
 - [023: Requirement board editing](requirements/features/023-myBoardEditing.md) — Completed; edit selected requirement metadata and prose through the confirmed myBoard CLI workflow.
-- [024: Requirement board branch versions](requirements/features/024-myBoardBranchVersions.md) — InProgress; show unmerged local and remote-only branches with their OMP versions.
+- [024: Requirement board branch versions](requirements/features/024-myBoardBranchVersions.md) — InProgress; deferred to 0.10. Show unmerged local and remote-only branches with their OMP versions.
 - [026: Shared TUI style mockup](requirements/features/026-sharedTuiStyleMockup.md) — Completed; generate an SVG from the shared Textual stylesheet.
 
 ## Internal refactor (no requirement)
@@ -66,7 +67,7 @@ scheduled within the planned order below.
 4. Patch-removal refactor — done.
 5. Requirement 013 — done.
 6. Requirement 012 downstream verification in `mailAgent` — done.
-7. Requirement 002 ADR and requirement refinement.
+7. Requirement 002 ADR and requirement refinement — deferred to 0.10.
 8. Release checks per `documentation/howToRelease.md`.
 
 ## Not in 0.9
@@ -81,8 +82,10 @@ scheduled within the planned order below.
 
 ## Verification still required
 
-- Run the full release validation for every 0.9 change.
+- None for 0.9. Release validation passed on 2026-10-26: pytest, `runLinter .`,
+  `runLinter --markup`, ruff and black.
 
 ## Immediate next action
 
-Continue with requirement 002, then the release checks.
+Plan the 0.10 increment, starting with the requirement 002 ADR and
+requirement 024.

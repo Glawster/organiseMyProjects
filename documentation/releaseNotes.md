@@ -1,117 +1,40 @@
 # Release notes
 
-## 0.9a9
+## 0.9 — 2026-10-26
 
-### Maintenance
-
-- Fix the import order and unused test variables reported by `ruff check .`,
-  so CI passes again.
-
-## 0.9a8
-
-### Requirement board editing
-
-Requirement 023 is complete: `myBoard edit NUMBER` replaces a requirement's
-title, index description or prose sections and keeps the index and increment
-in step.
-
-- Titles and descriptions must be a single line without `|`, and titles
-  cannot contain `[` or `]`. Such values previously broke the record heading
-  and the index link.
-- Editing a section the record does not have adds it in template order.
-  Previously the edit was silently ignored.
-- A replaced section keeps the blank line before the next heading, and text
-  between the title and the first section is kept.
-- Command errors are logged as errors rather than as progress messages.
-- See [Requirement board](myBoard.md#editing).
-
-## 0.9a7
-
-### List editing interaction
-
-A shared interaction standard for list- and table-driven application editing.
-
-- List and table views are the primary representation of structured data; large permanent edit forms should be avoided where a compact contextual editor is sufficient.
-- Common list actions use consistent single-key bindings where practical: `a` add, `e` edit, `d` delete/remove, `Enter` select/confirm, `Esc` cancel/back and `Space` toggle.
-- Known values should be selected from dropdowns, lists or cycle controls rather than retyped.
-- Add workflows should reuse the current row or panel context and pre-fill safe suggestions.
-- Edit workflows should operate on the selected row and expose only fields relevant to that item.
-- Existing values that may also be extended should provide an `Add...` choice rather than forcing free-text entry for every operation.
-- Destructive actions require appropriate confirmation.
-- Context-sensitive fields should remain hidden unless they are needed.
-- Tables should scroll internally, preserve cursor visibility and deliberately constrain or truncate long columns so text does not bleed into adjacent controls.
-- Peer action buttons should use consistent sizing and alignment.
-- Active keyboard bindings must remain discoverable through the footer, help or equivalent UI.
-
-The governing guide is [List editing interaction](listEditingInteraction.md).
-
-## 0.9a6
-
-### Agent sessions
-
-- The `agentSessions` DIRECTORY column shows only the folder name, such as
-  `organiseMyProjects` rather than `~/Source/organiseMyProjects`. Resuming
-  still uses the full path.
-- `--claude`, `--codex`, `--copilot` and `--grok` list only those agents'
-  sessions, from every directory. The flags combine: `agentSessions --claude
-  --grok` lists both. They imply `--all`, so the two cannot be combined.
-- `--id ROW` is removed. Use `--resume` to pick a session from a menu.
-
-## 0.9a5
-
-Bug fixes and refinements to the 0.9a0 requirement board.
-
-### Requirement board fixes
-
-- Only one card is selected at a time. Selecting a card in another column
-  previously left the first column's card highlighted, and `[`/`]` moved only
-  the card in the focused column.
-- A right click selects a card without opening it. A left click or Enter opens
-  it.
-- An open requirement shows the branch linked to it, that branch's commits and
-  each changed file on its own line. `[` and `]` do nothing while a
-  requirement is open.
-- pytest runs on `p` instead of `t`. Failures that name the requirement's files
-  or its Verification paths are listed on the card. The suite summary stays on
-  the strip.
-- `agentSessions --id ROW` now resumes that numbered session directly. Use
-  `--full` to show resume IDs in the listing when needed.
-- See [Requirement board](myBoard.md).
-
-## 0.9a4
-
-### Release process
-
-- Every development branch takes its own alpha version, one that no tag or
-  other branch holds, so a version always identifies one branch's work.
-- Each branch's work is tagged with its alpha version (`v0.9a4`) when it is
-  integrated, with the pull request in the tag message.
-- Projects without release branches record that exception in
-  `.github/additional-instructions.md`; numbering and tagging still apply.
-- See the [release guide](howToRelease.md).
-
-## 0.9a
-
-Scope and acceptance work are tracked in
-[the current increment](../project/currentIncrement.md).
+OMP 0.9 adds the `myBoard` requirement board and the `agentSessions` command,
+makes `runLinter` report and exit like pytest, and gives every development
+branch its own alpha version.
 
 ### Requirement board
 
-- `myBoard` shows the requirements of the project it is run from in Backlog,
-  ToDo, InProgress and Completed columns.
-- Confirmed moves update the requirement record, `requirementsIndex.md` and
-  `project/currentIncrement.md` together. Without `--confirm` the command only
-  reports the files it would change.
-- The board strip shows the current Git branch. Checks, `runLinter` and pytest
-  run when requested.
+- New `myBoard` command: shows the requirements of the project it is run from
+  in Backlog, ToDo, InProgress and Completed columns.
+- `myBoard move` updates the requirement record, `requirementsIndex.md` and
+  `project/currentIncrement.md` together. Without `--confirm` it only reports
+  the files it would change.
+- `myBoard edit NUMBER` replaces a requirement's title, index description or
+  prose sections and keeps the index and increment in step (requirement 023).
+  Values that would break the index are refused, and a section the record
+  does not have yet is added in template order.
+- Only one card is selected at a time. A right click selects a card; a left
+  click or Enter opens it.
+- An open requirement shows its linked branch, that branch's commits and each
+  changed file. Checks, `runLinter` and pytest (`p`) run on request, and pytest
+  failures that name the requirement's files are listed on its card.
+- Command errors are logged as errors.
 - See [Requirement board](myBoard.md).
 
 ### Agent sessions
 
-- New `agentSessions` command, moved from linuxMigration: lists the latest local
-  Codex, Claude, Grok and Copilot sessions for the current directory, with
-  titles, `--all`, `--history`, `--search` and `--resume` to pick a session
-  from a menu and resume it. Session stores are never edited.
+- New `agentSessions` command, moved from linuxMigration: lists local Codex,
+  Claude, Grok and Copilot sessions for the current directory, with titles.
+  Session stores are never edited.
+- `--resume` picks a session from a menu and resumes it in its own directory.
+- `--claude`, `--codex`, `--copilot` and `--grok` list only those agents'
+  sessions, from every directory; the flags combine. `--all`, `--history` and
+  `--search` widen or narrow the listing.
+- The DIRECTORY column shows only the folder name.
 - See [Agent sessions](agentSessions.md).
 
 ### runLinter reporting
@@ -125,6 +48,33 @@ Scope and acceptance work are tracked in
   on existing findings. Run `runLinter` in each project and fix or review its
   findings before upgrading.
 - See [the linter guide](linter.md#output-and-exit-status).
+
+### List editing interaction
+
+- New [list editing interaction](listEditingInteraction.md) standard for list-
+  and table-driven applications: list-first editing, consistent single-key
+  actions (`a` add, `e` edit, `d` delete, `Enter`, `Esc`, `Space`), choosing
+  known values instead of retyping them, confirmation for destructive actions,
+  internally scrolling tables and discoverable key bindings.
+- Requirement 027 covers deploying the guide through manageProject and adding
+  reliable static checks.
+
+### Release process
+
+- Every development branch takes its own alpha version, one that no tag or
+  other branch holds, so a version always identifies one branch's work.
+- Each branch's work is tagged with its alpha version (`v0.9a4`) when it is
+  integrated, with the pull request in the tag message.
+- Projects without release branches record that exception in
+  `.github/additional-instructions.md`; numbering and tagging still apply.
+- See the [release guide](howToRelease.md).
+
+### Other changes
+
+- A shared Textual style mockup command, `styleMockup`, renders the canonical
+  stylesheet to a reproducible SVG.
+- Import-time patch installation is removed from the package; the behaviour
+  now lives in the modules that own it.
 
 ## 0.8 — 2026-10-17
 

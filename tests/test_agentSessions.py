@@ -582,3 +582,18 @@ def testDirectoryIdentity(sessions, tmp_path):
         {"directory": str(tmp_path) + "-other"},
     ]
     assert sessions.sessionsForDirectory(rows, tmp_path) == rows[:2]
+
+
+def testDirectoryShowsFolderName(sessions):
+    """The listing shows only the folder name; the row keeps the full path."""
+    row = {
+        "agent": "Codex",
+        "directory": "~/Source/organiseMyProjects",
+        "session_id": SESSION_ID,
+        "date": sessions.datetime.min,
+        "title": "",
+    }
+    lines = sessions.tableLines([row, {**row, "directory": "~"}], terminal_width=120)
+    assert "organiseMyProjects" in lines[1] and "Source" not in lines[1]
+    assert "  ~  " in lines[2]
+    assert row["directory"] == "~/Source/organiseMyProjects"

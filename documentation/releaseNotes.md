@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.9a6
+
+### Agent sessions
+
+- The `agentSessions` DIRECTORY column shows only the folder name, such as
+  `organiseMyProjects` rather than `~/Source/organiseMyProjects`. Resuming
+  still uses the full path.
+
 ## 0.9a5
 
 Bug fixes and refinements to the 0.9a0 requirement board.

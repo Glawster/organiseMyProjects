@@ -284,7 +284,9 @@ def tableLines(
             {
                 "agent": row["agent"],
                 "date": row["date"].strftime("%Y-%m-%d %H:%M"),
-                "directory": row["directory"],
+                # Only the folder name is shown; the full path stays on the row
+                # so resuming still changes into the right directory.
+                "directory": Path(row["directory"]).name or row["directory"],
                 "session_id": sid,
                 "title": " ".join(row["title"].split()),
             }

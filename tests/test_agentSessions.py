@@ -3,9 +3,9 @@
 import importlib
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 from urllib.parse import quote
 
 import pytest
@@ -36,14 +36,14 @@ def _fixtureWrite(path: Path, content: str) -> Path:
 def teststoresCompose(sessions, tmp_path, capsys):
     """Real parsers compose into the listing and never rewrite source evidence."""
     cwd = str(tmp_path / "work")
-    codex = _fixtureWrite(
+    _fixtureWrite(
         tmp_path / ".codex/sessions/2026/rollout-one.jsonl",
         "broken\n"
         + json.dumps(
             {"type": "session_meta", "payload": {"id": SESSION_ID, "cwd": cwd}}
         ),
     )
-    claude = _fixtureWrite(
+    _fixtureWrite(
         tmp_path / f".claude/projects/work/{SESSION_ID}.jsonl", json.dumps({"cwd": cwd})
     )
     grok = _fixtureWrite(

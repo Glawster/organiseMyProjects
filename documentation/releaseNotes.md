@@ -1,5 +1,12 @@
 # Release notes
 
+## 0.9a9
+
+### Maintenance
+
+- Fix the import order and unused test variables reported by `ruff check .`,
+  so CI passes again.
+
 ## 0.9a8
 
 ### Requirement board editing

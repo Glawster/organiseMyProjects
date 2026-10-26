@@ -1,6 +1,8 @@
 # Release notes
 
-## 0.9.1a1
+## 0.9.1 — 2026-10-26
+
+Bug-fix release for 0.9's project scaffold.
 
 ### Scaffold index files
 

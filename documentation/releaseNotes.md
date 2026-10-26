@@ -1,5 +1,17 @@
 # Release notes
 
+## 0.9a4
+
+### Release process
+
+- Every development branch takes its own alpha version, one that no tag or
+  other branch holds, so a version always identifies one branch's work.
+- Each branch's work is tagged with its alpha version (`v0.9a4`) when it is
+  integrated, with the pull request in the tag message.
+- Projects without release branches record that exception in
+  `.github/additional-instructions.md`; numbering and tagging still apply.
+- See the [release guide](howToRelease.md).
+
 ## 0.9a
 
 Scope and acceptance work are tracked in

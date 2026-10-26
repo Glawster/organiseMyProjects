@@ -503,15 +503,18 @@ repos:
 
 ### Release Process
 
-1. Update `VERSION` in `organiseMyProjects/version.py`
-2. Update `documentation/releaseNotes.md` and other affected living guides
-3. Run full test suite: `pytest`
-4. Run linter: `runLinter .`
-5. Format code: `black .`
-6. Run static checks: `ruff check .`
-7. Build package: `python -m build`
-8. Test installation from the generated wheel
-9. Tag the commit as `v<VERSION>` (for example, `v0.5`)
+Follow the [release guide](howToRelease.md) for version numbering, branch
+integration, validation, merge and tagging. `main` holds the current final
+release; development branches use the next release's alpha versions, such as
+`1.4a1` and `1.4a2` while `main` is `1.3`. OMP's authoritative version source
+is `organiseMyProjects/version.py`. Update it as the first change whenever
+creating a new development branch, before implementation work, using the next
+alpha version that no tag or other branch holds. Tag each branch's work with
+its alpha version, such as `v1.4a2`, when it is integrated, and tag the
+released commit on `main` with the matching final Git tag, such as `v1.4`.
+
+For OMP, also build the package with `python -m build` and test installation
+from the generated wheel before merging the final release into `main`.
 
 ## Extending the Package
 

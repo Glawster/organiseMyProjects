@@ -1,130 +1,163 @@
 # Agent sessions
 
-agentSessions lists resumable local AI agent sessions without editing their stores.
-By default it shows the most recently active session per agent for the current
-working directory,
-grouped alphabetically by agent, with newest sessions first within each agent. With --resume it offers the listing as an arrow-key menu and resumes the chosen
-session with that agent's own command.
+`agentSessions` finds the sessions you have had with Claude, Codex, Copilot and
+Grok on this machine and lets you pick one up where you left off. It only reads
+the agents' session stores; it never changes or deletes them.
 
-## Runtime
+## Getting started
 
-agentSessions is an organiseMyProjects console script. Installing OMP
-(`pip install .`, or `pip install -e .` for development) puts `agentSessions`
-on PATH; `python -m organiseMyProjects.agentSessions` runs the same command.
-It needs Python 3.10 or newer and only the standard library beyond OMP's own
-logging. Dependencies are never installed by the command itself.
+`agentSessions` is installed with organiseMyProjects (`pip install .`, or
+`pip install -e .` for development). It needs Python 3.10 or newer.
+`python -m organiseMyProjects.agentSessions` runs the same command.
 
-## Usage
+From a project folder, run:
 
 ```bash
 agentSessions
-agentSessions --all --full
-agentSessions --history
-agentSessions --claude
-agentSessions --claude --codex --resume
-agentSessions --all --search migrateToRaid
-agentSessions --resume
-agentSessions --verbose
-agentSessions --quiet
-agentSessions --help
-agentSessions --version
 ```
 
---all includes sessions from all working directories. --history includes older
-sessions within the selected directory scope. Combine --all --history to see everything.
---claude, --codex, --copilot and --grok list only those agents' sessions from
-every directory; the flags combine, so `--claude --grok` lists both, and with
-none every agent is listed. They imply --all, so combining them with --all is
-an error (status 2). --full displays complete IDs. --verbose enables
-parser diagnostics; --quiet suppresses lifecycle messages. Shared run/section
-separators and the listing remain visible. agentSessions never edits session
-stores itself, so it has no --confirm option; a resumed agent manages its own store.
+You see the latest session each agent has for this folder:
 
-## Finding a session
+```text
+#  AGENT   DATE              DIRECTORY           SESSION ID  TITLE
+1  Claude  2026-10-26 10:41  organiseMyProjects  6605aa7a…   agentSessions user guide
+2  Codex   2026-10-24 16:02  organiseMyProjects  0199f3c2…   Requirement board fixes
+```
 
---search TEXT keeps sessions whose title or directory contains TEXT, ignoring case.
-It is applied before latest-session selection, so the default view shows the newest
-matching session per agent and directory; add --history for every match. It
-respects the directory scope, so add --all to search other projects:
+To carry on with one of them:
 
 ```bash
-agentSessions --all --search migrateToRaid
-agentSessions --all --search migrateToRaid --history
-agentSessions --all --search migrateToRaid --resume
+agentSessions --resume
 ```
 
-Current-directory matching uses the exact resolved directory, including symlink
-aliases. It excludes child directories and sessions with unknown working directories.
-Use --all to include those sessions and other projects.
+Choose a session and press Enter. `agentSessions` changes to that session's
+folder and starts the agent there with the session reopened.
+
+## Reading the listing
+
+| Column | What it shows |
+| --- | --- |
+| `#` | The row's position in this listing |
+| AGENT | Claude, Codex, Copilot or Grok |
+| DATE | When the session was last active |
+| DIRECTORY | The name of the folder the session ran in |
+| SESSION ID | The agent's session ID, shortened unless you add `--full` |
+| TITLE | The agent's own description of the session |
+
+Rows are grouped by agent in alphabetical order, newest first within each
+agent. DIRECTORY shows only the folder name; the full path is kept for
+resuming. Two different folders with the same name therefore look alike in the
+listing. A `?` means the agent did not record a folder.
+
+Titles come from each agent's own records: a Claude rename or generated title
+(or the opening prompt when there is neither), the Codex thread name, the Grok
+session summary or the Copilot session name. A blank title means the agent has
+not recorded one. Long titles are cut short to fit the terminal.
+
+## Choosing which sessions to see
+
+By default you see one session, the latest, per agent for the current folder
+only. Each option widens or narrows that:
+
+| Option | Effect |
+| --- | --- |
+| `--all` | Include sessions from every folder |
+| `--history` | Include older sessions, not just the latest per agent and folder |
+| `--search TEXT` | Keep sessions whose title or folder contains TEXT, in any case |
+| `--claude`, `--codex`, `--copilot`, `--grok` | Keep only those agents' sessions, from every folder |
+| `--full` | Show complete session IDs |
+
+Options combine. Some common combinations:
+
+```bash
+agentSessions --all                          # latest session per agent in every folder
+agentSessions --history                      # every session in this folder
+agentSessions --all --history                # everything
+agentSessions --claude                       # Claude sessions in every folder
+agentSessions --claude --grok                # Claude and Grok sessions in every folder
+agentSessions --all --search migrateToRaid   # sessions about migrateToRaid, anywhere
+```
+
+The agent options add up: `--claude --grok` shows both agents. They always
+search every folder, so `--all` is not needed with them, and combining the two
+is refused.
+
+`--search` only looks in the current folder unless you add `--all` or an agent
+option. It is applied before the latest session is picked, so you see the newest
+*matching* session per agent and folder; add `--history` to see every match.
+
+"This folder" means exactly the folder you are in, after following symlinks.
+Sessions started in a subfolder are not included; use `--all` or `--search`
+to find them.
 
 ## Resuming a session
 
-The easiest route is the interactive menu:
+`--resume` shows the listing you asked for as a menu:
 
 ```bash
 agentSessions --resume
+agentSessions --claude --resume
 agentSessions --all --search raid --resume
-agentSessions --all --history --resume
 ```
 
-It shows the same rows as the listing would for those options. Use ↑/↓ (or j/k),
-PgUp/PgDn and Home/End to move, Enter to resume and q or Esc to cancel (exit 0).
-On Enter, agentSessions changes to the session's working directory, prints the
-command it is running and replaces itself with the agent. It refuses with status 1
-when the directory is unknown or no longer exists, or the agent command is not
-installed. --resume needs an interactive terminal (status 2 otherwise). With no matching sessions it reports that and exits 0.
+| Key | Action |
+| --- | --- |
+| ↑ / ↓, or k / j | Move one row |
+| PgUp / PgDn | Move one screen |
+| Home / End | Jump to the first or last row |
+| Enter | Resume the selected session |
+| q or Esc | Cancel without resuming |
 
-To resume manually, run the matching agent command from the session's working
-directory with the full ID:
+On Enter, `agentSessions` prints the command it is about to run, changes to the
+session's folder and hands the terminal to the agent. When you leave the agent
+you return to your shell in the folder you started from.
+
+`--resume` needs an interactive terminal. It stops with an error if the
+session's folder no longer exists, its folder was not recorded, or the agent's
+command is not installed.
+
+To resume by hand instead, go to the session's folder and use the full ID from
+`agentSessions --full`:
 
 ```bash
-codex resume <id>
 claude --resume <id>
-grok --resume <id>
+codex resume <id>
 copilot --resume=<id>
+grok --resume <id>
 ```
 
-These examples are also included in `agentSessions --help` and were checked
-against the installed agents' CLI help. For Claude and Copilot, see their
-[CLI reference](https://docs.anthropic.com/en/docs/claude-code/cli-usage) and
-[session guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/chronicle).
+These are also listed in `agentSessions --help`.
 
-## Discovery and output
+## Messages and exit status
 
-| Agent | Local source |
+| Status | Meaning |
 | --- | --- |
-| Codex | ~/.codex/sessions/**/rollout-*.jsonl session_meta records |
-| Claude | ~/.claude/projects/*/UUID.jsonl working-directory metadata |
-| Grok | ~/.grok/sessions/encoded-directory/UUID, excluding nested subagents |
-| Copilot | $COPILOT_HOME/session-state, defaulting to ~/.copilot/session-state |
+| 0 | Listing shown, session resumed, menu cancelled, or nothing to show |
+| 1 | A session could not be resumed, or the output was closed early (for example by `\| head`) |
+| 2 | Invalid options, `--all` with an agent option, or `--resume` without a terminal |
 
-Copilot requires events.jsonl and reads the simple cwd scalar from workspace.yaml,
-falling back to session.start metadata. The workspace reader supports bare and
-single/double-quoted scalar paths, rather than general YAML syntax.
-Activity dates use local filesystem modification times. Grok prefers summary.json,
-then chat_history.jsonl, updates.jsonl and finally the session directory timestamp.
-Working directories need not still exist; missing metadata is shown as `?`.
-Long paths and IDs are shortened for terminal display.
+`No local agent sessions found.` means nothing matched; try `--all` or fewer
+filters. `--quiet` hides the start and finish messages and `--verbose` adds
+diagnostic detail. Logs are written under `~/.local/state/agentSessions/`.
 
-The TITLE column shows each agent's own description of the session:
+If an agent's store cannot be read, `agentSessions` warns and still lists the
+other agents, so a listing can be incomplete. Check for warnings when you need
+every session.
 
-| Agent | Title source |
+## Where sessions come from
+
+| Agent | Session store |
 | --- | --- |
-| Codex | latest thread_name for the ID in ~/.codex/session_index.jsonl |
-| Claude | custom-title (rename), then ai-title, then summary records; otherwise the opening prompt |
-| Grok | session_summary in summary.json |
-| Copilot | name scalar in workspace.yaml |
+| Claude | `~/.claude/projects/*/<id>.jsonl` |
+| Codex | `~/.codex/sessions/**/rollout-*.jsonl` (titles from `~/.codex/session_index.jsonl`) |
+| Copilot | `$COPILOT_HOME/session-state`, by default `~/.copilot/session-state` |
+| Grok | `~/.grok/sessions/<encoded folder>/<id>`, not counting subagents |
 
-Titles are blank when the agent has not recorded one. Long titles are clipped at
-the end; directory and title share the space left after the fixed columns.
-Claude transcripts are only JSON-decoded on lines carrying a title record.
-
-Missing stores are normal. Malformed JSON lines are skipped with debug diagnostics;
-I/O failures are logged with context and other agent stores are still scanned.
-If the output reader closes early (for example `| head`), the command stops
-without a traceback and exits with status 1.
-A successful listing may therefore be partial; inspect warnings when completeness
-matters. Application logs are written under ~/.local/state/agentSessions/.
+DATE is the modification time of the session's files. A store that does not
+exist is skipped silently, and malformed records are ignored. The resume
+commands were checked against each agent's CLI help; see the
+[Claude Code CLI reference](https://docs.anthropic.com/en/docs/claude-code/cli-usage)
+and [Copilot CLI session guide](https://docs.github.com/en/copilot/how-tos/copilot-cli/use-copilot-cli/chronicle).
 
 ## Verification
 
@@ -134,6 +167,6 @@ python -m black --check organiseMyProjects/agentSessions.py tests/test_agentSess
 runLinter organiseMyProjects/agentSessions.py
 ```
 
-Tests use temporary homes and synthetic session metadata with the real shared
-logger. They cover all four parsers, fallback metadata, latest-session selection,
-rendering, titles, search, malformed input, I/O failures, source preservation and CLI execution.
+Tests use temporary home folders with synthetic session stores and the real
+shared logger. They cover all four agents' stores, titles, filtering, search,
+the menu, resuming, malformed input and read failures.

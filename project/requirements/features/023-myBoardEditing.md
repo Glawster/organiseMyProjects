@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+Completed
 
 ## Outcome
 
@@ -67,3 +67,9 @@ record, requirements index and current increment inconsistent.
 ## Change history
 
 - 2026-10-25: created — follow-up requirement for myBoard editing.
+- 2026-10-26: verified against the acceptance criteria. Titles and
+  descriptions with line breaks, and titles with `[` or `]`, are now refused;
+  an edited section missing from the record is added in template order;
+  section spacing and preamble text are preserved; errors are logged as
+  errors (0.9a8).
+- 2026-10-26: status InProgress -> Completed — myBoard.

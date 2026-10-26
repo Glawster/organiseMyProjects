@@ -26,7 +26,7 @@ implemented in 0.10.
 - [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — InProgress; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. Implementation is deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
 - [021: Requirement board](requirements/features/021-myBoard.md) — Completed; myBoard lists each requirement in one column. A confirmed move updates the record, the index and the increment together. The detail shows the linked branch, commits and changed files. Checks, runLinter and pytest run on request, and a pytest failure stays with the requirement it names.
 - [022: Agent session listing](requirements/features/022-agentSessions.md) — Completed; merged into release/0.9 with parser, CLI subprocess and shared-logging evidence.
-- [023: Requirement board editing](requirements/features/023-myBoardEditing.md) — InProgress; edit selected requirement metadata and prose through the confirmed myBoard CLI workflow.
+- [023: Requirement board editing](requirements/features/023-myBoardEditing.md) — Completed; edit selected requirement metadata and prose through the confirmed myBoard CLI workflow.
 - [024: Requirement board branch versions](requirements/features/024-myBoardBranchVersions.md) — InProgress; show unmerged local and remote-only branches with their OMP versions.
 - [026: Shared TUI style mockup](requirements/features/026-sharedTuiStyleMockup.md) — Completed; generate an SVG from the shared Textual stylesheet.
 

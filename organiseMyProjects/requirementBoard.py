@@ -33,6 +33,18 @@ _FEATURE_LINK = re.compile(r"features/(\d{3})-")
 _PYTEST_PATH = re.compile(r"(?<![\w.-])((?:[\w.-]+/)*[\w.-]+\.[A-Za-z0-9]+)")
 _HEADING = re.compile(r"(?m)^## ([^\n]+)\n")
 _STATUS_WORD = re.compile(r"(—\s*)(ToDo|InProgress|Completed)\b")
+# The feature-record template order, used to place a section an edit adds.
+_RECORD_SECTIONS = (
+    "Status",
+    "Outcome",
+    "Context",
+    "Scope",
+    "Out of scope",
+    "Acceptance criteria",
+    "Dependencies and decisions",
+    "Verification",
+    "Change history",
+)
 _RECORD_STATUS = re.compile(r"^## Status\s*\n+([A-Za-z]+)", re.M)
 _RECORD_TITLE = re.compile(r"^# \d{3}:\s*(.+)$")
 _VERSION = re.compile(r'^VERSION\s*=\s*["\']([^"\']+)["\']', re.M)
@@ -939,10 +951,19 @@ def _updateCheck(update: RequirementUpdate) -> RequirementUpdate:
     )
     if not any(getattr(update, field) is not None for field in fields):
         raise ValueError("at least one editable field is required")
-    for field in ("title", "description"):
+    # Both values are written into one index table row; the title is also
+    # the record heading and the link text of index and increment entries.
+    for field, unsafe in (("title", "|[]"), ("description", "|")):
         value = getattr(update, field)
-        if value is not None and (not value.strip() or "|" in value):
-            raise ValueError(f"{field} must be non-empty and cannot contain '|'")
+        if value is None:
+            continue
+        if not value.strip():
+            raise ValueError(f"{field} cannot be empty")
+        if "\n" in value or "\r" in value:
+            raise ValueError(f"{field} must be a single line")
+        if any(character in value for character in unsafe):
+            listed = " or ".join(f"'{character}'" for character in unsafe)
+            raise ValueError(f"{field} cannot contain {listed}")
     for field in fields[2:]:
         value = getattr(update, field)
         if value is not None and not value.strip():
@@ -1494,12 +1515,17 @@ def _recordUpdate(
         "Verification": update.verification,
     }
     changed = update.title is not None and title != card.title
+    present = {heading for heading, _body in sections}
+    # A record created without an optional section gains it in template order.
+    for heading, value in replacements.items():
+        if value is not None and heading not in present:
+            sections.insert(_sectionPosition(sections, heading), (heading, ""))
     updated = []
     for heading, body in sections:
         value = replacements.get(heading)
         if value is not None:
-            replacement = "\n" + value.strip() + "\n"
-            changed = changed or replacement != body
+            replacement = "\n" + value.strip() + "\n\n"
+            changed = changed or replacement.strip() != body.strip()
             body = replacement
         updated.append((heading, body))
     if not changed:
@@ -1514,9 +1540,18 @@ def _recordUpdate(
         result.append((heading, body))
     if not found:
         result.append(("Change history", "\n" + history))
-    return TextChange(
-        path, text, _documentJoin(f"# {card.number}: {title}\n\n", result)
-    )
+    # Added sections may follow what was the final section, so every heading
+    # after the first must be preceded by a blank line.
+    result = [
+        (heading, body if body.endswith("\n\n") else body.rstrip("\n") + "\n\n")
+        for heading, body in result[:-1]
+    ] + result[-1:]
+    # Only the heading line changes; any other preamble text is kept.
+    first, newline, rest = preamble.partition("\n")
+    if _RECORD_TITLE.match(first.strip()):
+        preamble = f"# {card.number}: {title}" + newline + rest
+    # A replaced final section must not leave extra blank lines at the end.
+    return TextChange(path, text, _documentJoin(preamble, result).rstrip("\n") + "\n")
 
 
 def _releaseName(text: str) -> str:
@@ -1536,6 +1571,15 @@ def _sectionJoin(title: str, sections: tuple[tuple[str, str], ...]) -> str:
     for heading, body in sections:
         parts.extend([f"## {heading}", "", body, ""])
     return "\n".join(parts).rstrip() + "\n"
+
+
+def _sectionPosition(sections: list[tuple[str, str]], heading: str) -> int:
+    """Return where a missing record section belongs in template order."""
+    rank = _RECORD_SECTIONS.index(heading)
+    for position, (name, _body) in enumerate(sections):
+        if name in _RECORD_SECTIONS and _RECORD_SECTIONS.index(name) > rank:
+            return position
+    return len(sections)
 
 
 def _sectionText(text: str, heading: str) -> str:

@@ -356,6 +356,99 @@ def testEditRequiresAValue(tmp_path: Path):
         requirementUpdate(boardFixture(tmp_path), "003", RequirementUpdate())
 
 
+@pytest.mark.parametrize(
+    ("update", "message"),
+    [
+        (RequirementUpdate(title="  "), "title cannot be empty"),
+        (RequirementUpdate(title="Split | title"), "title cannot contain"),
+        (RequirementUpdate(title="Linked [title]"), "title cannot contain"),
+        (RequirementUpdate(title="Two\nlines"), "title must be a single line"),
+        (RequirementUpdate(description=""), "description cannot be empty"),
+        (RequirementUpdate(description="a | b"), "description cannot contain"),
+        (RequirementUpdate(description="a\r\nb"), "single line"),
+        (RequirementUpdate(outcome=" \n "), "outcome cannot be empty"),
+    ],
+)
+def testEditRejectsUnsafeValues(tmp_path: Path, update, message):
+    root = boardFixture(tmp_path)
+    before = fileBytes(root)
+    with pytest.raises(ValueError, match=message):
+        requirementUpdate(root, "003", update, dryRun=False)
+    assert fileBytes(root) == before
+
+
+def testEditCommandReportsErrors(tmp_path: Path):
+    root = boardFixture(tmp_path)
+    before = fileBytes(root)
+    for args in (["003", "--title", "Bad | title"], ["999", "--outcome", "x"]):
+        assert main(["--project", str(root), "edit", *args, "--confirm"]) == 1
+    assert fileBytes(root) == before
+
+
+def testEditKeepsIdentityStatusAndSpacing(tmp_path: Path):
+    root = boardFixture(tmp_path)
+    path = root / "project" / "requirements" / "features" / "004-fourth.md"
+    requirementUpdate(
+        root,
+        "004",
+        RequirementUpdate(
+            title="Renamed fourth",
+            outcome="As a tester, I need a new outcome so that it is current.",
+            verification="- pytest tests/test_myBoard.py",
+        ),
+        dryRun=False,
+        today="2026-10-26",
+    )
+    text = path.read_text()
+    card = boardLoad(root).cardGet("004")
+    assert (card.number, card.status, card.filename) == (
+        "004",
+        "InProgress",
+        "004-fourth.md",
+    )
+    assert text.startswith("# 004: Renamed fourth\n\n## Status\n\nInProgress\n")
+    assert "it is current.\n\n## Context\n" in text
+    assert "- pytest tests/test_myBoard.py\n\n## Change history\n" in text
+    assert text.endswith("- 2026-10-26: edited — myBoard.\n")
+
+
+def testEditAddsMissingSectionInOrder(tmp_path: Path):
+    root = boardFixture(tmp_path)
+    path = root / "project" / "requirements" / "features" / "003-third.md"
+    path.write_text(
+        path.read_text()
+        .replace("## Context\n\nFixture.\n\n", "")
+        .replace("## Change history\n\n- 2026-10-22: created — fixture.\n", "")
+        .rstrip("\n")
+        + "\n"
+    )
+    requirementUpdate(
+        root,
+        "003",
+        RequirementUpdate(context="Added context."),
+        dryRun=False,
+        today="2026-10-26",
+    )
+    text = path.read_text()
+    assert (
+        "so that the board can place it.\n\n## Context\n\nAdded context.\n\n## Scope\n"
+        in text
+    )
+    assert text.endswith(
+        "- pytest\n\n## Change history\n\n- 2026-10-26: edited — myBoard.\n"
+    )
+
+
+def testEditKeepsPreambleText(tmp_path: Path):
+    root = boardFixture(tmp_path)
+    path = root / "project" / "requirements" / "features" / "002-second.md"
+    path.write_text(
+        path.read_text().replace("\n\n## Status", "\n\nIntro note.\n\n## Status", 1)
+    )
+    requirementUpdate(root, "002", RequirementUpdate(title="Renamed"), dryRun=False)
+    assert path.read_text().startswith("# 002: Renamed\n\nIntro note.\n\n## Status")
+
+
 def testDocumentsRoundTrip():
     root = Path(__file__).resolve().parents[1]
     samples = [

@@ -115,7 +115,7 @@ def commandExecute(args: argparse.Namespace, logger, dryRun: bool) -> int:
     try:
         return handlers[args.command](args, root, logger, dryRun)
     except (OSError, ValueError) as exc:
-        reportWrite(logger, str(exc))
+        reportError(logger, str(exc))
         return 1
 
 
@@ -298,6 +298,14 @@ def changeReport(root: Path, changes, logger) -> None:
             print(relative)
         else:
             logger.action("write %s", relative)
+
+
+def reportError(logger, message: str) -> None:
+    """Report a failed command so it stands out from progress messages."""
+    if logger is None:
+        print(f"error: {message}", file=sys.stderr)
+        return
+    logger.error(message)
 
 
 def reportWrite(logger, message: str) -> None:

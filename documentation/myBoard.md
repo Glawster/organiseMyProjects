@@ -57,12 +57,35 @@ pip install 'organiseMyProjects[tui]'
 
 ## Editing
 
-`myBoard edit NUMBER` updates only fields supplied as options. It can replace
-the title, index description, Outcome, Context, Scope, Out of scope,
-Acceptance criteria, Dependencies and decisions, and Verification sections.
-The command previews the affected documents by default; `--confirm` writes
-them. It preserves the requirement ID and lifecycle status, updates matching
-index and increment titles, and appends a change-history entry.
+`myBoard edit NUMBER` updates only fields supplied as options:
+
+| Option | Replaces |
+| --- | --- |
+| `--title` | The record heading, index link and any increment or backlog bullet |
+| `--description` | The index description |
+| `--outcome` | Outcome |
+| `--context` | Context |
+| `--scope` | Scope |
+| `--excluded` | Out of scope |
+| `--acceptance` | Acceptance criteria |
+| `--dependencies` | Dependencies and decisions |
+| `--verification` | Verification |
+
+```bash
+myBoard edit 023 --outcome "As a ..."             # list the files it would change
+myBoard edit 023 --outcome "As a ..." --confirm   # write them
+```
+
+Without `--confirm` the command only lists the files it would write. A
+confirmed edit appends a dated `edited — myBoard.` entry to the record's
+change history. A section the record does not have yet is added in the
+standard template order. The requirement number, filename and Status never
+change; use `myBoard move` to change Status.
+
+The command refuses, with exit status 1 and no files changed, when no field is
+given, a value is blank, or a value would break the index table. Titles and
+descriptions must be a single line without `|`, and titles cannot contain `[`
+or `]`.
 
 ## Board keys
 
@@ -98,5 +121,6 @@ index status disagree. Moving the card writes both.
 
 ## What the board does not do
 
-It does not edit requirement prose, open pull requests, infer a column from
-Git or from test results, or commit the documents it writes.
+The board screen does not edit requirement prose (use `myBoard edit`), open
+pull requests, infer a column from Git or from test results, or commit the
+documents it writes.

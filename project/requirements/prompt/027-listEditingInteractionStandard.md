@@ -1,10 +1,10 @@
-# Requirement: 010 — project/requirements/features/010-listEditingInteractionStandard.md
+# Requirement: 027 — project/requirements/features/027-listEditingInteractionStandard.md
 
-Role: implement and verify for OMP 0.8.
+Role: implement and verify for OMP 0.9.
 
 Read the authoritative requirement, `documentation/listEditingInteraction.md`, the existing UI-organisation guidance in `.github/agent-instructions.md`, managed-file ownership/update code, `manageProject check`, and the packaged linter tests before changing behaviour.
 
-Implement REQ-010 so the list-editing standard is not merely documentation:
+Implement REQ-027 so the list-editing standard is not merely documentation:
 
 - keep `documentation/listEditingInteraction.md` as the canonical guide;
 - add an explicit agent-instruction pointer requiring the guide to be read before implementing or reviewing list/table interfaces;

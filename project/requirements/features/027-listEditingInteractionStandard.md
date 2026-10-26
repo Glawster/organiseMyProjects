@@ -1,8 +1,8 @@
-# 010: List editing interaction standard and enforcement
+# 027: List editing interaction standard and enforcement
 
 ## Status
 
-ToDo — planned for OMP 0.8.
+ToDo — planned for OMP 0.9.
 
 ## Outcome
 
@@ -92,7 +92,7 @@ For list/table editing interfaces, the default interaction model must include, w
 
 ## Acceptance criteria
 
-1. `documentation/listEditingInteraction.md` exists as the canonical OMP 0.8 guide and describes the required list-first interaction model.
+1. `documentation/listEditingInteraction.md` exists as the canonical OMP guide and describes the required list-first interaction model.
 2. `.github/agent-instructions.md` explicitly requires agents to read that guide when implementing or reviewing list/table interfaces.
 3. `manageProject create` deploys the guide and agent reference to a newly created managed project.
 4. `manageProject update` deploys or refreshes the managed guide/reference in an existing project without overwriting project-owned content.
@@ -132,3 +132,4 @@ Do not claim a verification step has passed unless it was actually run.
 ## Change history
 
 - 2026-10-07: created from mailAgent filing-panel UX review and the decision to standardise list editing, agent discovery, manageProject distribution/checking and derivable lint rules across OMP-managed projects.
+- 2026-10-26: renumbered from 010 (taken by the linter centralisation requirement) to 027 and retargeted to 0.9 when carried onto `release/0.9`.

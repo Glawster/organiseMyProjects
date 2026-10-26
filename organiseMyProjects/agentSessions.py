@@ -8,10 +8,9 @@ import os
 import re
 import shutil
 import sys
-from typing import Any, Iterator, TypedDict
-
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Iterator, TypedDict
 from urllib.parse import unquote
 
 from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication

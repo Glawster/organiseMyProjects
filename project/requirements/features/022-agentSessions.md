@@ -23,7 +23,7 @@ linuxMigration requirement 003 is closed as moved here.
 
 - Show latest sessions for the current directory by default; --all includes all directories.
 - Use --history for older sessions and --full for complete IDs.
-- Group rows by agent, newest first, and provide numbered full-ID extraction.
+- Group rows by agent, newest first.
 - Show each agent's recorded session title alongside its row.
 - Filter sessions by title or directory text with --search.
 - Choose a session from an arrow-key menu and resume it with --resume.
@@ -46,11 +46,11 @@ utilities or managed guidance.
 5. The CLI exposes help, version, verbose and quiet options, documents resume syntax for all four agents in help, and initialises shared logging at entry.
 6. Production-path tests, Black and targeted OMP lint pass; verification limitations are reported.
 
-7. Rows are grouped alphabetically by agent, newest first within each group; numbered selectors match this ordering.
-8. --id ROW prints only the selected full resume ID to stdout; invalid selectors fail with status 2 and a stderr error.
+7. Rows are grouped alphabetically by agent, newest first within each group; the --resume menu follows this ordering.
+8. --claude, --codex, --copilot and --grok keep only those agents' sessions from every directory; the flags combine, and combining them with --all fails with status 2.
 9. Each row shows the agent's stored title (Codex thread name, Claude rename/AI title or opening prompt, Grok summary, Copilot name), blank when absent and clipped to the terminal width.
-10. --search TEXT keeps rows whose title or directory contains TEXT case-insensitively, applied within the directory scope and before latest selection; --id numbering follows the filtered listing.
-11. --resume shows the selected listing as an arrow-key menu; Enter runs the agent's own resume command in the session's working directory, q/Esc cancels with status 0, a missing directory or agent command fails with status 1 and a non-interactive terminal or --id combination fails with status 2.
+10. --search TEXT keeps rows whose title or directory contains TEXT case-insensitively, applied within the directory scope and before latest selection; the --resume menu follows the filtered listing.
+11. --resume shows the selected listing as an arrow-key menu; Enter runs the agent's own resume command in the session's working directory, q/Esc cancels with status 0, a missing directory or agent command fails with status 1 and a non-interactive terminal fails with status 2.
 
 ## Dependencies and decisions
 
@@ -78,3 +78,6 @@ utilities or managed guidance.
   `agentSessions` console script at the owner's request; history above is kept.
 - 2026-10-25: completed after parser, CLI subprocess and shared-logging
   verification.
+- 2026-10-26: the DIRECTORY column shows only the folder name; added
+  --claude, --codex, --copilot and --grok filters, which imply --all; removed
+  --id in favour of --resume, all at the owner's request (0.9a6).

@@ -4,8 +4,7 @@ agentSessions lists resumable local AI agent sessions without editing their stor
 By default it shows the most recently active session per agent for the current
 working directory,
 grouped alphabetically by agent, with newest sessions first within each agent. With --resume it offers the listing as an arrow-key menu and resumes the chosen
-session with that agent's own command. `--id ROW` resumes a numbered row
-directly.
+session with that agent's own command.
 
 ## Runtime
 
@@ -22,8 +21,7 @@ agentSessions
 agentSessions --all --full
 agentSessions --history
 agentSessions --claude
-agentSessions --all --claude --codex
-agentSessions --id 2
+agentSessions --claude --codex --resume
 agentSessions --all --search migrateToRaid
 agentSessions --resume
 agentSessions --verbose
@@ -34,9 +32,10 @@ agentSessions --version
 
 --all includes sessions from all working directories. --history includes older
 sessions within the selected directory scope. Combine --all --history to see everything.
---claude, --codex, --copilot and --grok list only those agents' sessions; the
-flags combine, so `--claude --grok` lists both, and with none every agent is
-listed. --full displays complete IDs. --verbose enables
+--claude, --codex, --copilot and --grok list only those agents' sessions from
+every directory; the flags combine, so `--claude --grok` lists both, and with
+none every agent is listed. They imply --all, so combining them with --all is
+an error (status 2). --full displays complete IDs. --verbose enables
 parser diagnostics; --quiet suppresses lifecycle messages. Shared run/section
 separators and the listing remain visible. agentSessions never edits session
 stores itself, so it has no --confirm option; a resumed agent manages its own store.
@@ -51,25 +50,8 @@ respects the directory scope, so add --all to search other projects:
 ```bash
 agentSessions --all --search migrateToRaid
 agentSessions --all --search migrateToRaid --history
-agentSessions --all --search migrateToRaid --id 1
+agentSessions --all --search migrateToRaid --resume
 ```
-
-## Resuming a numbered row
-
-Each table row has a number in the `#` column. Resume the matching agent session
-directly, from its recorded working directory:
-
-```bash
-agentSessions --id 2
-agentSessions --all --search migrateToRaid --id 1
-```
-
-`--id` changes to the stored directory and replaces `agentSessions` with the
-selected agent's own resume command. Invalid row numbers return exit status 2
-with an error on stderr. Use the same listing options: after
-`agentSessions --all`, use `agentSessions --all --id 2`; include --history and
---search too when used for the listing. Row numbers refer to the current scan
-and can change when sessions are added or updated.
 
 Current-directory matching uses the exact resolved directory, including symlink
 aliases. It excludes child directories and sessions with unknown working directories.
@@ -90,8 +72,7 @@ PgUp/PgDn and Home/End to move, Enter to resume and q or Esc to cancel (exit 0).
 On Enter, agentSessions changes to the session's working directory, prints the
 command it is running and replaces itself with the agent. It refuses with status 1
 when the directory is unknown or no longer exists, or the agent command is not
-installed. --resume needs an interactive terminal (status 2 otherwise) and cannot
-be combined with --id. With no matching sessions it reports that and exits 0.
+installed. --resume needs an interactive terminal (status 2 otherwise). With no matching sessions it reports that and exits 0.
 
 To resume manually, run the matching agent command from the session's working
 directory with the full ID:

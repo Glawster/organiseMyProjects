@@ -8,7 +8,9 @@
   `organiseMyProjects` rather than `~/Source/organiseMyProjects`. Resuming
   still uses the full path.
 - `--claude`, `--codex`, `--copilot` and `--grok` list only those agents'
-  sessions. The flags combine: `agentSessions --claude --grok` lists both.
+  sessions, from every directory. The flags combine: `agentSessions --claude
+  --grok` lists both. They imply `--all`, so the two cannot be combined.
+- `--id ROW` is removed. Use `--resume` to pick a session from a menu.
 
 ## 0.9a5
 

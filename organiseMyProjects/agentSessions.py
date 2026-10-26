@@ -72,6 +72,8 @@ def main() -> int:
         if args.verbose
         else logging.WARNING if args.quiet else logging.INFO
     )
+    if args.all and args.agents:
+        parser.error("--all is implied by the agent options")
     if args.resume and not (sys.stdin.isatty() and sys.stdout.isatty()):
         parser.error("--resume needs an interactive terminal")
     # The picker owns the screen, so console logging would corrupt it.
@@ -79,17 +81,14 @@ def main() -> int:
     rows = sessionsCollect()
     if args.agents:
         rows = sessionsForAgents(rows, args.agents)
-    if not args.all:
+    # Agent options always search every directory.
+    if not (args.all or args.agents):
         rows = sessionsForDirectory(rows, Path.cwd())
     if args.search is not None:
         rows = sessionsSearch(rows, args.search)
     if not args.history:
         rows = sessionsLatest(rows)
     rows = sessionsSort(rows)
-    if args.id is not None:
-        if not 1 <= args.id <= len(rows):
-            parser.error("--id must identify a row in the current listing")
-        return sessionResume(rows[args.id - 1])
     if args.resume:
         if not rows:
             print("No local agent sessions found.")
@@ -120,17 +119,12 @@ def parserBuild() -> argparse.ArgumentParser:
   Grok:     grok --resume <id>
   Copilot:  copilot --resume=<id>
 
-Resume a numbered row:
-  agentSessions --id 2
-  agentSessions --all --id 2   # when selecting from --all
-
-List only some agents (flags combine; none means every agent):
+List only some agents, from every directory (flags combine):
   agentSessions --claude
-  agentSessions --all --claude --codex
+  agentSessions --claude --codex --resume
 
 Find a session by title or directory:
   agentSessions --all --search migrateToRaid
-  agentSessions --all --search migrateToRaid --id 1
 
 Pick from a menu and resume in the session's directory:
   agentSessions --resume
@@ -142,23 +136,16 @@ Pick from a menu and resume in the session's directory:
         action="store_true",
         help="include sessions from all working directories",
     )
-    # Each flag adds its agent, so --claude --grok lists both.
+    # Each flag adds its agent, so --claude --grok lists both. They imply --all.
     for agent in RESUME_COMMANDS:
         parser.add_argument(
             f"--{agent.lower()}",
             dest="agents",
             action="append_const",
             const=agent,
-            help=f"include {agent} sessions (combine flags; default: every agent)",
+            help=f"include {agent} sessions from every directory (combine flags)",
         )
-    action = parser.add_mutually_exclusive_group()
-    action.add_argument(
-        "--id",
-        type=int,
-        metavar="ROW",
-        help="resume numbered row ROW in its recorded working directory",
-    )
-    action.add_argument(
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="choose a session from an arrow-key menu and resume it",

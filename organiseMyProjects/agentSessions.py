@@ -74,9 +74,8 @@ def main() -> int:
     )
     if args.resume and not (sys.stdin.isatty() and sys.stdout.isatty()):
         parser.error("--resume needs an interactive terminal")
-    # ID extraction keeps stdout clean for shell substitution and clipboard pipes;
-    # the picker owns the screen, so console logging would corrupt it.
-    logger = getLogger(includeConsole=args.id is None and not args.resume, level=level)
+    # The picker owns the screen, so console logging would corrupt it.
+    logger = getLogger(includeConsole=not args.resume, level=level)
     rows = sessionsCollect()
     if not args.all:
         rows = sessionsForDirectory(rows, Path.cwd())
@@ -88,8 +87,7 @@ def main() -> int:
     if args.id is not None:
         if not 1 <= args.id <= len(rows):
             parser.error("--id must identify a row in the current listing")
-        print(rows[args.id - 1]["session_id"])
-        return 0
+        return sessionResume(rows[args.id - 1])
     if args.resume:
         if not rows:
             print("No local agent sessions found.")
@@ -120,7 +118,7 @@ def parserBuild() -> argparse.ArgumentParser:
   Grok:     grok --resume <id>
   Copilot:  copilot --resume=<id>
 
-Get a full ID:
+Resume a numbered row:
   agentSessions --id 2
   agentSessions --all --id 2   # when selecting from --all
 
@@ -143,7 +141,7 @@ Pick from a menu and resume in the session's directory:
         "--id",
         type=int,
         metavar="ROW",
-        help="print only the full resume ID for numbered row ROW",
+        help="resume numbered row ROW in its recorded working directory",
     )
     action.add_argument(
         "--resume",

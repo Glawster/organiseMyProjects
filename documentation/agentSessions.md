@@ -4,7 +4,8 @@ agentSessions lists resumable local AI agent sessions without editing their stor
 By default it shows the most recently active session per agent for the current
 working directory,
 grouped alphabetically by agent, with newest sessions first within each agent. With --resume it offers the listing as an arrow-key menu and resumes the chosen
-session with that agent's own command.
+session with that agent's own command. `--id ROW` resumes a numbered row
+directly.
 
 ## Runtime
 
@@ -48,21 +49,22 @@ agentSessions --all --search migrateToRaid --history
 agentSessions --all --search migrateToRaid --id 1
 ```
 
-## Grabbing a resume ID
+## Resuming a numbered row
 
-Each table row has a number in the `#` column. Print that row's complete resume ID:
+Each table row has a number in the `#` column. Resume the matching agent session
+directly, from its recorded working directory:
 
 ```bash
 agentSessions --id 2
-resumeId=$(agentSessions --id 2)
+agentSessions --all --search migrateToRaid --id 1
 ```
 
-`--id` writes only the full ID to stdout, making it suitable for copying or shell
-substitution. Invalid row numbers return exit status 2 with an error on stderr.
-Use the same listing options: after `agentSessions --all`, use
-`agentSessions --all --id 2`; include --history and --search too when used for the listing. Row numbers refer to the current scan and can change
-when sessions are added or updated; retain the extracted full ID for later use.
-Use `--full` to display complete IDs directly in the table.
+`--id` changes to the stored directory and replaces `agentSessions` with the
+selected agent's own resume command. Invalid row numbers return exit status 2
+with an error on stderr. Use the same listing options: after
+`agentSessions --all`, use `agentSessions --all --id 2`; include --history and
+--search too when used for the listing. Row numbers refer to the current scan
+and can change when sessions are added or updated.
 
 Current-directory matching uses the exact resolved directory, including symlink
 aliases. It excludes child directories and sessions with unknown working directories.

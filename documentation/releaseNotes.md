@@ -1,5 +1,26 @@
 # Release notes
 
+## 0.9a5
+
+Bug fixes and refinements to the 0.9a0 requirement board.
+
+### Requirement board fixes
+
+- Only one card is selected at a time. Selecting a card in another column
+  previously left the first column's card highlighted, and `[`/`]` moved only
+  the card in the focused column.
+- A right click selects a card without opening it. A left click or Enter opens
+  it.
+- An open requirement shows the branch linked to it, that branch's commits and
+  each changed file on its own line. `[` and `]` do nothing while a
+  requirement is open.
+- pytest runs on `p` instead of `t`. Failures that name the requirement's files
+  or its Verification paths are listed on the card. The suite summary stays on
+  the strip.
+- `agentSessions --id ROW` now resumes that numbered session directly. Use
+  `--full` to show resume IDs in the listing when needed.
+- See [Requirement board](myBoard.md).
+
 ## 0.9a4
 
 ### Release process
@@ -32,8 +53,8 @@ Scope and acceptance work are tracked in
 
 - New `agentSessions` command, moved from linuxMigration: lists the latest local
   Codex, Claude, Grok and Copilot sessions for the current directory, with
-  titles, `--all`, `--history`, `--search`, `--id` for scripting and `--resume`
-  to pick a session from a menu and resume it. Session stores are never edited.
+  titles, `--all`, `--history`, `--search` and `--resume` to pick a session
+  from a menu and resume it. Session stores are never edited.
 - See [Agent sessions](agentSessions.md).
 
 ### runLinter reporting

@@ -14,6 +14,7 @@ from organiseMyProjects.requirementBoard import (
     RequirementCard,
     RequirementDraft,
     RequirementGit,
+    RequirementUpdate,
     detailParts,
     _documentJoin,
     _documentSplit,
@@ -23,10 +24,12 @@ from organiseMyProjects.requirementBoard import (
     checkFindingsLoad,
     findingsSelect,
     gitContextLoad,
+    gitContextLines,
     projectRootFind,
     pytestSelect,
     requirementCreate,
     requirementGitLoad,
+    requirementUpdate,
 )
 
 REQUIRES_TEXTUAL = pytest.mark.skipif(
@@ -281,6 +284,78 @@ def testCreateRejectsABadName(tmp_path: Path):
         requirementCreate(root, draft, dryRun=False)
 
 
+def testEditUpdatesRecordIndexAndIncrement(tmp_path: Path):
+    root = boardFixture(tmp_path)
+    update = RequirementUpdate(
+        title="Renamed second",
+        description="An updated requirement description.",
+        outcome="As a tester, I need edited prose so that it remains current.",
+        acceptance="1. Given an edit, when confirmed, then all documents agree.",
+    )
+    before = fileBytes(root)
+    preview = requirementUpdate(root, "002", update, dryRun=True, today="2026-10-25")
+    assert preview.changed
+    assert fileBytes(root) == before
+    result = requirementUpdate(root, "002", update, dryRun=False, today="2026-10-25")
+    assert {change.path.name for change in result.changes} == {
+        "002-second.md",
+        "requirementsIndex.md",
+        "currentIncrement.md",
+    }
+    record = (
+        root / "project" / "requirements" / "features" / "002-second.md"
+    ).read_text()
+    index = (root / "project" / "requirements" / "requirementsIndex.md").read_text()
+    increment = (root / "project" / "currentIncrement.md").read_text()
+    assert "# 002: Renamed second" in record
+    assert "As a tester, I need edited prose" in record
+    assert "2026-10-25: edited — myBoard." in record
+    assert "[Renamed second](features/002-second.md)" in index
+    assert "An updated requirement description." in index
+    assert "[002: Renamed second](requirements/features/002-second.md)" in increment
+    assert boardLoad(root).cardGet("002").title == "Renamed second"
+
+
+def testEditCommandRequiresConfirmation(tmp_path: Path):
+    root = boardFixture(tmp_path)
+    feature = root / "project" / "requirements" / "features" / "003-third.md"
+    before = feature.read_text()
+    assert (
+        main(
+            [
+                "--project",
+                str(root),
+                "edit",
+                "003",
+                "--outcome",
+                "As a tester, I need an edited card so that I can verify it.",
+            ]
+        )
+        == 0
+    )
+    assert feature.read_text() == before
+    assert (
+        main(
+            [
+                "--project",
+                str(root),
+                "edit",
+                "003",
+                "--outcome",
+                "As a tester, I need an edited card so that I can verify it.",
+                "--confirm",
+            ]
+        )
+        == 0
+    )
+    assert "I need an edited card" in feature.read_text()
+
+
+def testEditRequiresAValue(tmp_path: Path):
+    with pytest.raises(ValueError, match="editable field"):
+        requirementUpdate(boardFixture(tmp_path), "003", RequirementUpdate())
+
+
 def testDocumentsRoundTrip():
     root = Path(__file__).resolve().parents[1]
     samples = [
@@ -400,6 +475,9 @@ def testPytestStaysWithTheRequirementItNames():
 
 def testGitLinksTheRequirementId(tmp_path: Path):
     root = boardFixture(tmp_path)
+    versionPath = root / "organiseMyProjects" / "version.py"
+    versionPath.parent.mkdir()
+    versionPath.write_text('VERSION = "0.9a1"\n')
     subprocess.run(
         ["git", "init", "-b", "main"], cwd=root, check=True, capture_output=True
     )
@@ -422,12 +500,40 @@ def testGitLinksTheRequirementId(tmp_path: Path):
         check=True,
         capture_output=True,
     )
+    versionPath.write_text('VERSION = "0.9a3"\n')
+    subprocess.run(
+        ["git", "add", "organiseMyProjects/version.py"], cwd=root, check=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "show branch version"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "update-ref", "refs/remotes/origin/remote-work", "HEAD"],
+        cwd=root,
+        check=True,
+    )
+    versionPath.write_text('VERSION = "0.9a4"\n')
     context = gitContextLoad(root, "0.9")
     assert context.available
     assert context.branch == "003-work"
-    assert context.aheadMain == 1
+    assert context.aheadMain == 2
     assert context.releaseBranch == "release/0.9"
     assert context.aheadRelease is None
+    assert [(item.name, item.version) for item in context.openBranches] == [
+        ("003-work", "0.9a4"),
+        ("origin/remote-work", "0.9a3"),
+    ]
+    assert "Open: 003-work (0.9a4)" in context.summary()
+    assert gitContextLines(context) == [
+        "Branch: 003-work (dirty)",
+        "main: +2 -0",
+        "release/0.9: unavailable",
+        "Open: 003-work (0.9a4)",
+        "Open: origin/remote-work (0.9a3)",
+    ]
     linked = requirementGitLoad(root, "003")
     assert "003-work" in linked.branches
     assert any(subject.startswith("003:") for _revision, subject in linked.commits)
@@ -558,6 +664,53 @@ def testSelectedCardStaysReadable(tmp_path: Path):
 
 
 @REQUIRES_TEXTUAL
+def testHeaderStatusPanelUsesSeparateRows(tmp_path: Path):
+    from textual.widgets import Static
+
+    from organiseMyProjects.myBoardTui import BoardApp
+
+    root = boardFixture(tmp_path)
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(140, 36)) as pilot:
+            lines = []
+            for _attempt in range(20):
+                await pilot.pause()
+                panel = app.query_one("#status-panel")
+                lines = [
+                    widget.render().plain
+                    for widget in panel.query(".status-line")
+                    if isinstance(widget, Static)
+                ]
+                if any(line.startswith("Git:") for line in lines):
+                    break
+            columns = app.query_one("#columns")
+            assert any(line == "Project: proj" for line in lines)
+            assert any(line.startswith("Git:") for line in lines)
+            assert any(line.startswith("Checks:") for line in lines)
+            assert any(line.startswith("Lint:") for line in lines)
+            assert any(line.startswith("Pytest:") for line in lines)
+            assert panel.region.y > columns.region.y
+            assert panel.region.height >= columns.region.height - 1
+            assert panel.region.x == columns.region.x
+            assert panel.region.width == columns.region.width
+            assert (
+                panel.styles.border[0][1].r,
+                panel.styles.border[0][1].g,
+                panel.styles.border[0][1].b,
+            ) == (38, 59, 78)
+            column = app.query_one(".column")
+            assert (
+                column.styles.border[0][1].r,
+                column.styles.border[0][1].g,
+                column.styles.border[0][1].b,
+            ) == (38, 59, 78)
+
+    asyncio.run(verify())
+
+
+@REQUIRES_TEXTUAL
 def testBoardMoveFromTheColumns(tmp_path: Path):
     from textual.widgets import Label, ListView
 
@@ -630,7 +783,7 @@ def testDetailIgnoresColumnMoves(tmp_path: Path):
 
 
 @REQUIRES_TEXTUAL
-def testClickSelectsWithoutOpeningTheCard(tmp_path: Path):
+def testRightClickSelectsAndLeftClickOpensTheCard(tmp_path: Path):
     from textual.widgets import ListView
 
     from organiseMyProjects.myBoardTui import BoardApp, ConfirmMove, DetailScreen
@@ -647,14 +800,53 @@ def testClickSelectsWithoutOpeningTheCard(tmp_path: Path):
                 if backlog.children:
                     break
             assert backlog is not None and backlog.children
-            await pilot.click(backlog.children[0])
+            card = backlog.children[0]
+            await pilot.click(card, button=3)
             await pilot.pause()
             assert not isinstance(app.screen, DetailScreen)
-            assert backlog.highlighted_child is backlog.children[0]
+            assert backlog.highlighted_child is card
             await pilot.press("right_square_bracket")
             await pilot.pause()
             assert isinstance(app.screen, ConfirmMove)
             assert boardLoad(root).cardGet("003").column == "Backlog"
+            await pilot.click("#move-cancel")
+            await pilot.pause()
+            await pilot.click(card)
+            await pilot.pause()
+            assert isinstance(app.screen, DetailScreen)
+            assert backlog.highlighted_child is card
+
+    asyncio.run(verify())
+
+
+@REQUIRES_TEXTUAL
+def testSelectingInAnotherColumnClearsTheFirst(tmp_path: Path):
+    from textual.widgets import ListView
+
+    from organiseMyProjects.myBoardTui import BoardApp
+
+    root = boardFixture(tmp_path)
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(140, 36)) as pilot:
+            backlog = completed = None
+            for _attempt in range(20):
+                await pilot.pause()
+                backlog = app.query_one("#list-Backlog", ListView)
+                completed = app.query_one("#list-Completed", ListView)
+                if backlog.children and completed.children:
+                    break
+            assert backlog is not None and backlog.children
+            assert completed is not None and completed.children
+            await pilot.click(backlog.children[0], button=3)
+            await pilot.pause()
+            assert backlog.highlighted_child is backlog.children[0]
+            await pilot.click(completed.children[0], button=3)
+            await pilot.pause()
+            assert completed.highlighted_child is completed.children[0]
+            assert backlog.highlighted_child is None
+            assert app.activeCard().number == "001"
 
     asyncio.run(verify())
 

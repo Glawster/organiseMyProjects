@@ -11,6 +11,7 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.events import Click
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, Static
 
@@ -29,6 +30,7 @@ from organiseMyProjects.requirementBoard import (
     changeApply,
     checkFindingsLoad,
     findingsSelect,
+    gitContextLines,
     gitContextLoad,
     lintSelect,
     lintSnapshotLoad,
@@ -83,17 +85,37 @@ class CardItem(ListItem):
         super().__init__(Label(f"{card.number}  {card.title}{mark}"))
         self.card = card
 
+    def on_click(self, event: Click) -> None:
+        """A right click only highlights the card. A left click also opens it."""
+        if event.button == 1:
+            return
+        # ListItem treats every button as a selection that opens the card.
+        event.prevent_default()
+        view = self.parent
+        if isinstance(view, CardList):
+            view.selectCard(self)
+
 
 class CardList(ListView):
-    """A column list. A click selects the card. Enter opens it."""
+    """A column list. Left click opens a card. Right click only selects it."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.selectOnly = False
+    def on_focus(self) -> None:
+        """Keep one selected card on the board.
 
-    def _on_list_item__child_clicked(self, event: ListItem._ChildClicked) -> None:
-        """Remember that this selection came from a click, not Enter."""
-        self.selectOnly = isinstance(event.item, CardItem)
+        Each column remembers its own highlight, so clear the other columns
+        when this one takes focus.
+        """
+        for view in self.screen.query(CardList):
+            if view is not self:
+                view.index = None
+
+    def selectCard(self, item: CardItem) -> None:
+        """Highlight one card without opening its detail."""
+        items = list(self.children)
+        if item not in items:
+            return
+        self.focus()
+        self.index = items.index(item)
 
 
 class ConfirmMove(ModalScreen[bool]):
@@ -192,62 +214,6 @@ class BoardApp(App):
     """Four-column board for the project root it was given."""
 
     CSS_PATH = _THEME
-    CSS = """
-    #board-strip {
-        height: 3;
-        padding: 0 1;
-        color: #60788e;
-    }
-    #columns {
-        height: 1fr;
-    }
-    .column {
-        width: 1fr;
-        height: 1fr;
-    }
-    .column-title {
-        height: 1;
-        padding: 0 1;
-        text-style: bold;
-    }
-    .column ListView {
-        height: 1fr;
-        border: none;
-    }
-    ConfirmMove {
-        align: center middle;
-    }
-    #confirm-box {
-        width: 72;
-        height: auto;
-        padding: 1 2;
-    }
-    #detail-scroll {
-        height: 1fr;
-    }
-    #detail-lines {
-        height: auto;
-        padding: 0 2 1 2;
-    }
-    .detail-row {
-        height: 1;
-        width: 1fr;
-    }
-    .detail-label,
-    .detail-hash {
-        width: 14;
-        height: 1;
-    }
-    .detail-value {
-        width: 1fr;
-        height: 1;
-    }
-    .detail-file {
-        height: 1;
-        width: 1fr;
-        padding: 0 2;
-    }
-    """
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("left", "focus_left", "Left", show=False),
@@ -275,12 +241,13 @@ class BoardApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Static("loading", id="board-strip")
         with Horizontal(id="columns"):
             for column in COLUMNS:
                 with Vertical(classes="column surface"):
                     yield Static(column, classes="column-title", id=f"title-{column}")
                     yield CardList(id=f"list-{column}")
+        with VerticalScroll(id="status-panel", classes="surface"):
+            yield Static("Loading status", classes="status-line")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -316,11 +283,7 @@ class BoardApp(App):
             self.columnFocus(0)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        """Open the card on Enter. A click only highlights it for a move."""
-        view = event.list_view
-        if isinstance(view, CardList) and view.selectOnly:
-            view.selectOnly = False
-            return
+        """Open the card. Enter and a left click both post this selection."""
         if isinstance(event.item, CardItem):
             self.push_screen(DetailScreen(event.item.card))
 
@@ -535,7 +498,7 @@ class BoardApp(App):
         self.detailRefresh()
 
     def stripRefresh(self) -> None:
-        """Redraw the project strip from the latest signals."""
+        """Redraw the header status panel from the latest signals."""
         if not self.is_mounted:
             return
         failures = warnings = None
@@ -547,13 +510,22 @@ class BoardApp(App):
             if failures is None
             else f"check {failures} failures, {warnings} warnings"
         )
-        parts = [
-            self.gitContext.summary(),
-            checks,
-            self.lintSummary or "lint not run",
-            self.pytestSummary or "pytest not run",
+        panel = self.query_one("#status-panel", VerticalScroll)
+        lines = [
+            f"Project: {self.root.name}",
+            *gitContextLines(self.gitContext),
+            f"Checks: {checks}",
+            f"Lint: {self.lintSummary or 'not run'}",
+            f"Pytest: {self.pytestSummary or 'not run'}",
         ]
-        self.query_one("#board-strip", Static).update(" | ".join(parts))
+
+        async def statusFill() -> None:
+            await panel.remove_children()
+            await panel.mount(
+                *(Static(line, classes="status-line", markup=False) for line in lines)
+            )
+
+        self.run_worker(statusFill, exclusive=True, group="status")
 
     def detailRefresh(self) -> None:
         """Redraw the detail screen when it is the screen in front."""

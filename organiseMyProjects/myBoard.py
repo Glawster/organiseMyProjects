@@ -1,8 +1,8 @@
 """Command line for the requirement board.
 
 ``myBoard`` with no subcommand opens the Textual board. ``list``, ``show``,
-``move``, ``create``, ``check``, ``lint`` and ``pytest`` run without a
-terminal UI. Moves and creates stay as a dry-run until ``--confirm``.
+``move``, ``create``, ``edit``, ``check``, ``lint`` and ``pytest`` run without
+a terminal UI. Changes stay as a dry-run until ``--confirm``.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from organiseMyProjects.logUtils import getLogger, line, runStart, setApplicatio
 from organiseMyProjects.requirementBoard import (
     COLUMNS,
     RequirementDraft,
+    RequirementUpdate,
     boardDump,
     boardFormat,
     boardLoad,
@@ -32,6 +33,7 @@ from organiseMyProjects.requirementBoard import (
     pytestSnapshotLoad,
     requirementCreate,
     requirementGitLoad,
+    requirementUpdate,
 )
 from organiseMyProjects.version import VERSION
 
@@ -76,8 +78,10 @@ def commandRun(args: argparse.Namespace) -> int:
     if getattr(args, "json", False):
         return commandExecute(args, None, False)
 
-    # Only move and create write. Other commands must not look like a dry-run.
-    dryRun = args.command in {"move", "create"} and not getattr(args, "confirm", False)
+    # Only document-changing commands must announce their dry-run mode.
+    dryRun = args.command in {"move", "create", "edit"} and not getattr(
+        args, "confirm", False
+    )
     logger = getLogger(includeConsole=True, dryRun=dryRun)
     runStart()
     logger.doing("starting")
@@ -103,6 +107,7 @@ def commandExecute(args: argparse.Namespace, logger, dryRun: bool) -> int:
         "show": commandShow,
         "move": commandMove,
         "create": commandCreate,
+        "edit": commandEdit,
         "check": commandCheck,
         "lint": commandLint,
         "pytest": commandPytest,
@@ -161,6 +166,33 @@ def commandCreate(args: argparse.Namespace, root: Path, logger, dryRun: bool) ->
         logger.value("created", plan.number)
     else:
         print(plan.number)
+    return 0
+
+
+def commandEdit(args: argparse.Namespace, root: Path, logger, dryRun: bool) -> int:
+    """Edit selected metadata and prose fields on one requirement."""
+    update = RequirementUpdate(
+        title=args.title,
+        description=args.description,
+        outcome=args.outcome,
+        context=args.context,
+        scope=args.scope,
+        excluded=args.excluded,
+        acceptance=args.acceptance,
+        dependencies=args.dependencies,
+        verification=args.verification,
+    )
+    plan = requirementUpdate(root, args.number, update, dryRun=True)
+    if not plan.changed:
+        reportWrite(logger, f"{plan.number} already has those values")
+        return 0
+    changeReport(root, plan.changes, logger)
+    if dryRun:
+        reportWrite(logger, "dry-run left the files unchanged")
+        return 0
+    changeApply(plan.changes)
+    if logger is not None:
+        logger.value("edited", plan.number)
     return 0
 
 
@@ -323,6 +355,7 @@ def _commandsAdd(
     )
     _confirmAdd(move)
     _createAdd(commands, common)
+    _editAdd(commands, common)
     check = commands.add_parser(
         "check", parents=[common], help="Show manageProject check findings."
     )
@@ -372,6 +405,27 @@ def _createAdd(
     create.add_argument("--acceptance", default="", help="Acceptance criteria section.")
     create.add_argument("--verification", default="", help="Verification section.")
     _confirmAdd(create)
+
+
+def _editAdd(
+    commands: argparse._SubParsersAction, common: argparse.ArgumentParser
+) -> None:
+    edit = commands.add_parser(
+        "edit", parents=[common], help="Edit requirement metadata and prose."
+    )
+    edit.add_argument("number", help="Requirement number, for example 012.")
+    edit.add_argument("--title", help="Replacement requirement title.")
+    edit.add_argument("--description", help="Replacement index description.")
+    edit.add_argument("--outcome", help="Replacement Outcome section.")
+    edit.add_argument("--context", help="Replacement Context section.")
+    edit.add_argument("--scope", help="Replacement Scope section.")
+    edit.add_argument("--excluded", help="Replacement Out of scope section.")
+    edit.add_argument("--acceptance", help="Replacement Acceptance criteria section.")
+    edit.add_argument(
+        "--dependencies", help="Replacement Dependencies and decisions section."
+    )
+    edit.add_argument("--verification", help="Replacement Verification section.")
+    _confirmAdd(edit)
 
 
 if __name__ == "__main__":

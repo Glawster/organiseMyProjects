@@ -295,6 +295,15 @@ def _directoryArtifactMigrate(
             pass
 
 
+def legacyIndexFind(basePath: Path | str, newRel: Path | str) -> Path | None:
+    """Return an existing legacy index that migrates to ``newRel``, if any."""
+    root = Path(basePath)
+    for oldRel, targetRel, _markers in _INDEX_MIGRATIONS:
+        if targetRel == Path(newRel) and (root / oldRel).is_file():
+            return root / oldRel
+    return None
+
+
 def layoutMigrate(basePath: Path | str, dryRun: bool = False, logger=None) -> None:
     """Apply requirement 004's deterministic layout migrations."""
     root = Path(basePath)

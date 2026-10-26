@@ -1,5 +1,23 @@
 # Release notes
 
+## 0.9a8
+
+### Requirement board editing
+
+Requirement 023 is complete: `myBoard edit NUMBER` replaces a requirement's
+title, index description or prose sections and keeps the index and increment
+in step.
+
+- Titles and descriptions must be a single line without `|`, and titles
+  cannot contain `[` or `]`. Such values previously broke the record heading
+  and the index link.
+- Editing a section the record does not have adds it in template order.
+  Previously the edit was silently ignored.
+- A replaced section keeps the blank line before the next heading, and text
+  between the title and the first section is kept.
+- Command errors are logged as errors rather than as progress messages.
+- See [Requirement board](myBoard.md#editing).
+
 ## 0.9a7
 
 ### List editing interaction

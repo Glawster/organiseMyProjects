@@ -72,22 +72,23 @@ def main() -> int:
         if args.verbose
         else logging.WARNING if args.quiet else logging.INFO
     )
+    if args.all and args.agents:
+        parser.error("--all is implied by the agent options")
     if args.resume and not (sys.stdin.isatty() and sys.stdout.isatty()):
         parser.error("--resume needs an interactive terminal")
     # The picker owns the screen, so console logging would corrupt it.
     logger = getLogger(includeConsole=not args.resume, level=level)
     rows = sessionsCollect()
-    if not args.all:
+    if args.agents:
+        rows = sessionsForAgents(rows, args.agents)
+    # Agent options always search every directory.
+    if not (args.all or args.agents):
         rows = sessionsForDirectory(rows, Path.cwd())
     if args.search is not None:
         rows = sessionsSearch(rows, args.search)
     if not args.history:
         rows = sessionsLatest(rows)
     rows = sessionsSort(rows)
-    if args.id is not None:
-        if not 1 <= args.id <= len(rows):
-            parser.error("--id must identify a row in the current listing")
-        return sessionResume(rows[args.id - 1])
     if args.resume:
         if not rows:
             print("No local agent sessions found.")
@@ -118,13 +119,12 @@ def parserBuild() -> argparse.ArgumentParser:
   Grok:     grok --resume <id>
   Copilot:  copilot --resume=<id>
 
-Resume a numbered row:
-  agentSessions --id 2
-  agentSessions --all --id 2   # when selecting from --all
+List only some agents, from every directory (flags combine):
+  agentSessions --claude
+  agentSessions --claude --codex --resume
 
 Find a session by title or directory:
   agentSessions --all --search migrateToRaid
-  agentSessions --all --search migrateToRaid --id 1
 
 Pick from a menu and resume in the session's directory:
   agentSessions --resume
@@ -136,14 +136,16 @@ Pick from a menu and resume in the session's directory:
         action="store_true",
         help="include sessions from all working directories",
     )
-    action = parser.add_mutually_exclusive_group()
-    action.add_argument(
-        "--id",
-        type=int,
-        metavar="ROW",
-        help="resume numbered row ROW in its recorded working directory",
-    )
-    action.add_argument(
+    # Each flag adds its agent, so --claude --grok lists both. They imply --all.
+    for agent in RESUME_COMMANDS:
+        parser.add_argument(
+            f"--{agent.lower()}",
+            dest="agents",
+            action="append_const",
+            const=agent,
+            help=f"include {agent} sessions from every directory (combine flags)",
+        )
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="choose a session from an arrow-key menu and resume it",
@@ -181,6 +183,12 @@ def sessionsCollect() -> list[Session]:
             _warningReport(f"cannot scan session store: {collect.__name__}: {error}")
     getLogger().debug("scanned all supported session stores")
     return rows
+
+
+def sessionsForAgents(rows: list[Session], agents: list[str]) -> list[Session]:
+    """Keep sessions from the selected agents only."""
+    wanted = set(agents)
+    return [row for row in rows if row["agent"] in wanted]
 
 
 def sessionsForDirectory(rows: list[Session], directory: Path) -> list[Session]:
@@ -284,7 +292,9 @@ def tableLines(
             {
                 "agent": row["agent"],
                 "date": row["date"].strftime("%Y-%m-%d %H:%M"),
-                "directory": row["directory"],
+                # Only the folder name is shown; the full path stays on the row
+                # so resuming still changes into the right directory.
+                "directory": Path(row["directory"]).name or row["directory"],
                 "session_id": sid,
                 "title": " ".join(row["title"].split()),
             }

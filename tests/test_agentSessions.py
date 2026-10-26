@@ -245,15 +245,15 @@ def testAgentOrderAndSelectors(sessions, tmp_path, monkeypatch, capsys):
     )
 
 
-@pytest.mark.parametrize("row", ["0", "-1", "100", "invalid"])
-def testInvalidSelector(sessions, monkeypatch, capsys, row):
-    monkeypatch.setattr(sys, "argv", [SCRIPT, "--id", row])
-    with pytest.raises(SystemExit) as error:
-        sessions.main()
-    assert error.value.code == 2
-    output = capsys.readouterr()
-    assert output.out == ""
-    assert "error:" in output.err
+def _offered(sessions, monkeypatch, *options) -> list[str]:
+    """Return the session IDs the --resume menu would offer, in order."""
+    offered = []
+    monkeypatch.setattr(sys, "argv", [SCRIPT, "--resume", *options])
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setattr(sessions, "sessionPick", lambda rows: offered.extend(rows))
+    assert sessions.main() == 0
+    return [row["session_id"] for row in offered]
 
 
 def testCurrentDirectoryAndAll(sessions, tmp_path, monkeypatch, capsys):
@@ -273,11 +273,7 @@ def testCurrentDirectoryAndAll(sessions, tmp_path, monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "here-resume-id" in output
     assert "elsewhere-resume-id" not in output
-    resumed = []
-    monkeypatch.setattr(sys, "argv", [SCRIPT, "--id", "1"])
-    monkeypatch.setattr(sessions, "sessionResume", lambda row: resumed.append(row) or 0)
-    assert sessions.main() == 0
-    assert [row["session_id"] for row in resumed] == ["here-resume-id"]
+    assert _offered(sessions, monkeypatch) == ["here-resume-id"]
     monkeypatch.setattr(sys, "argv", [SCRIPT, "--all", "--full"])
     assert sessions.main() == 0
     output = capsys.readouterr().out
@@ -364,7 +360,7 @@ def testTitleLayout(sessions, monkeypatch, capsys):
 
 
 def testSearchSelectsMatches(sessions, tmp_path, monkeypatch, capsys):
-    """Search filters by title or directory before latest selection and --id."""
+    """Search filters by title or directory before latest selection and the menu."""
     names = (
         ("older-match", 100, "MigrateToRaid destinations", tmp_path),
         ("newest-other", 300, "Unrelated work", tmp_path / "migrateToRaid"),
@@ -383,23 +379,11 @@ def testSearchSelectsMatches(sessions, tmp_path, monkeypatch, capsys):
     _fixtureWrite(tmp_path / ".codex/session_index.jsonl", "\n".join(index))
 
     for options, expected in (
-        (["--search", "MIGRATETORAID", "--id", "1"], "newer-match"),
-        (
-            ["--search", "migrateToRaid", "--history", "--id", "2"],
-            "older-match",
-        ),
-        (
-            ["--all", "--search", "migrateToRaid", "--id", "1"],
-            "newest-other",
-        ),
+        (["--search", "MIGRATETORAID"], ["newer-match"]),
+        (["--search", "migrateToRaid", "--history"], ["newer-match", "older-match"]),
+        (["--all", "--search", "migrateToRaid"], ["newest-other", "newer-match"]),
     ):
-        monkeypatch.setattr(sys, "argv", [SCRIPT, *options])
-        resumed = []
-        monkeypatch.setattr(
-            sessions, "sessionResume", lambda row: resumed.append(row) or 0
-        )
-        assert sessions.main() == 0
-        assert [row["session_id"] for row in resumed] == [expected]
+        assert _offered(sessions, monkeypatch, *options) == expected
     monkeypatch.setattr(sys, "argv", [SCRIPT, "--search", "absent"])
     assert sessions.main() == 0
     assert "No local agent sessions found." in capsys.readouterr().out
@@ -539,29 +523,10 @@ def testResumeOption(sessions, tmp_path, monkeypatch, capsys):
     assert capsys.readouterr().out == ""
 
 
-def testIdOptionResumesNumberedRow(sessions, tmp_path, monkeypatch):
-    """--id bypasses the picker and resumes the numbered filtered row."""
-    _fixtureWrite(
-        tmp_path / ".codex/sessions/rollout-direct.jsonl",
-        json.dumps(
-            {
-                "type": "session_meta",
-                "payload": {"id": "direct-id", "cwd": str(tmp_path)},
-            }
-        ),
-    )
-    resumed = []
-    monkeypatch.setattr(sys, "argv", [SCRIPT, "--id", "1"])
-    monkeypatch.setattr(sessions, "sessionResume", lambda row: resumed.append(row) or 7)
-    assert sessions.main() == 7
-    assert [row["session_id"] for row in resumed] == ["direct-id"]
-
-
-@pytest.mark.parametrize("options", [["--resume"], ["--resume", "--id", "1"]])
-def testResumeNeedsTerminal(tmp_path, options):
+def testResumeNeedsTerminal(tmp_path):
     env = {**os.environ, "HOME": str(tmp_path), "PYTHONPATH": str(REPO_ROOT)}
     result = subprocess.run(
-        [*COMMAND, *options],
+        [*COMMAND, "--resume"],
         env=env,
         text=True,
         capture_output=True,
@@ -582,3 +547,59 @@ def testDirectoryIdentity(sessions, tmp_path):
         {"directory": str(tmp_path) + "-other"},
     ]
     assert sessions.sessionsForDirectory(rows, tmp_path) == rows[:2]
+
+
+def testDirectoryShowsFolderName(sessions):
+    """The listing shows only the folder name; the row keeps the full path."""
+    row = {
+        "agent": "Codex",
+        "directory": "~/Source/organiseMyProjects",
+        "session_id": SESSION_ID,
+        "date": sessions.datetime.min,
+        "title": "",
+    }
+    lines = sessions.tableLines([row, {**row, "directory": "~"}], terminal_width=120)
+    assert "organiseMyProjects" in lines[1] and "Source" not in lines[1]
+    assert "  ~  " in lines[2]
+    assert row["directory"] == "~/Source/organiseMyProjects"
+
+
+def testAgentFlagsCombine(sessions, tmp_path, monkeypatch, capsys):
+    """Agent flags are cumulative; with none, every agent is listed."""
+    cwd = str(tmp_path)
+    _fixtureWrite(
+        tmp_path / f".claude/projects/work/{SESSION_ID}.jsonl",
+        json.dumps({"cwd": cwd}),
+    )
+    _fixtureWrite(
+        tmp_path / ".codex/sessions/rollout-one.jsonl",
+        json.dumps({"type": "session_meta", "payload": {"id": SESSION_ID, "cwd": cwd}}),
+    )
+    _fixtureWrite(
+        tmp_path / f".grok/sessions/{quote(cwd, safe='')}/{SESSION_ID}/summary.json",
+        "{}",
+    )
+
+    def listed(*flags):
+        monkeypatch.setattr(sys, "argv", [SCRIPT, *flags])
+        assert sessions.main() == 0
+        output = capsys.readouterr().out
+        return {agent for agent in ("Claude", "Codex", "Grok") if agent in output}
+
+    assert listed() == {"Claude", "Codex", "Grok"}
+    assert listed("--claude") == {"Claude"}
+    assert listed("--claude", "--grok") == {"Claude", "Grok"}
+    assert listed("--copilot") == set()
+
+    # Agent options search every directory, so --all is redundant.
+    other = str(tmp_path / "other")
+    _fixtureWrite(
+        tmp_path / f".claude/projects/other/{SESSION_ID[:-1]}d.jsonl",
+        json.dumps({"cwd": other}),
+    )
+    assert len(_offered(sessions, monkeypatch, "--claude")) == 2
+    assert len(_offered(sessions, monkeypatch)) == 3
+    monkeypatch.setattr(sys, "argv", [SCRIPT, "--claude", "--all"])
+    with pytest.raises(SystemExit) as error:
+        sessions.main()
+    assert error.value.code == 2 and "--all" in capsys.readouterr().err

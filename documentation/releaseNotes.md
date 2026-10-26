@@ -1,5 +1,17 @@
 # Release notes
 
+## 0.9a6
+
+### Agent sessions
+
+- The `agentSessions` DIRECTORY column shows only the folder name, such as
+  `organiseMyProjects` rather than `~/Source/organiseMyProjects`. Resuming
+  still uses the full path.
+- `--claude`, `--codex`, `--copilot` and `--grok` list only those agents'
+  sessions, from every directory. The flags combine: `agentSessions --claude
+  --grok` lists both. They imply `--all`, so the two cannot be combined.
+- `--id ROW` is removed. Use `--resume` to pick a session from a menu.
+
 ## 0.9a5
 
 Bug fixes and refinements to the 0.9a0 requirement board.

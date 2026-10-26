@@ -16,7 +16,7 @@ from organiseMyProjects.managedContent import (
     managedContentBody,
     managedContentBuild,
 )
-from organiseMyProjects.requirementLayout import layoutMigrate
+from organiseMyProjects.requirementLayout import layoutMigrate, legacyIndexFind
 from organiseMyProjects.requirementNaming import requirementNamesCorrect
 from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
 from organiseMyProjects.version import VERSION
@@ -438,7 +438,7 @@ Describe the current problem and relevant constraints.
 - YYYY-MM-DD: created — reason or source.
 """
 
-REQUIREMENTS_README_CONTENT = """# Requirements
+REQUIREMENTS_INDEX_CONTENT = """# Requirements
 
 Next available number: 001
 
@@ -479,7 +479,7 @@ Chosen option because rationale.
 - Negative: Trade-off or limitation.
 """
 
-ADR_README_CONTENT = """# Architecture Decision Records
+ADR_INDEX_CONTENT = """# Architecture Decision Records
 
 Next available number: 001
 
@@ -505,8 +505,8 @@ The importable Python package is `{packageName}/`. Install the project with
 - [Architecture](documentation/architecture.md)
 - [Roadmap](project/roadmap.md)
 - [Current Increment](project/currentIncrement.md)
-- [Requirements](project/requirements/README.md)
-- [Architecture Decisions](project/adr/README.md)
+- [Requirements](project/requirements/requirementsIndex.md)
+- [Architecture Decisions](project/adr/adrIndex.md)
 - [Release Guide](documentation/howToRelease.md)
 - [Repository Layout](documentation/repositoryLayout.md)
 - [Requirements Management](documentation/requirementsManagement.md)
@@ -540,12 +540,15 @@ PROJECT_TEXT_TEMPLATES = [
     (Path("project") / "currentIncrement.md", CURRENT_INCREMENT_CONTENT),
     (Path("project") / "project.yaml", PROJECT_YAML_CONTENT),
     (Path("project") / "roadmap.md", ROADMAP_CONTENT),
-    (Path("project") / "requirements" / "README.md", REQUIREMENTS_README_CONTENT),
+    (
+        Path("project") / "requirements" / "requirementsIndex.md",
+        REQUIREMENTS_INDEX_CONTENT,
+    ),
     (
         Path("project") / "requirements" / "templates" / "requirement.md",
         REQUIREMENT_TEMPLATE_CONTENT,
     ),
-    (Path("project") / "adr" / "README.md", ADR_README_CONTENT),
+    (Path("project") / "adr" / "adrIndex.md", ADR_INDEX_CONTENT),
     (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
 ]
 
@@ -554,12 +557,15 @@ PROJECT_CONTEXT_TEMPLATES = [
     (Path("project") / "currentIncrement.md", CURRENT_INCREMENT_CONTENT),
     (Path("project") / "project.yaml", PROJECT_YAML_CONTENT),
     (Path("project") / "roadmap.md", ROADMAP_CONTENT),
-    (Path("project") / "requirements" / "README.md", REQUIREMENTS_README_CONTENT),
+    (
+        Path("project") / "requirements" / "requirementsIndex.md",
+        REQUIREMENTS_INDEX_CONTENT,
+    ),
     (
         Path("project") / "requirements" / "templates" / "requirement.md",
         REQUIREMENT_TEMPLATE_CONTENT,
     ),
-    (Path("project") / "adr" / "README.md", ADR_README_CONTENT),
+    (Path("project") / "adr" / "adrIndex.md", ADR_INDEX_CONTENT),
     (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
 ]
 MANAGED_COPY_TEMPLATES = [
@@ -695,9 +701,9 @@ FILE_OWNERSHIP = {
     "project/currentIncrement.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "project/project.yaml": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "project/roadmap.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
-    "project/requirements/README.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/requirements/requirementsIndex.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "project/requirements/templates/requirement.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
-    "project/adr/README.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "project/adr/adrIndex.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "project/adr/templates/adr.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
 }
 FILE_OWNERSHIP.update(
@@ -905,13 +911,13 @@ def createProject(
         )
         (basePath / "project" / "project.yaml").write_text(PROJECT_YAML_CONTENT)
         (basePath / "project" / "roadmap.md").write_text(ROADMAP_CONTENT)
-        (basePath / "project" / "requirements" / "README.md").write_text(
-            REQUIREMENTS_README_CONTENT
+        (basePath / "project" / "requirements" / "requirementsIndex.md").write_text(
+            REQUIREMENTS_INDEX_CONTENT
         )
         (
             basePath / "project" / "requirements" / "templates" / "requirement.md"
         ).write_text(REQUIREMENT_TEMPLATE_CONTENT)
-        (basePath / "project" / "adr" / "README.md").write_text(ADR_README_CONTENT)
+        (basePath / "project" / "adr" / "adrIndex.md").write_text(ADR_INDEX_CONTENT)
         (basePath / "project" / "adr" / "templates" / "adr.md").write_text(
             ADR_TEMPLATE_CONTENT
         )
@@ -1231,6 +1237,10 @@ def migrateProject(projectName, dryRun: bool = False):
             (basePath / folder).mkdir(parents=True, exist_ok=True)
 
     for destRel, content in PROJECT_CONTEXT_TEMPLATES:
+        # A legacy README or folderIndex index is renamed by the layout
+        # migration below; creating the new index first would block that.
+        if legacyIndexFind(basePath, destRel) is not None:
+            continue
         _createTextFileIfMissing(basePath / destRel, content, dryRun)
 
     _requirementLayoutMaintain(basePath, dryRun)

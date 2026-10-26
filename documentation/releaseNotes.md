@@ -1,5 +1,20 @@
 # Release notes
 
+## 0.9.1 — 2026-10-26
+
+Bug-fix release for 0.9's project scaffold.
+
+### Scaffold index files
+
+- `manageProject create` and `manageProject migrate` create
+  `project/requirements/requirementsIndex.md` and `project/adr/adrIndex.md`
+  directly. They previously wrote the old `README.md` index names, which a
+  confirmed run then removed again, so `migrate`'s dry run listed files it
+  would not leave behind.
+- `migrate` does not create a new index while a legacy `README.md` or
+  `folderIndex.md` index is waiting to be renamed, so the rename keeps its rows.
+- The scaffolded project README links to the new index files.
+
 ## 0.9 — 2026-10-26
 
 OMP 0.9 adds the `myBoard` requirement board and the `agentSessions` command,

@@ -21,6 +21,8 @@ logging. Dependencies are never installed by the command itself.
 agentSessions
 agentSessions --all --full
 agentSessions --history
+agentSessions --claude
+agentSessions --all --claude --codex
 agentSessions --id 2
 agentSessions --all --search migrateToRaid
 agentSessions --resume
@@ -31,7 +33,10 @@ agentSessions --version
 ```
 
 --all includes sessions from all working directories. --history includes older
-sessions within the selected directory scope. Combine --all --history to see everything. --full displays complete IDs. --verbose enables
+sessions within the selected directory scope. Combine --all --history to see everything.
+--claude, --codex, --copilot and --grok list only those agents' sessions; the
+flags combine, so `--claude --grok` lists both, and with none every agent is
+listed. --full displays complete IDs. --verbose enables
 parser diagnostics; --quiet suppresses lifecycle messages. Shared run/section
 separators and the listing remain visible. agentSessions never edits session
 stores itself, so it has no --confirm option; a resumed agent manages its own store.

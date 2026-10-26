@@ -77,6 +77,8 @@ def main() -> int:
     # The picker owns the screen, so console logging would corrupt it.
     logger = getLogger(includeConsole=not args.resume, level=level)
     rows = sessionsCollect()
+    if args.agents:
+        rows = sessionsForAgents(rows, args.agents)
     if not args.all:
         rows = sessionsForDirectory(rows, Path.cwd())
     if args.search is not None:
@@ -122,6 +124,10 @@ Resume a numbered row:
   agentSessions --id 2
   agentSessions --all --id 2   # when selecting from --all
 
+List only some agents (flags combine; none means every agent):
+  agentSessions --claude
+  agentSessions --all --claude --codex
+
 Find a session by title or directory:
   agentSessions --all --search migrateToRaid
   agentSessions --all --search migrateToRaid --id 1
@@ -136,6 +142,15 @@ Pick from a menu and resume in the session's directory:
         action="store_true",
         help="include sessions from all working directories",
     )
+    # Each flag adds its agent, so --claude --grok lists both.
+    for agent in RESUME_COMMANDS:
+        parser.add_argument(
+            f"--{agent.lower()}",
+            dest="agents",
+            action="append_const",
+            const=agent,
+            help=f"include {agent} sessions (combine flags; default: every agent)",
+        )
     action = parser.add_mutually_exclusive_group()
     action.add_argument(
         "--id",
@@ -181,6 +196,12 @@ def sessionsCollect() -> list[Session]:
             _warningReport(f"cannot scan session store: {collect.__name__}: {error}")
     getLogger().debug("scanned all supported session stores")
     return rows
+
+
+def sessionsForAgents(rows: list[Session], agents: list[str]) -> list[Session]:
+    """Keep sessions from the selected agents only."""
+    wanted = set(agents)
+    return [row for row in rows if row["agent"] in wanted]
 
 
 def sessionsForDirectory(rows: list[Session], directory: Path) -> list[Session]:

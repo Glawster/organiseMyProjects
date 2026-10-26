@@ -7,6 +7,8 @@
 - The `agentSessions` DIRECTORY column shows only the folder name, such as
   `organiseMyProjects` rather than `~/Source/organiseMyProjects`. Resuming
   still uses the full path.
+- `--claude`, `--codex`, `--copilot` and `--grok` list only those agents'
+  sessions. The flags combine: `agentSessions --claude --grok` lists both.
 
 ## 0.9a5
 

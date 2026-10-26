@@ -597,3 +597,31 @@ def testDirectoryShowsFolderName(sessions):
     assert "organiseMyProjects" in lines[1] and "Source" not in lines[1]
     assert "  ~  " in lines[2]
     assert row["directory"] == "~/Source/organiseMyProjects"
+
+
+def testAgentFlagsCombine(sessions, tmp_path, monkeypatch, capsys):
+    """Agent flags are cumulative; with none, every agent is listed."""
+    cwd = str(tmp_path)
+    _fixtureWrite(
+        tmp_path / f".claude/projects/work/{SESSION_ID}.jsonl",
+        json.dumps({"cwd": cwd}),
+    )
+    _fixtureWrite(
+        tmp_path / ".codex/sessions/rollout-one.jsonl",
+        json.dumps({"type": "session_meta", "payload": {"id": SESSION_ID, "cwd": cwd}}),
+    )
+    _fixtureWrite(
+        tmp_path / f".grok/sessions/{quote(cwd, safe='')}/{SESSION_ID}/summary.json",
+        "{}",
+    )
+
+    def listed(*flags):
+        monkeypatch.setattr(sys, "argv", [SCRIPT, *flags])
+        assert sessions.main() == 0
+        output = capsys.readouterr().out
+        return {agent for agent in ("Claude", "Codex", "Grok") if agent in output}
+
+    assert listed() == {"Claude", "Codex", "Grok"}
+    assert listed("--claude") == {"Claude"}
+    assert listed("--claude", "--grok") == {"Claude", "Grok"}
+    assert listed("--copilot") == set()

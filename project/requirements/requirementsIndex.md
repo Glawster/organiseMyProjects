@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 028
+Next available number: 029
 
 ## Requirement index
 
@@ -33,3 +33,4 @@ Next available number: 028
 | 025 | [Repository portfolio board](features/025-repositoryPortfolioBoard.md) | Show actionable status across local repositories above individual requirement boards. | ToDo | [Prompt](prompt/025-repositoryPortfolioBoard.md) | Pending |
 | 026 | [Shared TUI style mockup](features/026-sharedTuiStyleMockup.md) | Generate a reproducible SVG showing shared Textual styles in regular use. | Completed | [Prompt](prompt/026-sharedTuiStyleMockup.md) | Not required |
 | 027 | [List editing interaction standard and enforcement](features/027-listEditingInteractionStandard.md) | Standardise list/table editing, deploy the guide through manageProject, make agents read it, validate managed copies and add only reliable static UI checks. | ToDo | [Prompt](prompt/027-listEditingInteractionStandard.md) | Not required unless implementation introduces a new ownership model |
+| 028 | [Agent usage availability](features/028-agentUsage.md) | Show comparable remaining availability for Claude, Codex, Grok and Copilot with `agentSessions --usage`. | InProgress | [Prompt](prompt/028-agentUsage.md) | Not required |

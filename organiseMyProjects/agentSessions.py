@@ -73,10 +73,32 @@ def main() -> int:
     )
     if args.all and args.agents:
         parser.error("--all is implied by the agent options")
+    if args.usage and (
+        args.resume
+        or args.all
+        or args.agents
+        or args.search is not None
+        or args.history
+        or args.full
+    ):
+        parser.error(
+            "--usage cannot be combined with session listing or resume options"
+        )
     if args.resume and not (sys.stdin.isatty() and sys.stdout.isatty()):
         parser.error("--resume needs an interactive terminal")
     # The picker owns the screen, so console logging would corrupt it.
     logger = getLogger(includeConsole=not args.resume, level=level)
+    if args.usage:
+        from organiseMyProjects.agentUsage import allowanceCollect, allowanceLines
+
+        runStart()
+        logger.doing("reading account availability")
+        line()
+        for text in allowanceLines(allowanceCollect()):
+            print(text)
+        line()
+        logger.done("account availability complete")
+        return 0
     rows = sessionsCollect()
     if args.agents:
         rows = sessionsForAgents(rows, args.agents)
@@ -129,6 +151,11 @@ Pick from a menu and resume in the session's directory:
   agentSessions --resume
   agentSessions --all --search raid --resume
 """,
+    )
+    parser.add_argument(
+        "--usage",
+        action="store_true",
+        help="show account capacity remaining for every supported agent",
     )
     parser.add_argument(
         "--all",

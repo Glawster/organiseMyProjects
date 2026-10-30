@@ -43,3 +43,12 @@ Use provider-appropriate window names if the returned quota model differs. `UNKN
 Add focused tests for adapter parsing and normalisation, provider failure isolation and rendering. Run the existing `agentSessions` tests as regression coverage plus the repository's normal test/lint commands. If a provider requires an installed/authenticated external CLI for integration testing, keep unit tests deterministic with captured representative protocol responses and report any manual verification separately.
 
 Do not commit secrets, captured auth files or bearer tokens in fixtures.
+
+## Approved Claude fallback
+
+The user approved terminal scraping of Claude Code's built-in `/usage` on
+2026-10-30. Use a separate safe-mode POSIX terminal and interpret its rendered
+state with `pyte`; do not scrape browser pages or extract OAuth tokens. Submit
+only `/usage`, reject startup/trust/login dialogs, preserve all quota windows,
+and terminate the process group on success, failure and timeout. Do not save or
+log screen contents. Keep `UNKNOWN` when the UI cannot be read confidently.

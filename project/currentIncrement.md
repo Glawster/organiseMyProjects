@@ -2,90 +2,67 @@
 
 ## Increment
 
-0.9 — Acceptance close-out, internal patch removal, runLinter reporting and
-runtime architecture decision
+0.10 — Agent account availability
 
 ## Status
 
-Released as 0.9 on 2026-10-26 — 004, 012, 013, 014, 021, 022, 023, 026 and
-the patch-removal refactor done. 002 and 024 are deferred to 0.10 and stay
-InProgress.
+InReview
 
 ## Objective
 
-Close out requirements 004 and 012, move import-time patch behaviour back into
-the modules that own it, deliver pytest-style runLinter reporting, and decide
-and document the runtime-sharing architecture for requirement 002 so it can be
-implemented in 0.10.
+Deliver [028: Agent usage availability](requirements/features/028-agentUsage.md)
+on `feature/028-agent-usage` without changing session listing or resumption.
 
-## Requirements
+## Implementation
 
-- [004: Requirement, prompt and directory-index layout](requirements/features/004-requirementDocumentationLayout.md) — Completed; all acceptance criteria verified in the 0.9 review.
-- [012: Shared TUI button presentation](requirements/features/012-sharedTuiButtonPresentation.md) — Completed; style tests run in the `ompr` environment. `mailAgent` adopted the shared `button-group` on both execute rows in `f75f694`, removing local width/height/padding overrides; headless render tests measure one-row buttons, equal widths, one-column gaps and one free row around each group.
-- [013: runLinter pytest-style reporting](requirements/features/013-runLinterPytestStyleReporting.md) — Completed; downstream projects with findings now fail `runLinter` (for example `mailAgent`: one `NAM-003`).
-- [014: OMPR test environment](requirements/features/014-omprTestEnvironment.md) — Completed; run tests and release validation in the `ompr` Conda environment.
-- [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md) — InProgress; the no-runtime-dependency goal is retained. 0.9 delivers a new ADR deciding where canonical shared runtime code lives and how it is synchronised, reconsidering rather than reviving superseded ADR-002. The ADR and implementation are deferred to 0.10. The ADR must also settle the reserved package name: `omp` denotes organiseMyPhotos, so it cannot mean organiseMyProjects (OMPR).
-- [021: Requirement board](requirements/features/021-myBoard.md) — Completed; myBoard lists each requirement in one column. A confirmed move updates the record, the index and the increment together. The detail shows the linked branch, commits and changed files. Checks, runLinter and pytest run on request, and a pytest failure stays with the requirement it names.
-- [022: Agent session listing](requirements/features/022-agentSessions.md) — Completed; merged into release/0.9 with parser, CLI subprocess and shared-logging evidence.
-- [023: Requirement board editing](requirements/features/023-myBoardEditing.md) — Completed; edit selected requirement metadata and prose through the confirmed myBoard CLI workflow.
-- [024: Requirement board branch versions](requirements/features/024-myBoardBranchVersions.md) — InProgress; deferred to 0.10. Show unmerged local and remote-only branches with their OMP versions.
-- [026: Shared TUI style mockup](requirements/features/026-sharedTuiStyleMockup.md) — Completed; generate an SVG from the shared Textual stylesheet.
+- `agentSessions --usage` queries every supported provider independently and
+  renders account capacity remaining, with separate windows and local reset times.
+- `agentUsage.py` owns provider acquisition, explicit percentage conversion,
+  normalisation, safe statuses and table formatting. `claudeUsage.py` adds the
+  user-approved terminal fallback using the `pyte` runtime dependency.
+- Presentation uses aligned agent/window/available/reset columns, one quota per
+  line and a blank line between agents; redundant default bucket names are omitted.
+- Protocol calls use bounded subprocesses; tests verify timeout cleanup. No
+  model turns, session token totals, direct credential-file reads or raw response
+  logging are used to obtain capacity.
+- Session-specific flags conflict with `--usage`; help, quiet and verbose work.
+- The maintained agent sessions guide documents interface provenance, semantics,
+  authentication states and known limitations.
 
-## Internal refactor (no requirement)
+## Verification
 
-Done: the six import-time patch installations are removed from
-`organiseMyProjects/__init__.py`. `linter08` and `linterCentralisation` are
-folded into `guiNamingLinter`, `runLinter` and `manageProject`; `manageProject`
-calls `layoutMigrate` and `promptIndexEnsure` explicitly; the requirement and
-README checks live in `agentCheck`. All existing tests pass unchanged apart
-from imports.
+- Full suite: 625 passed with no skips in the `ompr` environment; focused
+  provider/session/Claude terminal suite: 118 passed.
+- Synthetic CLI subprocesses exercise Codex/Grok line-based JSON-RPC and Copilot
+  Content-Length framing, with independently specified quota expectations.
+- Tests cover used/remaining conversion, boundaries, malformed/missing fields,
+  named buckets, multiple windows, resets, auth errors, isolation and timeouts.
+- Claude tests cover screenshot-derived quota expectations, additional weekly
+  bars, malformed/partial screens, real terminal redraws, timezone/date rollover,
+  startup dialog rejection and reaping stalled processes.
+- Existing session listing, search, filters, history and resume regressions pass.
+- Black, Ruff, targeted OMP source lint, repository markup and diff whitespace
+  validation pass.
+- Isolated source distribution and wheel builds pass; the wheel includes the
+  Claude adapter and declares the `pyte` dependency.
+- Repository readiness check: zero failures, six existing requirement-template
+  warnings in unrelated requirements.
+- Live read-only verification: Codex and Copilot return account quota percentages;
+  Grok returns the billing period but omits `creditUsagePercent`; Claude Code
+  2.1.314 `/usage` capture returns session/weekly percentages and timezone resets.
 
-Follow-up candidate: scaffold `requirementsIndex.md` and `adrIndex.md`
-directly instead of writing legacy `README.md` indexes that update then
-migrates.
+## Limitations and review
 
-## Backlog
+- Claude terminal scraping is less stable than an account protocol. It uses a
+  separate safe-mode process, rejects dialogs, preserves redraw semantics and
+  falls back to `UNKNOWN` on unsupported platforms or changed/ambiguous screens.
+  No direct OAuth extraction or undocumented endpoint was introduced.
+- Grok 1.0.70 reports `weekly: UNKNOWN` alongside its supplied reset when the
+  percentage is missing. Financial counts are deliberately not converted.
+- Independent review and human acceptance remain before merge.
+- This is an OMPR developer command. OMS, OMV and OMP have no code/runtime impact.
 
-Captured on 2026-10-20 from the `mailAgent` review; all ToDo and not yet
-scheduled within the planned order below.
+## Backlog retained for 0.10
 
-- [015: Requirement record conformance checks](requirements/features/015-requirementRecordConformance.md) — Completed; REQ-007 to REQ-012 added to `manageProject --check`.
-- [016: Requirement naming correction during update](requirements/features/016-requirementNamingCorrection.md) — Completed; `manageProject --update` corrects names, prompts, headings and links.
-- [017: Requirements guide clarifications](requirements/features/017-requirementsGuideClarifications.md)
-- [018: Framework override naming exemptions beyond Textual](requirements/features/018-frameworkOverrideNamingExemptions.md)
-- [019: Environment and test configuration consistency](requirements/features/019-environmentAndTestConfigConsistency.md) — resolves the open question in 014.
-- [020: Documentation completeness checks](requirements/features/020-documentationCompletenessChecks.md)
-- [025: Repository portfolio board](requirements/features/025-repositoryPortfolioBoard.md) — local cross-repository status and attention signals.
-
-## Planned order
-
-1. Housekeeping — done: removed duplicate
-   `documentation/omp-agent-portability-design-proposal(1).md`; captured
-   requirements 013 and 014.
-2. Requirement 014 test environment — done.
-3. Requirement 004 evidence and close-out — done.
-4. Patch-removal refactor — done.
-5. Requirement 013 — done.
-6. Requirement 012 downstream verification in `mailAgent` — done.
-7. Requirement 002 ADR and requirement refinement — deferred to 0.10.
-8. Release checks per `documentation/howToRelease.md`.
-
-## Not in 0.9
-
-- `origin/feature/0.8-list-editing-standard` — left untouched; any future
-  list-editing requirement takes the next available number.
-- Repository-wide rename of "OMP" to "OMPR" for organiseMyProjects in
-  existing documentation; candidate for 0.10.
-- `origin/docs/project-self-discovery` and
-  `origin/standards/branch-squash-workflow` — not requirements; the latter
-  conflicts with the release-branch model in `documentation/howToRelease.md`.
-
-## Verification still required
-
-- None for 0.9. Release validation passed on 2026-10-26: pytest, `runLinter .`,
-  `runLinter --markup`, ruff and black.
-
-## Immediate next action
-
-Plan the 0.10 increment, starting with the requirement 002 ADR and
-requirement 024.
+- [002: Runtime infrastructure synchronisation](requirements/features/002-runtimeInfrastructureSync.md): runtime-sharing ADR and reserved package-name decision.
+- [024: Requirement board branch versions](requirements/features/024-myBoardBranchVersions.md): unmerged local and remote branches with their versions.

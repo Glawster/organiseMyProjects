@@ -2,17 +2,23 @@
 
 ## Status
 
-InProgress
+Completed
 
-## Requirement
+## Outcome
 
 As a developer using several AI coding agents, I need `agentSessions --usage` to show how much usable plan capacity remains for Claude, Codex, Grok and Copilot in one common format, so that I can choose an agent that has enough availability for the next piece of work.
 
 The command shall normalise every provider to **percentage available/remaining**. Provider-native percentages reported as used/consumed shall be converted with `100 - used`. Raw token, credit or request counts are not useful as the primary comparison and shall not be substituted for a percentage when a trustworthy percentage cannot be calculated.
 
-## Behaviour
+## Context
 
-`agentSessions --usage` shall report one row per supported agent. Where an agent has more than one independently binding allowance, the command shall show the relevant windows separately rather than collapsing them into a misleading single number. Reset times shall be shown when the provider supplies them.
+The session-listing command already knows the supported agent CLIs, but local
+session token statistics do not describe account capacity. This feature adds
+independent account queries without changing session discovery or resumption.
+
+## Scope
+
+`agentSessions --usage` shall group allowances by supported agent, using aligned columns and one row per quota window for readability. Where an agent has more than one independently binding allowance, the command shall show the relevant windows separately rather than collapsing them into a misleading single number. Reset times shall be shown when the provider supplies them.
 
 The preferred presentation is compact and comparable, for example:
 
@@ -63,3 +69,34 @@ Provider interfaces can evolve. Keep provider-specific acquisition and parsing b
 - Predicting how long a future task will consume.
 - Comparing model quality or recommending an agent solely from quota.
 - Scraping browser account pages when a supported local CLI/SDK/protocol is available.
+
+## Dependencies and decisions
+
+- Provider-owned authentication through installed CLIs; no direct credential
+  extraction or model requests. `pyte` interprets the approved Claude terminal fallback.
+- Account acquisition and normalisation live in `organiseMyProjects/agentUsage.py`;
+  `agentSessions.py` owns argument parsing and command dispatch.
+- At the user's request, Claude may use a separate POSIX terminal to capture
+  built-in `/usage` output when no account protocol is available. Only explicitly
+  labelled quota bars are used; dialogs are not accepted and raw screens are not
+  persisted. Missing or ambiguous readings remain unknown. Grok percentages are
+  likewise never inferred from financial or session counts.
+
+## Verification
+
+- Deterministic quota conversion, reset, error isolation and protocol tests in
+  `tests/test_agentUsage.py`, including real subprocesses for both stdio framings.
+- Existing `tests/test_agentSessions.py` covers listing/filter/search/history/resume
+  regressions; execute the full suite in the `ompr` environment.
+- Black, Ruff, targeted `runLinter`, markup validation and `git diff --check`.
+- Manual read-only probes of installed providers; record limitations in the
+  current increment and the maintained agent sessions guide.
+
+## Change history
+
+- 2026-10-30: captured on the feature branch and implemented account availability
+  through provider protocols, preserving unknown data and independent windows.
+
+- 2026-10-30: refined the output at user request to group agents with aligned per-window rows.
+
+- 2026-10-30: user approved scraping Claude Code `/usage`; added a private terminal fallback with redraw-aware parsing, timezone resets and bounded cleanup.

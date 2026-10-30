@@ -170,3 +170,82 @@ runLinter organiseMyProjects/agentSessions.py
 Tests use temporary home folders with synthetic session stores and the real
 shared logger. They cover all four agents' stores, titles, filtering, search,
 the menu, resuming, malformed input and read failures.
+
+## Account capacity remaining
+
+Run `agentSessions --usage` to compare account allowances without listing or
+resuming sessions. Use `--quiet` to suppress lifecycle messages or `--verbose`
+for the existing logging mode. Session options such as `--all`, `--history`,
+`--search`, agent filters and `--resume` cannot be combined with `--usage`.
+
+Every percentage means **available/remaining**, including `0%` for an exhausted
+allowance. Used percentages are converted with `100 - used`; remaining
+percentages are retained, with results clamped to 0–100. Rows are grouped by agent, with one allowance per line and aligned
+window, available-capacity and reset columns. Independent quota windows keep
+their own reset times in local time. Missing reset times appear as `—`.
+
+- `NOT INSTALLED`: the agent executable is absent from PATH.
+- `NOT AUTHENTICATED`: a supported status response or explicit authentication
+  error says that the account is not authenticated.
+- `UNKNOWN`: the provider did not supply a trustworthy account percentage,
+  does not support the account method, failed, or timed out. Authentication
+  failures that cannot be reliably identified also remain unknown.
+
+Provider adapters use short-lived local protocol clients, query accounts
+independently, and apply a twelve-second deadline per provider. They do not
+submit model tasks, read OAuth credential files, or
+print/log raw protocol responses and provider errors. The provider CLIs own
+credential access and may update their own normal runtime state.
+
+### Provider interfaces and limitations
+
+- **Claude:** `claude auth status --json` distinguishes an unauthenticated
+  account. On POSIX systems the user-approved fallback launches a separate
+  `claude --safe-mode --no-chrome` terminal and submits only the built-in `/usage`
+  command. The `pyte` dependency interprets cursor movement and redraws in memory,
+  so overwritten percentages are not read as current values. The adapter reads
+  the current session and all-model weekly bars, plus additional weekly bars
+  when present, and converts their explicitly labelled used percentages.
+  Resets are parsed with the timezone shown by Claude. A time-only reset denotes
+  its next occurrence; a dated reset uses the current year, rolling into the
+  next year when required. Unrecognised reset formats remain `—`.
+  Terminal frames are never saved or logged. Trust, login and terms dialogs
+  are not accepted automatically. The child process group is terminated and
+  reaped after capture, failure or timeout. Screen-format changes, missing quota
+  bars, unsupported platforms, or unavailable terminal support produce `UNKNOWN`.
+  This fallback was verified with Claude Code 2.1.314. UI scraping is less stable
+  than an account protocol; direct OAuth extraction and undocumented usage
+  endpoints remain excluded.
+- **Codex:** the app-server `account/read` and `account/rateLimits/read`
+  methods provide authentication and quota snapshots. Primary/secondary windows
+  remain separate, named buckets are preserved, and `usedPercent` is converted.
+  Known five-hour and seven-day durations are labelled `5h` and `weekly`.
+- **Grok:** `grok agent --no-leader stdio` exposes the `_x.ai/billing` ACP
+  extension. Only `config.creditUsagePercent` is interpreted as used capacity;
+  `config.currentPeriod.end` provides its reset. The installed 1.0.70 CLI
+  returned the period but omitted that percentage during verification, so it
+  shows `weekly: UNKNOWN` with the supplied reset. Financial balances and
+  per-session token/cost statistics are never substituted for availability.
+- **Copilot:** the headless SDK stdio protocol exposes `auth.getStatus` and
+  `account.getQuota`. Each `quotaSnapshots` entry retains its provider name,
+  `remainingPercentage`, and `resetDate`. Account windows need not be weekly;
+  chat, completions and premium interactions can have different entitlements.
+
+The interface basis is the
+[Codex app-server protocol](https://github.com/openai/codex/tree/main/codex-rs/app-server),
+[Copilot SDK account quota documentation](https://docs.github.com/en/copilot/how-tos/copilot-sdk/features/usage-and-billing),
+[pyte's terminal-emulation API](https://pyte.readthedocs.io/en/latest/api.html),
+and live read-only probes of the installed CLIs. Grok's extension was verified
+locally; it may change across versions. Unsupported or changed response shapes
+remain `UNKNOWN` rather than being inferred from unrelated values.
+
+Run the focused regression suite with:
+
+```bash
+python -m pytest tests/test_agentUsage.py tests/test_claudeUsage.py tests/test_agentSessions.py
+```
+
+The tests compose actual stdio subprocesses and pseudo-terminals using synthetic
+account responses and terminal redraws;
+live account values are not committed as fixtures. This is an OMPR developer
+command; OMS, OMV and OMP need no code or runtime changes.

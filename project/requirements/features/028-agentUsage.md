@@ -2,7 +2,7 @@
 
 ## Status
 
-Completed
+InReview
 
 ## Outcome
 
@@ -73,14 +73,14 @@ Provider interfaces can evolve. Keep provider-specific acquisition and parsing b
 ## Dependencies and decisions
 
 - Provider-owned authentication through installed CLIs; no direct credential
-  extraction or model requests. `pyte` interprets the approved Claude terminal fallback.
+  extraction or model requests. `pyte` interprets the Claude terminal fallback.
 - Account acquisition and normalisation live in `organiseMyProjects/agentUsage.py`;
   `agentSessions.py` owns argument parsing and command dispatch.
-- At the user's request, Claude may use a separate POSIX terminal to capture
-  built-in `/usage` output when no account protocol is available. Only explicitly
-  labelled quota bars are used; dialogs are not accepted and raw screens are not
-  persisted. Missing or ambiguous readings remain unknown. Grok percentages are
-  likewise never inferred from financial or session counts.
+- Claude uses a separate POSIX terminal to capture built-in `/usage` output when no
+  suitable account quota protocol is available. Only explicitly labelled quota
+  bars are used; dialogs are not accepted and raw screens are not persisted.
+  Missing or ambiguous readings remain unknown. Grok percentages are likewise
+  never inferred from financial or session counts.
 
 ## Verification
 
@@ -99,4 +99,4 @@ Provider interfaces can evolve. Keep provider-specific acquisition and parsing b
 
 - 2026-10-30: refined the output at user request to group agents with aligned per-window rows.
 
-- 2026-10-30: user approved scraping Claude Code `/usage`; added a private terminal fallback with redraw-aware parsing, timezone resets and bounded cleanup.
+- 2026-10-30: added a private Claude Code `/usage` terminal fallback with redraw-aware parsing, timezone resets and bounded cleanup because no suitable account quota protocol is available.

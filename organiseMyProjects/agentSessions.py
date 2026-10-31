@@ -39,12 +39,12 @@ CLAUDE_TITLES = (
 )
 
 
-# Each agent's own resume syntax, verified against its installed CLI help.
+# Each agent's resume syntax and no-prompt policy, verified against CLI help.
 RESUME_COMMANDS = {
-    "Claude": ("claude", "--resume", "{id}"),
-    "Codex": ("codex", "resume", "{id}"),
-    "Copilot": ("copilot", "--resume={id}"),
-    "Grok": ("grok", "--resume", "{id}"),
+    "Claude": ("claude", "--resume", "{id}", "--permission-mode", "dontAsk"),
+    "Codex": ("codex", "resume", "{id}", "--ask-for-approval", "never"),
+    "Copilot": ("copilot", "--resume={id}", "--allow-all-tools"),
+    "Grok": ("grok", "--resume", "{id}", "--permission-mode", "dontAsk"),
 }
 
 PICKER_HELP = "↑/↓ move · PgUp/PgDn page · Enter resume · q cancel"
@@ -73,10 +73,32 @@ def main() -> int:
     )
     if args.all and args.agents:
         parser.error("--all is implied by the agent options")
+    if args.usage and (
+        args.resume
+        or args.all
+        or args.agents
+        or args.search is not None
+        or args.history
+        or args.full
+    ):
+        parser.error(
+            "--usage cannot be combined with session listing or resume options"
+        )
     if args.resume and not (sys.stdin.isatty() and sys.stdout.isatty()):
         parser.error("--resume needs an interactive terminal")
     # The picker owns the screen, so console logging would corrupt it.
     logger = getLogger(includeConsole=not args.resume, level=level)
+    if args.usage:
+        from organiseMyProjects.agentUsage import allowanceCollect, allowanceLines
+
+        runStart()
+        logger.doing("reading account availability")
+        line()
+        for text in allowanceLines(allowanceCollect()):
+            print(text)
+        line()
+        logger.done("account availability complete")
+        return 0
     rows = sessionsCollect()
     if args.agents:
         rows = sessionsForAgents(rows, args.agents)
@@ -113,10 +135,10 @@ def parserBuild() -> argparse.ArgumentParser:
         description="List resumable local AI agent sessions",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Resume a session (use its full ID, from the session's working directory):
-  Codex:    codex resume <id>
-  Claude:   claude --resume <id>
-  Grok:     grok --resume <id>
-  Copilot:  copilot --resume=<id>
+  Codex:    codex resume <id> --ask-for-approval never
+  Claude:   claude --resume <id> --permission-mode dontAsk
+  Grok:     grok --resume <id> --permission-mode dontAsk
+  Copilot:  copilot --resume=<id> --allow-all-tools
 
 List only some agents, from every directory (flags combine):
   agentSessions --claude
@@ -129,6 +151,11 @@ Pick from a menu and resume in the session's directory:
   agentSessions --resume
   agentSessions --all --search raid --resume
 """,
+    )
+    parser.add_argument(
+        "--usage",
+        action="store_true",
+        help="show account capacity remaining for every supported agent",
     )
     parser.add_argument(
         "--all",

@@ -237,6 +237,7 @@ from a menu. It never edits session stores. See the
 agentSessions
 agentSessions --all --search raid
 agentSessions --claude
+agentSessions --usage    # account capacity remaining across agents
 agentSessions --resume
 ```
 

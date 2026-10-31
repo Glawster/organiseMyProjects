@@ -1,5 +1,28 @@
 # Release notes
 
+## 0.10a2 — 2026-10-31
+
+### Agent account availability
+
+- `agentSessions --usage` displays remaining account capacity for Claude, Codex,
+  Grok and Copilot, grouped by agent with separate quota windows and local reset
+  times. Missing data, missing CLIs and unauthenticated accounts have distinct
+  statuses. Provider failures do not hide the other accounts.
+- Claude availability uses its built-in `/usage` terminal display; unsupported
+  or ambiguous displays remain unknown. Codex, Grok and Copilot use their CLI
+  account protocols without model requests or direct credential extraction.
+- Copilot premium interactions appear first. Unlimited chat and completions show
+  `UNLIMITED` instead of a misleading `100%` beside exhausted premium capacity.
+
+### Session resumption
+
+- Resume commands disable approval prompts using Codex
+  `--ask-for-approval never`, Claude/Grok `--permission-mode dontAsk`, and
+  Copilot `--allow-all-tools`. Claude/Grok deny actions that would need approval;
+  Codex retains its configured sandbox. Copilot path/URL permissions still apply.
+- Help and manual resume examples include the same flags.
+- See [Agent sessions](agentSessions.md) for provider details and limitations.
+
 ## 0.9.1 — 2026-10-26
 
 Bug-fix release for 0.9's project scaffold.

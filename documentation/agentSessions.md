@@ -120,13 +120,17 @@ To resume by hand instead, go to the session's folder and use the full ID from
 `agentSessions --full`:
 
 ```bash
-claude --resume <id>
-codex resume <id>
-copilot --resume=<id>
-grok --resume <id>
+claude --resume <id> --permission-mode dontAsk
+codex resume <id> --ask-for-approval never
+copilot --resume=<id> --allow-all-tools
+grok --resume <id> --permission-mode dontAsk
 ```
 
-These are also listed in `agentSessions --help`.
+These are also listed in `agentSessions --help`. Resumed sessions use each
+agent's no-approval-prompt option. Codex retains its configured sandbox; Claude
+and Grok use `dontAsk`, which denies actions requiring approval rather than
+prompting. Copilot automatically allows tools with `--allow-all-tools`; its
+separate path and URL permissions still apply.
 
 ## Messages and exit status
 
@@ -230,6 +234,9 @@ credential access and may update their own normal runtime state.
   `account.getQuota`. Each `quotaSnapshots` entry retains its provider name,
   `remainingPercentage`, and `resetDate`. Account windows need not be weekly;
   chat, completions and premium interactions can have different entitlements.
+  Premium interactions appear first. Explicit unlimited entitlements are labelled
+  `UNLIMITED`, rather than `100%`, so unlimited base services do not obscure an
+  exhausted premium allowance.
 
 The interface basis is the
 [Codex app-server protocol](https://github.com/openai/codex/tree/main/codex-rs/app-server),

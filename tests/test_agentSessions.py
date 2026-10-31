@@ -465,10 +465,16 @@ def testResumeCommands(sessions, tmp_path, monkeypatch, caplog):
     """Each agent resumes with its own syntax from the session's directory."""
     row = _pickerRows(sessions, 1)[0]
     expected = {
-        "Claude": ["claude", "--resume", row["session_id"]],
-        "Codex": ["codex", "resume", row["session_id"]],
-        "Copilot": ["copilot", f"--resume={row['session_id']}"],
-        "Grok": ["grok", "--resume", row["session_id"]],
+        "Claude": [
+            "claude",
+            "--resume",
+            row["session_id"],
+            "--permission-mode",
+            "dontAsk",
+        ],
+        "Codex": ["codex", "resume", row["session_id"], "--ask-for-approval", "never"],
+        "Copilot": ["copilot", f"--resume={row['session_id']}", "--allow-all-tools"],
+        "Grok": ["grok", "--resume", row["session_id"], "--permission-mode", "dontAsk"],
     }
     for agent, command in expected.items():
         assert sessions.resumeCommand({**row, "agent": agent}) == command

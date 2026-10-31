@@ -173,7 +173,7 @@ while True:
     elif method == "account/rateLimits/read":
         result = {"rateLimits": {"primary": {"usedPercent": 26, "windowDurationMins": 300}}}
     elif method == "account.getQuota":
-        result = {"quotaSnapshots": {"premium_interactions": {"remainingPercentage": 82}}}
+        result = {"quotaSnapshots": {"chat": {"remainingPercentage": 100, "isUnlimitedEntitlement": True}, "premium_interactions": {"remainingPercentage": 0, "isUnlimitedEntitlement": False}}}
     elif method == "_x.ai/billing":
         result = {"config": {"creditUsagePercent": 54}}
     else: result = {}
@@ -194,7 +194,7 @@ def testProtocolComposition(tmp_path, monkeypatch):
     monkeypatch.setenv("PATH", str(tmp_path))
     rows = usage.allowanceCollect()
     assert [r.status for r in rows] == ["NOT AUTHENTICATED", "OK", "OK", "OK"]
-    assert [r.windows[0].available for r in rows[1:]] == [74, 46, 82]
+    assert [r.windows[0].available for r in rows[1:]] == [74, 46, 0]
 
 
 def testUsageCliProductionPath(tmp_path):
@@ -230,7 +230,8 @@ def testUsageCliProductionPath(tmp_path):
             "Grok",
             "46%",
             "Copilot",
-            "82%",
+            "0%",
+            "UNLIMITED",
         )
     )
     assert "session listing" not in result.stdout
@@ -371,3 +372,34 @@ def testEmptyQuotaTableAndStatusLabels():
     )
     assert "NOT AUTHENTICATED" in lines[1]
     assert "NOT INSTALLED" in lines[3]
+
+
+@pytest.mark.parametrize(
+    "unlimited", [{"isUnlimitedEntitlement": True}, {"entitlementRequests": -1}]
+)
+def testCopilotUnlimitedDoesNotHideExhaustedPremium(unlimited):
+    result = usage.quotaParse(
+        "Copilot",
+        {
+            "quotaSnapshots": {
+                "chat": {"remainingPercentage": 100, **unlimited},
+                "completions": {"remainingPercentage": 100, **unlimited},
+                "premium_interactions": {
+                    "remainingPercentage": 0,
+                    "hasQuota": False,
+                    "entitlementRequests": 1500,
+                    "usedRequests": 1500,
+                },
+            }
+        },
+    )
+    assert [window.name for window in result.windows] == [
+        "premium_interactions",
+        "chat",
+        "completions",
+    ]
+    lines = usage.allowanceLines([result])
+    assert "Copilot" in lines[1] and "premium interactions" in lines[1]
+    assert "0%" in lines[1]
+    assert sum("UNLIMITED" in line for line in lines) == 2
+    assert "100%" not in "\n".join(lines)

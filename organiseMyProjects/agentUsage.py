@@ -19,6 +19,7 @@ class QuotaWindow:
     name: str
     available: float | None
     reset: datetime | None = None
+    unlimited: bool = False
 
 
 @dataclass(frozen=True)
@@ -55,7 +56,9 @@ def allowanceLines(rows: list[AgentAllowance]) -> list[str]:
             continue
         for index, window in enumerate(row.windows):
             available = (
-                "UNKNOWN" if window.available is None else f"{window.available:g}%"
+                "UNLIMITED"
+                if window.unlimited
+                else "UNKNOWN" if window.available is None else f"{window.available:g}%"
             )
             reset = (
                 window.reset.astimezone().strftime("%a %d %b %H:%M %Z")
@@ -131,15 +134,20 @@ def quotaParse(agent: str, response: Any) -> AgentAllowance:
     elif agent == "Copilot":
         snapshots = response.get("quotaSnapshots")
         if isinstance(snapshots, dict):
-            for name, value in snapshots.items():
+            # Show the binding premium allowance before unlimited base services.
+            names = sorted(snapshots, key=lambda name: name != "premium_interactions")
+            for name in names:
+                value = snapshots[name]
                 if isinstance(value, dict):
                     windows.append(
-                        _windowBuild(
+                        QuotaWindow(
                             _labelClean(name),
-                            value,
-                            "remainingPercentage",
-                            "remaining",
-                            "resetDate",
+                            percentageAvailable(
+                                value.get("remainingPercentage"), meaning="remaining"
+                            ),
+                            _resetParse(value.get("resetDate")),
+                            value.get("isUnlimitedEntitlement") is True
+                            or value.get("entitlementRequests") == -1,
                         )
                     )
     elif agent == "Grok":

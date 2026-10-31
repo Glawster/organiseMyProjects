@@ -39,12 +39,12 @@ CLAUDE_TITLES = (
 )
 
 
-# Each agent's own resume syntax, verified against its installed CLI help.
+# Each agent's resume syntax and no-prompt policy, verified against CLI help.
 RESUME_COMMANDS = {
-    "Claude": ("claude", "--resume", "{id}"),
-    "Codex": ("codex", "resume", "{id}"),
-    "Copilot": ("copilot", "--resume={id}"),
-    "Grok": ("grok", "--resume", "{id}"),
+    "Claude": ("claude", "--resume", "{id}", "--permission-mode", "dontAsk"),
+    "Codex": ("codex", "resume", "{id}", "--ask-for-approval", "never"),
+    "Copilot": ("copilot", "--resume={id}", "--allow-all-tools"),
+    "Grok": ("grok", "--resume", "{id}", "--permission-mode", "dontAsk"),
 }
 
 PICKER_HELP = "↑/↓ move · PgUp/PgDn page · Enter resume · q cancel"
@@ -135,10 +135,10 @@ def parserBuild() -> argparse.ArgumentParser:
         description="List resumable local AI agent sessions",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Resume a session (use its full ID, from the session's working directory):
-  Codex:    codex resume <id>
-  Claude:   claude --resume <id>
-  Grok:     grok --resume <id>
-  Copilot:  copilot --resume=<id>
+  Codex:    codex resume <id> --ask-for-approval never
+  Claude:   claude --resume <id> --permission-mode dontAsk
+  Grok:     grok --resume <id> --permission-mode dontAsk
+  Copilot:  copilot --resume=<id> --allow-all-tools
 
 List only some agents, from every directory (flags combine):
   agentSessions --claude

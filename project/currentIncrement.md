@@ -2,7 +2,7 @@
 
 ## Increment
 
-0.10 — Agent account availability
+0.10a2 — Agent account availability and resume approval options
 
 ## Status
 
@@ -11,7 +11,7 @@ InReview
 ## Objective
 
 Deliver [028: Agent usage availability](requirements/features/028-agentUsage.md)
-on `feature/028-agent-usage` without changing session listing or resumption.
+on `release/0.10`, including explicit no-prompt policies for session resumption.
 
 ## Implementation
 
@@ -29,10 +29,32 @@ on `feature/028-agent-usage` without changing session listing or resumption.
 - The maintained agent sessions guide documents interface provenance, semantics,
   authentication states and known limitations.
 
+## Copilot presentation correction
+
+- A live account read confirmed exhausted premium interactions alongside unlimited
+  chat/completions, which the provider represents as 100% remaining.
+- Premium interactions now appear first; unlimited entitlements render as
+  `UNLIMITED`. Finite remaining percentages retain their original meaning.
+- Focused provider/session/Claude regression suite: 120 passed, including CLI
+  protocol coverage of exhausted premium and unlimited base services. Black,
+  Ruff and diff whitespace checks pass.
+- Scope remains OMPR only; OMS, OMV and OMP have no runtime impact.
+
+## Resume approval options
+
+- Resume commands add Codex `--ask-for-approval never`, Claude/Grok
+  `--permission-mode dontAsk`, and Copilot `--allow-all-tools`.
+- CLI help and manual resume examples document the same flags and semantics.
+- Existing resume regression verifies command construction and terminal handoff.
+- Scope remains OMPR only; OMS, OMV and OMP have no runtime impact.
+
 ## Verification
 
-- Full suite: 625 passed with no skips in the `ompr` environment; focused
-  provider/session/Claude terminal suite: 118 passed.
+- Full suite: 627 passed with no skips in the `ompr` environment; focused
+  provider/session/Claude terminal suite: 120 passed.
+- Version `0.10a2` and release notes cover quota presentation and resume approval
+  options. Repository source lint (66 files), markup lint, Black, Ruff and diff
+  whitespace validation pass.
 - Synthetic CLI subprocesses exercise Codex/Grok line-based JSON-RPC and Copilot
   Content-Length framing, with independently specified quota expectations.
 - Tests cover used/remaining conversion, boundaries, malformed/missing fields,

@@ -6,7 +6,7 @@
 
 ## Status
 
-InReview
+Completed
 
 ## Objective
 
@@ -82,7 +82,13 @@ on `release/0.10`, including explicit permission policies for session resumption
   No direct OAuth extraction or undocumented endpoint was introduced.
 - Grok 1.0.70 reports `weekly: UNKNOWN` alongside its supplied reset when the
   percentage is missing. Financial counts are deliberately not converted.
-- Independent review and human acceptance remain before merge.
+- Requirement 028 is closed following the user's closure request. Implementation
+  is merged into `release/0.10` at `d5d76de`; closure verification on 2026-11-01
+  passed all 627 tests with no skips in the `ompr` environment. The sandboxed
+  attempt could not write application logs; the approved rerun passed.
+- Provider limitations above remain explicit supported outcomes under the
+  requirement's `UNKNOWN` criteria. No provider interface changes were needed
+  for closure.
 - This is an OMPR developer command. OMS, OMV and OMP have no code/runtime impact.
 
 ## Backlog retained for 0.10

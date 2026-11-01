@@ -2,7 +2,7 @@
 
 ## Status
 
-InReview
+Completed
 
 ## Outcome
 

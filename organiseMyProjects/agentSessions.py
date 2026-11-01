@@ -39,9 +39,9 @@ CLAUDE_TITLES = (
 )
 
 
-# Each agent's resume syntax and no-prompt policy, verified against CLI help.
+# Each agent's resume syntax and permission policy, verified against CLI help.
 RESUME_COMMANDS = {
-    "Claude": ("claude", "--resume", "{id}", "--permission-mode", "dontAsk"),
+    "Claude": ("claude", "--resume", "{id}", "--permission-mode", "auto"),
     "Codex": ("codex", "resume", "{id}", "--ask-for-approval", "never"),
     "Copilot": ("copilot", "--resume={id}", "--allow-all-tools"),
     "Grok": ("grok", "--resume", "{id}", "--permission-mode", "dontAsk"),
@@ -136,7 +136,7 @@ def parserBuild() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Resume a session (use its full ID, from the session's working directory):
   Codex:    codex resume <id> --ask-for-approval never
-  Claude:   claude --resume <id> --permission-mode dontAsk
+  Claude:   claude --resume <id> --permission-mode auto
   Grok:     grok --resume <id> --permission-mode dontAsk
   Copilot:  copilot --resume=<id> --allow-all-tools
 

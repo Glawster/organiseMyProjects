@@ -11,7 +11,7 @@ InReview
 ## Objective
 
 Deliver [028: Agent usage availability](requirements/features/028-agentUsage.md)
-on `release/0.10`, including explicit no-prompt policies for session resumption.
+on `release/0.10`, including explicit permission policies for session resumption.
 
 ## Implementation
 
@@ -42,8 +42,9 @@ on `release/0.10`, including explicit no-prompt policies for session resumption.
 
 ## Resume approval options
 
-- Resume commands add Codex `--ask-for-approval never`, Claude/Grok
-  `--permission-mode dontAsk`, and Copilot `--allow-all-tools`.
+- Resume commands add Codex `--ask-for-approval never`, Claude
+  `--permission-mode auto`, Grok `--permission-mode dontAsk`, and Copilot
+  `--allow-all-tools`. Claude uses `auto` at the user's request.
 - CLI help and manual resume examples document the same flags and semantics.
 - Existing resume regression verifies command construction and terminal handoff.
 - Scope remains OMPR only; OMS, OMV and OMP have no runtime impact.

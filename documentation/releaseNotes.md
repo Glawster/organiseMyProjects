@@ -16,9 +16,9 @@
 
 ### Session resumption
 
-- Resume commands disable approval prompts using Codex
-  `--ask-for-approval never`, Claude/Grok `--permission-mode dontAsk`, and
-  Copilot `--allow-all-tools`. Claude/Grok deny actions that would need approval;
+- Resume commands use Codex `--ask-for-approval never`, Claude
+  `--permission-mode auto`, Grok `--permission-mode dontAsk`, and
+  Copilot `--allow-all-tools`. Grok denies actions that would need approval;
   Codex retains its configured sandbox. Copilot path/URL permissions still apply.
 - Help and manual resume examples include the same flags.
 - See [Agent sessions](agentSessions.md) for provider details and limitations.

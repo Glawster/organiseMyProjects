@@ -120,16 +120,16 @@ To resume by hand instead, go to the session's folder and use the full ID from
 `agentSessions --full`:
 
 ```bash
-claude --resume <id> --permission-mode dontAsk
+claude --resume <id> --permission-mode auto
 codex resume <id> --ask-for-approval never
 copilot --resume=<id> --allow-all-tools
 grok --resume <id> --permission-mode dontAsk
 ```
 
 These are also listed in `agentSessions --help`. Resumed sessions use each
-agent's no-approval-prompt option. Codex retains its configured sandbox; Claude
-and Grok use `dontAsk`, which denies actions requiring approval rather than
-prompting. Copilot automatically allows tools with `--allow-all-tools`; its
+agent's permission option. Claude uses `--permission-mode auto`. Codex retains
+its configured sandbox; Grok uses `dontAsk`, which denies actions requiring
+approval rather than prompting. Copilot automatically allows tools with `--allow-all-tools`; its
 separate path and URL permissions still apply.
 
 ## Messages and exit status

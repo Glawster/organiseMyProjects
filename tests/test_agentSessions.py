@@ -470,7 +470,7 @@ def testResumeCommands(sessions, tmp_path, monkeypatch, caplog):
             "--resume",
             row["session_id"],
             "--permission-mode",
-            "dontAsk",
+            "auto",
         ],
         "Codex": ["codex", "resume", row["session_id"], "--ask-for-approval", "never"],
         "Copilot": ["copilot", f"--resume={row['session_id']}", "--allow-all-tools"],

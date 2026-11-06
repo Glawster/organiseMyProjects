@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+Completed
 
 ## Outcome
 
@@ -19,7 +19,7 @@ ADR-002 proposed a sibling `omp` package, but that ADR is superseded:
 `omp` denotes organiseMyPhotos, whereas `ompr` denotes
 organiseMyProjects. The canonical helper source remains in
 `organiseMyProjects` and is deployed into a managed `ompr` package in
-consuming repositories. ADR-005 records the proposed strategy.
+consuming repositories. ADR-005 records the accepted strategy.
 
 ## Scope
 
@@ -68,20 +68,22 @@ consuming repositories. ADR-005 records the proposed strategy.
 
 - [ADR-002](../../adr/002-ompRuntimePackage.md) is superseded and must not be
   used as implementation guidance.
-- [ADR-005](../../adr/005-omprRuntimeSync.md) proposes the corrected
-  namespace and canonical-source decision; confirm it before implementing.
+- [ADR-005](../../adr/005-omprRuntimeSync.md) accepts the corrected
+  namespace and canonical-source decision.
 - Builds on existing `manageProject` managed-file ownership rules.
 
 ## Verification
 
-- Review current create/update/sync ownership and packaging behaviour.
-- Focused manifest/sync tests using isolated temporary consumer projects.
-- Import test in an isolated environment without the OMPR toolkit installed.
-- Full pytest, runLinter, Black, packaging and diff checks before completion.
+- 2026-11-06 GitHub Validate workflow passed: 637 pytest tests with no failures, Black, Ruff, OMP runLinter and agent readiness.
+- `tests/test_runtimeSync.py` verifies preview and idempotence, managed changes, unowned-package and symlink protection, explicit batch selection, shell executable bit, CLI/update integration and isolated imports without an installed OMPR toolkit.
+- Newly scaffolded setuptools metadata includes `ompr` and the shell helper as package data; existing project packaging is project-owned and requires explicit migration.
+- Live deployment into existing downstream applications was not performed; consumers must independently validate their imports and build artifacts after opting in.
 
 ## Change history
 
 - 2026-08-31: a sibling `omp/` package was reverted.
 - 2026-10-22: status ToDo -> InProgress — myBoard.
 - 2026-11-06: corrected namespace to `ompr`, reconciled superseded ADR-002
-  and proposed ADR-005; implementation and verification remain outstanding.
+  and proposed ADR-005.
+- 2026-11-06: completed managed runtime deployment, CLI integration, packaging,
+  documentation and isolated tests; GitHub validation passed.

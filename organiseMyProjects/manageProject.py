@@ -17,9 +17,9 @@ from organiseMyProjects.managedContent import (
     managedContentBuild,
 )
 from organiseMyProjects.requirementLayout import layoutMigrate, legacyIndexFind
-from organiseMyProjects.runtimeSync import runtimeBatch, runtimeSync
 from organiseMyProjects.requirementNaming import requirementNamesCorrect
 from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
+from organiseMyProjects.runtimeSync import runtimeBatch, runtimeSync
 from organiseMyProjects.version import VERSION
 
 

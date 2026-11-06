@@ -243,6 +243,9 @@ dev = ["black", "pre-commit", "pytest", "ruff"]
 [tool.setuptools]
 packages = ["{packageName}", "ompr"]
 
+[tool.setuptools.package-data]
+ompr = ["*.sh"]
+
 [tool.black]
 target-version = ["py310"]
 

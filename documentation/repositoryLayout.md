@@ -99,8 +99,7 @@ The package directory is the primary home for project Python code. Individual
 OMPR means organiseMyProjects. The managed local runtime namespace is
 `ompr/`; `omp` remains reserved for organiseMyPhotos. The canonical sources
 of synchronised OMPR helpers live in the `organiseMyProjects` package, and
-only manifest-listed reusable files are deployed. See the
-[OMPR runtime sync guide](runtimeSync.md).
+only manifest-listed reusable files are deployed. See `documentation/runtimeSync.md` in the canonical organiseMyProjects repository.
 
 ## Top-level directories
 

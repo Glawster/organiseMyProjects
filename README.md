@@ -21,6 +21,7 @@ The living guides are:
 - [Requirements Management](documentation/requirementsManagement.md)
 - [Requirement Board](documentation/myBoard.md)
 - [Agent Sessions](documentation/agentSessions.md)
+- [OMPR Runtime Synchronisation](documentation/runtimeSync.md)
 - [Shared TUI Styling](documentation/tuiStyling.md)
 - [Testing Process](documentation/testingProcess.md)
 - [List Editing Interaction Standard](documentation/listEditingInteraction.md)

@@ -49,3 +49,36 @@ def testBatchDoesNotTouchOtherProjects(tmp_path: Path):
     assert len(results) == 2
     assert all((root / "ompr" / "logUtils.py").exists() for root in roots[:2])
     assert list(roots[2].iterdir()) == []
+
+
+def testBlockedUnownedPackageAndLinks(tmp_path: Path):
+    root = tmp_path / "consumer"
+    package = root / "ompr"
+    package.mkdir(parents=True)
+    (package / "local.py").write_text("keep = True")
+    result = sync.runtimeSync(root, dryRun=False)
+    assert result[0].action == "blocked"
+    assert not (package / "__init__.py").exists()
+    (package / "local.py").unlink()
+    package.rmdir()
+    elsewhere = tmp_path / "other"
+    elsewhere.mkdir()
+    package.symlink_to(elsewhere, target_is_directory=True)
+    result = sync.runtimeSync(root, dryRun=False)
+    assert result[0].action == "blocked"
+    assert list(elsewhere.iterdir()) == []
+
+
+def testManifestAndShellPermissions(tmp_path: Path):
+    import stat
+
+    from organiseMyProjects.manageProject import _pyprojectContentBuild
+
+    root = tmp_path / "consumer"
+    root.mkdir()
+    sync.runtimeSync(root, dryRun=False)
+    script = root / "ompr" / "logUtils.sh"
+    assert script.read_text().startswith("#!/usr/bin/env bash\n" + sync.MARKER)
+    assert script.stat().st_mode & stat.S_IXUSR
+    assert "version=" in script.read_text()
+    assert 'packages = ["example", "ompr"]' in _pyprojectContentBuild("example")

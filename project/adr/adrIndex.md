@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Next available number: 005
+Next available number: 006
 
 ## Decision index
 
@@ -10,3 +10,4 @@ Next available number: 005
 | 002 | [Canonical omp runtime package](002-ompRuntimePackage.md) | Superseded | 2026-08-31 |
 | 003 | [Root-level project Python package](003-rootPackageScaffold.md) | Accepted | 2026-08-31 |
 | 004 | [GitHub portfolio discovery](004-githubPortfolioDiscovery.md) | Accepted | 2026-10-25 |
+| 005 | [Namespaced synchronised runtime helpers](005-omprRuntimeSync.md) | Proposed | 2026-11-06 |

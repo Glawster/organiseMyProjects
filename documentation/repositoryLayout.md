@@ -81,6 +81,10 @@ footballVision/
 ├── footballVision/
 │   ├── __init__.py
 │   └── ...
+├── ompr/                        # synchronised OMPR runtime helpers
+│   ├── __init__.py
+│   ├── logUtils.py
+│   └── logUtils.sh
 ├── tests/
 ├── pyproject.toml
 ├── footballVisionEnvironment.yml
@@ -92,10 +96,17 @@ The package directory is the primary home for project Python code. Individual
 `.py` files inside it are modules; the importable directory containing
 `__init__.py` is the Python package.
 
+OMPR means organiseMyProjects. The managed local runtime namespace is
+`ompr/`; `omp` remains reserved for organiseMyPhotos. The canonical sources
+of synchronised OMPR helpers live in the `organiseMyProjects` package, and
+only manifest-listed reusable files are deployed. See the
+[OMPR runtime sync guide](runtimeSync.md).
+
 ## Top-level directories
 
 | Path | Purpose | Examples |
 | --- | --- | --- |
+| `ompr/` | OMPR-managed runtime deployment package; not project business logic. | Synchronised logging and CLI helpers. |
 | `<projectName>/` | Required Python package for newly scaffolded Python projects. | Domain models, application services, CLI modules and reusable project code. |
 | `app/` | Optional non-package application resources where a genuine separate concern exists. | Static resources or deployment wrappers. |
 | `brand/` | Optional approved visual identity assets and guidance. | Logos, icons, imagery, colours and style guidance. |

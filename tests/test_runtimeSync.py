@@ -114,3 +114,25 @@ def testManifestRejectsUnexpectedModule():
 
     with pytest.raises(ValueError):
         sync.runtimeContent("manageProject.py")
+
+
+def testManageProjectCliRuntimeSync(tmp_path: Path):
+    from organiseMyProjects.manageProject import main
+
+    root = tmp_path / "consumer"
+    root.mkdir()
+    assert main(["sync", "--runtime", "--project", str(root)]) == 0
+    assert not (root / "ompr").exists()
+    assert main(["sync", "--runtime", "--project", str(root), "--confirm"]) == 0
+    assert (root / "ompr" / "logUtils.py").is_file()
+
+
+def testUpdateProjectDeploysRuntime(tmp_path: Path):
+    from organiseMyProjects.manageProject import updateProject
+
+    root = tmp_path / "consumer"
+    root.mkdir()
+    updateProject(root, dryRun=True)
+    assert not (root / "ompr").exists()
+    updateProject(root, dryRun=False)
+    assert (root / "ompr" / "logUtils.py").is_file()

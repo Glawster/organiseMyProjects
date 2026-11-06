@@ -7,7 +7,6 @@ are never overwritten. No dependency on the toolkit is written to consumers.
 
 from __future__ import annotations
 
-import os
 import stat
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,6 +42,14 @@ def runtimeContent(name: str, version: str = VERSION) -> str:
         shebang, rest = contents.split("\n", 1)
         return shebang + "\n" + marker + rest
     return marker + contents
+
+
+def _initContent(version: str) -> str:
+    return (
+        f"{MARKER} source=organiseMyProjects/runtimeSync.py "
+        f"version={version}; do not edit locally\\n"
+        '\"\"\"Synchronised OMPR runtime helpers.\"\"\"\\n'
+    )
 
 
 def _managed(text: str) -> bool:
@@ -81,7 +88,7 @@ def runtimePlan(project: Path, version: str = VERSION) -> tuple[RuntimeChange, .
                 RuntimeChange(package, "blocked", "unowned ompr package exists"),
             )
 
-    files = {"__init__.py": f"{MARKER} source=organiseMyProjects/runtimeSync.py version={version}; do not edit locally\n\"\"\"Synchronised OMPR runtime helpers.\"\"\"\n"}
+    files = {"__init__.py": _initContent(version)}
     files.update({name: runtimeContent(name, version) for name in RUNTIME_MANIFEST})
     changes: list[RuntimeChange] = []
     for name, wanted in files.items():
@@ -122,7 +129,9 @@ def runtimeSync(
     if report is not None:
         for change in changes:
             qualifier = f": {change.reason}" if change.reason else ""
-            verb = f"would {change.action}" if dryRun and change.action in {"create", "update"} else change.action
+            verb = change.action
+            if dryRun and change.action in {"create", "update"}:
+                verb = f"would {change.action}"
             report(f"runtime {verb}: {change.path}{qualifier}")
     if dryRun or any(change.action == "blocked" for change in changes):
         return changes
@@ -132,7 +141,7 @@ def runtimeSync(
         if change.action not in {"create", "update"}:
             continue
         if change.path.name == "__init__.py":
-            wanted = f"{MARKER} source=organiseMyProjects/runtimeSync.py version={VERSION}; do not edit locally\n\"\"\"Synchronised OMPR runtime helpers.\"\"\"\n"
+            wanted = _initContent(VERSION)
         else:
             wanted = runtimeContent(change.path.name)
         change.path.write_text(wanted, encoding="utf-8")

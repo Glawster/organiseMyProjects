@@ -48,7 +48,7 @@ def _initContent(version: str) -> str:
     return (
         f"{MARKER} source=organiseMyProjects/runtimeSync.py "
         f"version={version}; do not edit locally\n"
-        '\"\"\"Synchronised OMPR runtime helpers.\"\"\"\n'
+        '"""Synchronised OMPR runtime helpers."""\n'
     )
 
 
@@ -67,15 +67,15 @@ def runtimePlan(project: Path, version: str = VERSION) -> tuple[RuntimeChange, .
         return (RuntimeChange(root, "blocked", "project directory does not exist"),)
     package = root / NAMESPACE
     if package.is_symlink() or (package.exists() and not package.is_dir()):
-        return (RuntimeChange(package, "blocked", "runtime package is not a directory"),)
+        return (
+            RuntimeChange(package, "blocked", "runtime package is not a directory"),
+        )
 
     init = package / "__init__.py"
     if package.exists() and not init.is_file():
         # A populated ompr directory without an ownership marker is not ours.
         if any(package.iterdir()):
-            return (
-                RuntimeChange(package, "blocked", "unowned ompr package exists"),
-            )
+            return (RuntimeChange(package, "blocked", "unowned ompr package exists"),)
     if init.is_file():
         if init.is_symlink():
             return (RuntimeChange(init, "blocked", "symbolic link is not managed"),)
@@ -94,7 +94,9 @@ def runtimePlan(project: Path, version: str = VERSION) -> tuple[RuntimeChange, .
     for name, wanted in files.items():
         target = package / name
         if target.is_symlink() or (target.exists() and not target.is_file()):
-            changes.append(RuntimeChange(target, "blocked", "non-file or symbolic link"))
+            changes.append(
+                RuntimeChange(target, "blocked", "non-file or symbolic link")
+            )
             continue
         if target.is_file():
             try:

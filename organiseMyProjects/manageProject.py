@@ -1642,7 +1642,8 @@ def _parserBuild() -> argparse.ArgumentParser:
         help="synchronise manifest-listed OMPR runtime into selected local projects",
     )
     syncParser.add_argument(
-        "-p", "--project",
+        "-p",
+        "--project",
         dest="runtimeProjects",
         action="append",
         metavar="PATH",
@@ -1742,7 +1743,9 @@ def main(argv: list[str] | None = None):
     if args.command == "sync":
         if args.runtime:
             if args.repo is not None or args.merge or args.token:
-                parser.error("--runtime cannot be mixed with GitHub instruction-sync flags")
+                parser.error(
+                    "--runtime cannot be mixed with GitHub instruction-sync flags"
+                )
             if not args.runtimeProjects:
                 parser.error("--runtime requires at least one --project PATH")
             targets = [Path(item) for item in args.runtimeProjects]

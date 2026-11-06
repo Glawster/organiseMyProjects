@@ -82,3 +82,35 @@ def testManifestAndShellPermissions(tmp_path: Path):
     assert script.stat().st_mode & stat.S_IXUSR
     assert "version=" in script.read_text()
     assert 'packages = ["example", "ompr"]' in _pyprojectContentBuild("example")
+
+
+def testConsumerImportsWithoutInstalledToolkit(tmp_path: Path):
+    import os
+    import subprocess
+    import sys
+
+    root = tmp_path / "consumer"
+    root.mkdir()
+    sync.runtimeSync(root, dryRun=False)
+    command = (
+        "import importlib.util; "
+        "assert importlib.util.find_spec('organiseMyProjects') is None; "
+        "from ompr.logUtils import getLogger, setApplication; "
+        "assert callable(getLogger) and callable(setApplication)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-S", "-c", command],
+        cwd=root,
+        env={**os.environ, "PYTHONPATH": str(root)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def testManifestRejectsUnexpectedModule():
+    import pytest
+
+    with pytest.raises(ValueError):
+        sync.runtimeContent("manageProject.py")

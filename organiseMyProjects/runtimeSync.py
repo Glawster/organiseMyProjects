@@ -84,9 +84,7 @@ def runtimePlan(project: Path, version: str = VERSION) -> tuple[RuntimeChange, .
         except (OSError, UnicodeError):
             return (RuntimeChange(init, "blocked", "cannot read package ownership"),)
         if not _managed(initText):
-            return (
-                RuntimeChange(package, "blocked", "unowned ompr package exists"),
-            )
+            return (RuntimeChange(package, "blocked", "unowned ompr package exists"),)
 
     files = {"__init__.py": _initContent(version)}
     files.update({name: runtimeContent(name, version) for name in RUNTIME_MANIFEST})

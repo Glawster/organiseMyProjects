@@ -17,6 +17,7 @@ from organiseMyProjects.managedContent import (
     managedContentBuild,
 )
 from organiseMyProjects.requirementLayout import layoutMigrate, legacyIndexFind
+from organiseMyProjects.runtimeSync import runtimeBatch, runtimeSync
 from organiseMyProjects.requirementNaming import requirementNamesCorrect
 from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
 from organiseMyProjects.version import VERSION
@@ -71,7 +72,7 @@ REQUIREMENTS_MANAGED_BLOCK = (
 DEV_REQUIREMENTS_MANAGED_BLOCK = "black\npytest\npre-commit\nruff"
 PACKAGE_MAIN_CONTENT = """from pathlib import Path
 
-from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
+from ompr.logUtils import getLogger, line, runStart, setApplication
 
 thisApplication = Path(__file__).resolve().parent.name
 setApplication(thisApplication)
@@ -240,7 +241,7 @@ dependencies = []
 dev = ["black", "pre-commit", "pytest", "ruff"]
 {scripts}
 [tool.setuptools]
-packages = ["{packageName}"]
+packages = ["{packageName}", "ompr"]
 
 [tool.black]
 target-version = ["py310"]
@@ -674,6 +675,9 @@ MANAGED_BLOCK_TEMPLATES = [
 # Exactly one ownership policy for every file createProject can deploy.
 FILE_OWNERSHIP = {
     "myStyles.css": POLICY_MANAGED_OVERWRITE,
+    "ompr/__init__.py": POLICY_MANAGED_OVERWRITE,
+    "ompr/logUtils.py": POLICY_MANAGED_OVERWRITE,
+    "ompr/logUtils.sh": POLICY_MANAGED_OVERWRITE,
     "documentation/tuiStyling.md": POLICY_MANAGED_OVERWRITE,
     "AGENTS.md": POLICY_MANAGED_OVERWRITE,
     "CLAUDE.md": POLICY_MANAGED_OVERWRITE,
@@ -1064,6 +1068,10 @@ def createProject(
         except Exception as e:
             logger.error(f"Could not initialize git or install pre-commit: {e}")
 
+    if dryRun:
+        logger.action("would create managed ompr runtime package")
+    else:
+        runtimeSync(basePath, dryRun=False, report=logger.action)
     _requirementLayoutMaintain(basePath, dryRun)
     logger.done(f"project '{projectName}' created")
     if dryRun:
@@ -1429,6 +1437,7 @@ def updateProject(
     _managedPathRelocate(basePath, dryRun)
 
     _sharedStylesDeploy(basePath, dryRun)
+    runtimeSync(basePath, dryRun=dryRun, report=logger.action)
     _onboardingScaffoldEnsure(basePath, dryRun)
     _requirementLayoutMaintain(basePath, dryRun)
 
@@ -1625,6 +1634,18 @@ def _parserBuild() -> argparse.ArgumentParser:
         help=confirmHelp,
     )
     syncParser.add_argument(
+        "--runtime",
+        action="store_true",
+        help="synchronise manifest-listed OMPR runtime into selected local projects",
+    )
+    syncParser.add_argument(
+        "-p", "--project",
+        dest="runtimeProjects",
+        action="append",
+        metavar="PATH",
+        help="local consumer project for --runtime; repeat for batch synchronisation",
+    )
+    syncParser.add_argument(
         "--merge",
         action="store_true",
         help="create and merge conflict-free sync pull requests",
@@ -1716,6 +1737,23 @@ def main(argv: list[str] | None = None):
     line()
 
     if args.command == "sync":
+        if args.runtime:
+            if args.repo is not None or args.merge or args.token:
+                parser.error("--runtime cannot be mixed with GitHub instruction-sync flags")
+            if not args.runtimeProjects:
+                parser.error("--runtime requires at least one --project PATH")
+            targets = [Path(item) for item in args.runtimeProjects]
+            results = runtimeBatch(targets, dryRun=dryRun, report=logger.action)
+            if any(
+                change.action == "blocked"
+                for changes in results.values()
+                for change in changes
+            ):
+                logger.error("Runtime synchronisation blocked for one or more projects")
+                return 1
+            return 0
+        if args.runtimeProjects:
+            parser.error("--project requires --runtime for sync")
         syncAgentInstructions = _loadSyncModule()
 
         syncArgv = ["syncAgentInstructions.py"]

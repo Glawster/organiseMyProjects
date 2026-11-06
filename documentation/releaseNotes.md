@@ -2,14 +2,24 @@
 
 ## 0.10 — Release candidate (not yet released)
 
-Version 0.10 is pending completion and verification of REQ-002 and REQ-024.
-Current development version is 0.10a2. REQ-028 is completed.
+Version 0.10 is pending final verification of REQ-024.
+Current development version is 0.10a3; REQ-002 is complete. REQ-028 is completed.
 REQ-025 (`myProjects`) is planned for 0.11 on the path to OMPR 1.0.
 
 ### Outstanding 0.10 close-out
 
-- REQ-002: `ompr` runtime sync design under proposed ADR-005; implementation pending.
+- REQ-002: completed under accepted ADR-005; existing consumers must opt in to the managed `ompr` deployment.
 - REQ-024: existing branch/version code under review; final validation pending.
+
+## 0.10a3 — 2026-11-06
+
+### Managed OMPR runtime synchronisation (REQ-002)
+
+- The canonical logging helper remains in `organiseMyProjects`; a manifest deploys managed copies into an `ompr` package in consumer repositories, preserving independent runtime imports. `omp` remains reserved for organiseMyPhotos.
+- `manageProject create` and `update` include previewable managed runtime deployment. `manageProject sync --runtime --project PATH [--project PATH ...] --confirm` supports explicit local batch selection. Existing GitHub instruction sync is unchanged.
+- Ownership markers, source/version provenance, symlink and unowned-package checks prevent unintended replacement; shell helpers retain executable permission. New scaffold packaging includes the `ompr` package and its shell helper.
+- Existing consumers retain ownership of their packaging and imports; migration is opt-in. See [runtime synchronisation](runtimeSync.md).
+- GitHub validation passed 637 pytest tests, Black, Ruff, runLinter and repository-readiness checks.
 
 ## 0.10a2 — 2026-10-31
 

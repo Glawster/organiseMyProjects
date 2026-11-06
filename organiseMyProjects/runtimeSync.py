@@ -47,8 +47,8 @@ def runtimeContent(name: str, version: str = VERSION) -> str:
 def _initContent(version: str) -> str:
     return (
         f"{MARKER} source=organiseMyProjects/runtimeSync.py "
-        f"version={version}; do not edit locally\\n"
-        '\"\"\"Synchronised OMPR runtime helpers.\"\"\"\\n'
+        f"version={version}; do not edit locally\n"
+        '\"\"\"Synchronised OMPR runtime helpers.\"\"\"\n'
     )
 
 

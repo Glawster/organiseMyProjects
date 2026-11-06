@@ -52,7 +52,7 @@ def _initContent(version: str) -> str:
     )
 
 
-def _managed(text: str) -> bool:
+def _runtimeManaged(text: str) -> bool:
     """Require the marker at the beginning, after an optional shebang."""
     lines = text.splitlines()
     if lines and lines[0].startswith("#!"):
@@ -83,7 +83,7 @@ def runtimePlan(project: Path, version: str = VERSION) -> tuple[RuntimeChange, .
             initText = init.read_text(encoding="utf-8")
         except (OSError, UnicodeError):
             return (RuntimeChange(init, "blocked", "cannot read package ownership"),)
-        if not _managed(initText):
+        if not _runtimeManaged(initText):
             return (RuntimeChange(package, "blocked", "unowned ompr package exists"),)
 
     files = {"__init__.py": _initContent(version)}
@@ -102,7 +102,7 @@ def runtimePlan(project: Path, version: str = VERSION) -> tuple[RuntimeChange, .
             except (OSError, UnicodeError):
                 changes.append(RuntimeChange(target, "blocked", "cannot read file"))
                 continue
-            if not _managed(current):
+            if not _runtimeManaged(current):
                 changes.append(RuntimeChange(target, "blocked", "project-owned file"))
             elif current == wanted:
                 changes.append(RuntimeChange(target, "unchanged"))

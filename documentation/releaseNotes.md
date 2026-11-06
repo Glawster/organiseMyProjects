@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.10 — Release candidate (not yet released)
+
+Version 0.10 is pending completion and verification of REQ-002 and REQ-024.
+Current development version is 0.10a2. REQ-028 is completed.
+REQ-025 (`myProjects`) is planned for 0.11 on the path to OMPR 1.0.
+
+### Outstanding 0.10 close-out
+
+- REQ-002: `ompr` runtime sync design under proposed ADR-005; implementation pending.
+- REQ-024: existing branch/version code under review; final validation pending.
+
 ## 0.10a2 — 2026-10-31
 
 ### Agent account availability

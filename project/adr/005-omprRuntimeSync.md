@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -24,7 +24,7 @@ the existing `organiseMyProjects` canonical source.
   overwritten.
 - Support deterministic, previewable and verifiable synchronisation.
 
-## Decision (proposed for REQ-002)
+## Decision
 
 1. The canonical source stays inside the `organiseMyProjects` package, in
    clearly designated reusable runtime modules. Do not create a second,
@@ -65,9 +65,16 @@ the existing `organiseMyProjects` canonical source.
   REQ-002 can be considered complete.
 - Consumers may need a controlled import migration; this is not automatic
   just because the shared files are deployed.
-- This decision remains Proposed until validated against existing consumer
-  repositories and packaging requirements.
+- New scaffolds explicitly include `ompr` in setuptools package lists and
+  package data. Existing consumers must update project-owned packaging
+  explicitly; runtime deployment does not overwrite it.
 
 ## Requirements
 
 - [002: Runtime infrastructure synchronisation](../requirements/features/002-runtimeInfrastructureSync.md)
+
+## Verification
+
+- 2026-11-06: REQ-002 implementation on `feature/002-runtime-sync` passed GitHub Validate workflow, including 637 pytest tests, Black, Ruff, runLinter and agent readiness.
+- Isolated consumer tests verify `ompr.logUtils` imports without an installed OMPR toolkit, managed overwrite/collision protections, idempotence and explicit local batch selection.
+- Existing consumer import migrations remain opt-in and must be verified independently for each project.

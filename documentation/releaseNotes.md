@@ -1,5 +1,11 @@
 # Release notes
 
+## Unreleased
+
+- `runLinter` accepts `API`, `IDs`, `TV` and `XML` in logging messages, so
+  messages such as `skipping TV merge with conflicting provider IDs` no longer
+  need the acronyms lowercased. See [Linter](linter.md).
+
 ## 0.10a2 — 2026-10-31
 
 ### Agent account availability

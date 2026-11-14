@@ -68,7 +68,11 @@ class TestLinter08Naming:
         source.write_text(
             "logger.info('using GoPro and SQLite metadata')\n"
             "logger.warning('Grok check unavailable')\n"
-            "logger.error('Could not read TVDB metadata')\n",
+            "logger.error('Could not read TVDB metadata')\n"
+            "logger.warning('blank TVDB API key provided')\n"
+            "logger.warning('could not parse metadata XML')\n"
+            "logger.error('No TV storage locations found!')\n"
+            "logger.warning('skipping TV merge with conflicting provider IDs')\n",
             encoding="utf-8",
         )
 
@@ -94,14 +98,18 @@ class TestLinter08Naming:
 
     def testLoggingWhitelistIsExplicit(self):
         assert LOGGING_CASE_WHITELIST == {
+            "API",
             "DJI",
             "Firefox",
             "GoPro",
             "Grok",
+            "IDs",
             "MCM",
             "SQLite",
+            "TV",
             "TVDB",
             "X.ai",
+            "XML",
         }
 
     def testSpellingCheckIgnoresFunctionDocstrings(self, temp_dir):

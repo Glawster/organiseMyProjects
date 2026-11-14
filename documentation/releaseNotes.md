@@ -11,6 +11,12 @@ REQ-025 (`myProjects`) is planned for 0.11 on the path to OMPR 1.0.
 - REQ-002: completed under accepted ADR-005; existing consumers must opt in to the managed `ompr` deployment.
 - REQ-024: existing branch/version code under review; final validation pending.
 
+### Linter logging acronyms
+
+- `runLinter` accepts `API`, `IDs`, `TV` and `XML` in logging messages, so
+  messages such as `skipping TV merge with conflicting provider IDs` no longer
+  need the acronyms lowercased. See [Linter](linter.md).
+
 ## 0.10a3 — 2026-11-06
 
 ### Managed OMPR runtime synchronisation (REQ-002)

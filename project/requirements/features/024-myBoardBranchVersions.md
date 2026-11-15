@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+InReview
 
 ## Outcome
 
@@ -48,10 +48,12 @@ version each branch reports.
 
 ## Verification
 
-- pytest tests/test_myBoard.py
-- runLinter on organiseMyProjects/requirementBoard.py
-- myBoard list in a repository with unmerged local and remote-only branches
+- Code review on 2026-11-06 confirms `gitContextLoad`, `_openBranches`, `_branchNames` and `_branchVersion` provide the specified read-only behaviour.
+- Existing `testGitLinksTheRequirementId` exercises local, remote-only and current-branch versions, plus unavailable release metadata and presentation via `gitContextLines`.
+- Before closure, rerun `python -m pytest tests/test_myBoard.py`, `runLinter organiseMyProjects/requirementBoard.py`, Black, and `git diff --check` in `ompr`; manually inspect `myBoard list` against current branches.
+- Status stays InReview until those checks are independently completed.
 
 ## Change history
 
 - 2026-10-25: created — show open branches and versions in myBoard.
+- 2026-11-06: reviewed existing implementation and tests; moved to InReview pending final runtime verification.

@@ -2,7 +2,9 @@
 
 ## Status
 
-Superseded
+Superseded by [ADR-005](005-deployedOmprRuntime.md). The historical proposal
+below is not current guidance; deployed consumers use `ompr`, and OMP means
+organiseMyPhotos.
 
 A separate `omp/` package was not added to this repository. The canonical
 runtime package is already `organiseMyProjects`.

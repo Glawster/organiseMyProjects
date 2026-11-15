@@ -19,6 +19,13 @@ from organiseMyProjects.managedContent import (
 from organiseMyProjects.requirementLayout import layoutMigrate, legacyIndexFind
 from organiseMyProjects.requirementNaming import requirementNamesCorrect
 from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
+from organiseMyProjects import wowAddon
+from organiseMyProjects.runtimeDeployment import (
+    runtimeDeploy,
+    runtimeFiles,
+    runtimeMigrationReport,
+    runtimeValidate,
+)
 from organiseMyProjects.version import VERSION
 
 
@@ -71,7 +78,7 @@ REQUIREMENTS_MANAGED_BLOCK = (
 DEV_REQUIREMENTS_MANAGED_BLOCK = "black\npytest\npre-commit\nruff"
 PACKAGE_MAIN_CONTENT = """from pathlib import Path
 
-from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
+from ompr.logUtils import getLogger, line, runStart, setApplication
 
 thisApplication = Path(__file__).resolve().parent.name
 setApplication(thisApplication)
@@ -220,6 +227,12 @@ def _pyprojectContentBuild(
 ) -> str:
     """Return project-neutral Python package and tool metadata."""
     packageName = _packageNameFor(projectName)
+    packages = [packageName, "ompr"]
+    if includeUi:
+        packages.append(f"{packageName}.ui")
+    if includeQt:
+        packages.append(f"{packageName}.qt")
+    packageList = ", ".join(f'"{name}"' for name in packages)
     scripts = ""
     if includeUi or includeQt:
         scripts = f"""
@@ -240,7 +253,10 @@ dependencies = []
 dev = ["black", "pre-commit", "pytest", "ruff"]
 {scripts}
 [tool.setuptools]
-packages = ["{packageName}"]
+packages = [{packageList}]
+
+[tool.setuptools.package-data]
+ompr = ["*.sh"]
 
 [tool.black]
 target-version = ["py310"]
@@ -498,11 +514,14 @@ Project scaffold created by manageProject.py.
 
 The importable Python package is `{packageName}/`. Install the project with
 `pip install -e .` from the Conda environment defined in
-`{packageName}Environment.yml`. Logging uses `organiseMyProjects.logUtils`.
+`{packageName}Environment.yml`. Logging uses the deployed `ompr.logUtils`; applications do not need OMPR installed.
+The managed `ompr/` package is reserved for organiseMyProjects runtime helpers.
+Use `from ompr.logUtils import getLogger, setApplication` in application code.
 
 ## Documentation
 
 - [Architecture](documentation/architecture.md)
+- [Deployed Runtime](documentation/runtimeDeployment.md)
 - [Roadmap](project/roadmap.md)
 - [Current Increment](project/currentIncrement.md)
 - [Requirements](project/requirements/requirementsIndex.md)
@@ -569,6 +588,10 @@ PROJECT_CONTEXT_TEMPLATES = [
     (Path("project") / "adr" / "templates" / "adr.md", ADR_TEMPLATE_CONTENT),
 ]
 MANAGED_COPY_TEMPLATES = [
+    (
+        TEMPLATE_DIR.parent / "documentation" / "runtimeDeployment.md",
+        Path("documentation") / "runtimeDeployment.md",
+    ),
     (TEMPLATE_DIR.parent / ".github" / "AGENTS.md", Path("AGENTS.md")),
     (TEMPLATE_DIR.parent / "projectGuidelines.md", Path("projectGuidelines.md")),
     (
@@ -610,6 +633,22 @@ MANAGED_COPY_TEMPLATES = [
     (
         TEMPLATE_DIR.parent / "documentation" / "linter.md",
         Path("documentation") / "linter.md",
+    ),
+]
+# WoW addons get the language-neutral managed guides plus the addon standard;
+# the Python TUI styling and GUI-naming linter guides do not apply to Lua.
+ADDON_EXCLUDED_MANAGED = {
+    Path("documentation") / "tuiStyling.md",
+    Path("documentation") / "linter.md",
+}
+ADDON_MANAGED_COPY_TEMPLATES = [
+    (src, dest)
+    for src, dest in MANAGED_COPY_TEMPLATES
+    if dest not in ADDON_EXCLUDED_MANAGED
+] + [
+    (
+        TEMPLATE_DIR.parent / "documentation" / "wowAddon.md",
+        Path("documentation") / "wowAddon.md",
     ),
 ]
 # Projects use the installed OMP linter; recognised unmodified copies from
@@ -673,6 +712,7 @@ MANAGED_BLOCK_TEMPLATES = [
 
 # Exactly one ownership policy for every file createProject can deploy.
 FILE_OWNERSHIP = {
+    **{path.as_posix(): POLICY_MANAGED_OVERWRITE for _source, path in runtimeFiles()},
     "myStyles.css": POLICY_MANAGED_OVERWRITE,
     "documentation/tuiStyling.md": POLICY_MANAGED_OVERWRITE,
     "AGENTS.md": POLICY_MANAGED_OVERWRITE,
@@ -686,6 +726,7 @@ FILE_OWNERSHIP = {
     "documentation/agentImplementationWorkflow.md": POLICY_MANAGED_OVERWRITE,
     "documentation/howToRelease.md": POLICY_MANAGED_OVERWRITE,
     "documentation/linter.md": POLICY_MANAGED_OVERWRITE,
+    "documentation/runtimeDeployment.md": POLICY_MANAGED_OVERWRITE,
     "pytest.ini": POLICY_MANAGED_BLOCK_MERGE,
     ".pre-commit-config.yaml": POLICY_MANAGED_BLOCK_MERGE,
     ".vscode/settings.json": POLICY_MANAGED_BLOCK_MERGE,
@@ -705,6 +746,13 @@ FILE_OWNERSHIP = {
     "project/requirements/templates/requirement.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "project/adr/adrIndex.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
     "project/adr/templates/adr.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    # wow-addon role (see wowAddon.py)
+    "documentation/wowAddon.md": POLICY_MANAGED_OVERWRITE,
+    ".luacheckrc": POLICY_MANAGED_BLOCK_MERGE,
+    "stylua.toml": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    ".pkgmeta": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    ".envrc": POLICY_PROJECT_OWNED_MISSING_ONLY,
+    "CHANGELOG.md": POLICY_PROJECT_OWNED_MISSING_ONLY,
 }
 FILE_OWNERSHIP.update(
     {
@@ -757,6 +805,11 @@ def _templateModulesIterate(
 
 def _projectRoleDetect(basePath: Path) -> str:
     """Infer the existing project role from common repository markers."""
+    # A root .toc makes the repository a WoW addon, even if it also holds
+    # Python tooling (e.g. a test harness) in a subfolder.
+    if wowAddon.isWowAddon(basePath):
+        return wowAddon.ROLE
+
     if (basePath / "main.py").exists():
         return "standalone-application"
 
@@ -857,6 +910,10 @@ def createProject(
         return
 
     packageName = _packageNameFor(projectName)
+    if packageName == "ompr":
+        raise ValueError(
+            "ompr is reserved for managed organiseMyProjects runtime helpers"
+        )
     logger.doing(f"creating project at {basePath}")
     logger.value("package name", packageName)
 
@@ -1011,6 +1068,13 @@ def createProject(
             (basePath / "documentation" / "howToRelease.md").write_text(
                 _managedContentBuild(srcHowToRelease.read_text())
             )
+
+    runtimeGuide = TEMPLATE_DIR.parent / "documentation" / "runtimeDeployment.md"
+    if runtimeGuide.exists():
+        _managedCopyUpdate(
+            runtimeGuide, basePath / "documentation" / "runtimeDeployment.md", dryRun
+        )
+    runtimeDeploy(basePath, dryRun=dryRun, logger=logger)
 
     # Copy template modules into the new project
     logger.action("copying template modules")
@@ -1236,11 +1300,20 @@ def migrateProject(projectName, dryRun: bool = False):
         for folder in contextFolders:
             (basePath / folder).mkdir(parents=True, exist_ok=True)
 
+    toc = wowAddon.addonTocFind(basePath)
     for destRel, content in PROJECT_CONTEXT_TEMPLATES:
         # A legacy README or folderIndex index is renamed by the layout
         # migration below; creating the new index first would block that.
         if legacyIndexFind(basePath, destRel) is not None:
             continue
+        if toc is not None and destRel == Path("project") / "project.yaml":
+            fields = wowAddon.tocFieldsRead(toc)
+            content = wowAddon.projectYamlContentBuild(
+                toc.stem,
+                wowAddon.flavourDetect(fields.get("Interface", "")),
+                version=fields.get("Version", "0.1.0"),
+                description=fields.get("Notes", "World of Warcraft addon"),
+            )
         _createTextFileIfMissing(basePath / destRel, content, dryRun)
 
     _requirementLayoutMaintain(basePath, dryRun)
@@ -1401,6 +1474,16 @@ def updateProject(
         logger.done("project unchanged")
         return
 
+    if detectedRole == wowAddon.ROLE:
+        _wowAddonUpdate(basePath, dryRun)
+        logger.done("project updated")
+        if dryRun:
+            logger.info("update simulation complete: no changes were applied")
+        return
+
+    # Validate runtime ownership before deploying managed content.
+    runtimeValidate(basePath)
+
     applicationRoles = {"standalone-application"}
     if detectedRole not in applicationRoles:
         logger.info(
@@ -1431,10 +1514,155 @@ def updateProject(
     _sharedStylesDeploy(basePath, dryRun)
     _onboardingScaffoldEnsure(basePath, dryRun)
     _requirementLayoutMaintain(basePath, dryRun)
+    runtimeDeploy(basePath, dryRun=dryRun, logger=logger)
+    runtimeMigrationReport(basePath, logger)
 
     logger.done("project updated")
     if dryRun:
         logger.info("update simulation complete: no changes were applied")
+
+
+def _wowAddonManagedFiles(addonName: str):
+    """Yield (relative path, full content, managed block, comment prefix)."""
+    yield (
+        Path(".pre-commit-config.yaml"),
+        wowAddon.PRECOMMIT_CONTENT,
+        wowAddon.PRECOMMIT_MANAGED_BLOCK,
+        "#",
+    )
+    yield (
+        Path(".luacheckrc"),
+        wowAddon.luacheckrcContentBuild(addonName),
+        wowAddon.LUACHECK_MANAGED_BLOCK,
+        "--",
+    )
+    yield (
+        Path(wowAddon.environmentFileName(addonName)),
+        wowAddon.ENVIRONMENT_CONTENT,
+        wowAddon.ENVIRONMENT_MANAGED_BLOCK,
+        "#",
+    )
+    yield (
+        Path(".vscode") / "settings.json",
+        wowAddon.VSCODE_SETTINGS_CONTENT,
+        wowAddon.VSCODE_MANAGED_BLOCK,
+        "//",
+    )
+
+
+def _wowAddonProjectFiles(addonName: str, flavour: str):
+    """Yield (relative path, content) for project-owned addon files."""
+    yield Path(".gitignore"), wowAddon.GITIGNORE_CONTENT
+    yield Path(".envrc"), wowAddon.ENVRC_CONTENT
+    yield Path("stylua.toml"), wowAddon.STYLUA_CONTENT
+    yield Path(".pkgmeta"), wowAddon.pkgmetaContentBuild(addonName)
+    yield Path("CHANGELOG.md"), wowAddon.CHANGELOG_CONTENT
+    yield Path("README.md"), wowAddon.readmeContentBuild(addonName, flavour)
+
+
+def _wowAddonUpdate(basePath: Path, dryRun: bool = False) -> None:
+    """Refresh a WoW addon's managed files; never add Python scaffolding."""
+    toc = wowAddon.addonTocFind(basePath)
+    addonName = toc.stem if toc is not None else wowAddon.addonNameFor(basePath)
+    logger.value("addon", addonName)
+    logger.info("wow addon: Python package, pyproject and ompr runtime are not added")
+
+    for destRel, content, blockInner, commentPrefix in _wowAddonManagedFiles(addonName):
+        ownershipPolicy(destRel)
+        _managedBlockMerge(
+            basePath / destRel, content, blockInner, commentPrefix, dryRun
+        )
+
+    for src, destRel in ADDON_MANAGED_COPY_TEMPLATES:
+        if src.exists():
+            ownershipPolicy(destRel)
+            _managedCopyUpdate(src, basePath / destRel, dryRun)
+
+    # Project-owned addon files are seeded when missing, never overwritten.
+    fields = wowAddon.tocFieldsRead(toc) if toc is not None else {}
+    flavour = wowAddon.flavourDetect(fields.get("Interface", ""))
+    for destRel, content in _wowAddonProjectFiles(addonName, flavour):
+        ownershipPolicy(destRel)
+        _createTextFileIfMissing(basePath / destRel, content, dryRun)
+
+    _migrateManagedNames(basePath, dryRun)
+    _managedPathRelocate(basePath, dryRun)
+    _onboardingScaffoldEnsure(basePath, dryRun)
+    _requirementLayoutMaintain(basePath, dryRun)
+
+    if toc is not None:
+        missing = [key for key in wowAddon.REQUIRED_TOC_FIELDS if key not in fields]
+        if missing:
+            logger.warning(f"{toc.name} is missing: {', '.join(missing)}")
+
+
+def createWowAddon(
+    projectName,
+    flavour: str = wowAddon.DEFAULT_FLAVOUR,
+    dryRun: bool = False,
+):
+    """Create a WoW addon repository: .toc and Lua at the root, no Python package."""
+    basePath = Path(projectName)
+    if basePath.exists():
+        logger.info(f"project '{projectName}' already exists")
+        return
+    if flavour not in wowAddon.FLAVOURS:
+        raise ValueError(
+            f"unknown flavour '{flavour}': use one of {', '.join(wowAddon.FLAVOURS)}"
+        )
+
+    addonName = wowAddon.addonNameFor(projectName)
+    logger.doing(f"creating wow addon at {basePath}")
+    logger.value("addon name", addonName)
+    logger.value("flavour", flavour)
+
+    logger.action("creating directories")
+    if not dryRun:
+        for folder in [
+            ".github",
+            "documentation",
+            "project/requirements/features",
+            "project/requirements/prompt",
+            "project/requirements/templates",
+            "project/adr/templates",
+            "project/reviews",
+        ]:
+            (basePath / folder).mkdir(parents=True, exist_ok=True)
+
+    logger.action("writing addon files")
+    if not dryRun:
+        (basePath / f"{addonName}.toc").write_text(
+            wowAddon.tocContentBuild(addonName, flavour)
+        )
+        (basePath / f"{addonName}.lua").write_text(
+            wowAddon.mainLuaContentBuild(addonName)
+        )
+        for destRel, content in _wowAddonProjectFiles(addonName, flavour):
+            (basePath / destRel).write_text(content)
+        for destRel, content in PROJECT_CONTEXT_TEMPLATES:
+            if destRel == Path("project") / "project.yaml":
+                content = wowAddon.projectYamlContentBuild(addonName, flavour)
+            (basePath / destRel).parent.mkdir(parents=True, exist_ok=True)
+            (basePath / destRel).write_text(content)
+
+    _wowAddonUpdate(basePath, dryRun)
+
+    logger.action("initializing git repository")
+    if not dryRun:
+        try:
+            subprocess.run(["git", "init", "-b", "main"], cwd=basePath, check=True)
+            subprocess.run(["pre-commit", "install"], cwd=basePath, check=True)
+            logger.done("git initialized and pre-commit hook installed")
+        except Exception as e:
+            logger.error(f"Could not initialize git or install pre-commit: {e}")
+
+    logger.done(f"wow addon '{addonName}' created")
+    logger.info(
+        f"clone or move it into <WoW install>/{wowAddon.FLAVOURS[flavour]['folder']}"
+        "/Interface/AddOns; symlinked addon folders are not loaded under Wine"
+    )
+    if dryRun:
+        logger.info("create simulation complete: no changes were applied")
 
 
 COMMANDS = ("check", "create", "migrate", "sync", "update")
@@ -1563,6 +1791,18 @@ def _parserBuild() -> argparse.ArgumentParser:
         help="install Qt UI templates in the project package",
     )
     createParser.add_argument(
+        "--wow-addon",
+        dest="wowAddon",
+        action="store_true",
+        help="create a World of Warcraft addon (Lua, .toc at the root) instead of a Python project",
+    )
+    createParser.add_argument(
+        "--flavour",
+        choices=sorted(wowAddon.FLAVOURS),
+        default=wowAddon.DEFAULT_FLAVOUR,
+        help="game flavour for --wow-addon: sets the .toc Interface number (default: retail)",
+    )
+    createParser.add_argument(
         "-y",
         "--confirm",
         dest="confirm",
@@ -1623,6 +1863,11 @@ def _parserBuild() -> argparse.ArgumentParser:
         dest="confirm",
         action="store_true",
         help=confirmHelp,
+    )
+    syncParser.add_argument(
+        "--runtime",
+        action="store_true",
+        help="also deploy the managed ompr runtime package",
     )
     syncParser.add_argument(
         "--merge",
@@ -1723,6 +1968,8 @@ def main(argv: list[str] | None = None):
             syncArgv.append("--confirm")
         if args.merge:
             syncArgv.append("--merge")
+        if args.runtime:
+            syncArgv.append("--runtime")
         if args.repo is not None:
             syncArgv.append("--repo")
             if args.repo:
@@ -1755,6 +2002,11 @@ def main(argv: list[str] | None = None):
 
     if projectPath is None:
         parser.error("the following arguments are required: project")
+    if getattr(args, "wowAddon", False):
+        if getattr(args, "ui", False) or getattr(args, "qt", False):
+            parser.error("--wow-addon cannot be combined with --ui or --qt")
+        createWowAddon(projectPath, flavour=args.flavour, dryRun=dryRun)
+        return
     createProject(
         projectPath,
         dryRun=dryRun,

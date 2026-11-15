@@ -4,7 +4,7 @@
 # Part of organiseMyProjects — the canonical shared tooling library.
 #
 # SOURCE this file; do not execute it directly:
-#   source "$(python3 -c 'import organiseMyProjects, os; print(os.path.dirname(organiseMyProjects.__file__))')/logUtils.sh"
+#   source "${applicationRoot}/ompr/logUtils.sh"
 #
 # Then initialise logging once per script:
 #   setApplication "myScript"          # → ~/.local/state/myScript/myScript-<date>.log

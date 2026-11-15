@@ -1,13 +1,13 @@
 # Requirements
 
-Next available number: 029
+Next available number: 030
 
 ## Requirement index
 
 | Req ID | Requirement | Description | Status | Agent Prompt | Architecture Decisions |
 | --- | --- | --- | --- | --- | --- |
 | 001 | [Project-role-aware updates](features/001-projectRoleAwareUpdates.md) | Safely update established projects without taking ownership of project-specific files. | Completed | [Prompt](prompt/001-projectRoleAwareUpdates.md) | [ADR-001](../adr/001-fileOwnershipPolicies.md) |
-| 002 | [Runtime Infrastructure Synchronisation](features/002-runtimeInfrastructureSync.md) | Share reusable runtime infrastructure without a second package in this repository. | InProgress | [Prompt](prompt/002-runtimeInfrastructureSync.md) | [ADR-002](../adr/002-ompRuntimePackage.md) |
+| 002 | [Runtime Infrastructure Synchronisation](features/002-runtimeInfrastructureSync.md) | Deploy self-contained ompr runtime helpers from canonical organiseMyProjects sources. | InReview | [Prompt](prompt/002-runtimeInfrastructureSync.md) | [ADR-005](../adr/005-deployedOmprRuntime.md) |
 | 003 | [OMP 0.6 managed migration and project scaffold](features/003-omp06ManagedMigrationAndScaffold.md) | Safely relocate OMP-managed files and make new projects use a root-level project Python package instead of `src/`. | Completed | [Prompt](prompt/003-omp06ManagedMigrationAndScaffold.md) | [ADR-003](../adr/003-rootPackageScaffold.md) |
 | 004 | [Requirement, prompt and directory-index layout](features/004-requirementDocumentationLayout.md) | Reserve `README.md` for repository root, use folder-derived `<folderName>Index.md` names for directory indexes, keep requirements/prompts as flat numbered files, and safely clean legacy generated layouts. | Completed | [Prompt](prompt/004-requirementDocumentationLayout.md) | Pending |
 | 005 | [runLinter source directory discovery](features/005-runLinterSourceDiscovery.md) | Discover default lint targets from packaging metadata and root-level packages. | Completed | [Prompt](prompt/005-runLinterSourceDiscovery.md) | Not required |
@@ -34,3 +34,4 @@ Next available number: 029
 | 026 | [Shared TUI style mockup](features/026-sharedTuiStyleMockup.md) | Generate a reproducible SVG showing shared Textual styles in regular use. | Completed | [Prompt](prompt/026-sharedTuiStyleMockup.md) | Not required |
 | 027 | [List editing interaction standard and enforcement](features/027-listEditingInteractionStandard.md) | Standardise list/table editing, deploy the guide through manageProject, make agents read it, validate managed copies and add only reliable static UI checks. | ToDo | [Prompt](prompt/027-listEditingInteractionStandard.md) | Not required unless implementation introduces a new ownership model |
 | 028 | [Agent usage availability](features/028-agentUsage.md) | Show comparable remaining availability for Claude, Codex, Grok and Copilot with `agentSessions --usage`. | Completed | [Prompt](prompt/028-agentUsage.md) | Not required |
+| 029 | [WoW addon project role](features/029-wowAddonProjectRole.md) | Add a dedicated WoW addon role for scaffold, update and metadata workflows without Python runtime/package scaffolding. | InProgress | [Prompt](prompt/029-wowAddonProjectRole.md) | Not required |

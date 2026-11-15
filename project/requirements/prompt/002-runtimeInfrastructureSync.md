@@ -1,31 +1,22 @@
-# Requirement: 002
+# 002: Runtime infrastructure synchronisation
 
-Source: project/requirements/features/002-runtimeInfrastructureSync.md
-Role: implement
+## Assignment
 
-Read the authoritative requirement and all applicable repository instructions
-before changing anything. Deliver every acceptance criterion in requirement
-002 while preserving its exclusions. Follow ADR-002 for the canonical `omp`
-package location. Do not copy application business logic or UI code into
-`omp`.
+Implement and verify [requirement 002](../features/002-runtimeInfrastructureSync.md)
+using [ADR-005](../../adr/005-deployedOmprRuntime.md). Canonical sources remain
+in `organiseMyProjects/`; consumers receive a managed `ompr/` runtime subset.
+OMP means organiseMyPhotos, not organiseMyProjects.
 
-Limit changes to the runtime package, create/update/sync deployment, related
-documentation, requirement or ADR traceability, and tests needed to prove the
-criteria.
+## Boundaries
 
-Verify with:
+Keep application code and packaging project-owned on update. Report migration
+needs rather than rewriting arbitrary projects. Reject unowned runtime paths
+and symlinks. Do not deploy business logic or UI, or perform confirmed remote
+sync as part of local implementation verification.
 
-- focused omp runtime and sync tests;
-- the full pytest suite;
-- an import check that a generated project loads `omp` without importing
-  `organiseMyProjects`.
+## Evidence
 
-If the requirement is ambiguous or its outcome must change, stop and report
-the decision needed. Do not infer new scope.
-
-Handoff with:
-
-- files changed and why;
-- an acceptance-criterion-to-evidence mapping;
-- commands run and results; and
-- assumptions, risks, decisions, and unresolved items.
+Map acceptance criteria to focused deployment/sync tests, independent generated
+application execution and a built/installed distribution without OMPR. Run the
+full suite, Black, Ruff, source/markup lint and whitespace checks. Report
+remaining gaps and impacts on OMPR, OMS, OMV and organiseMyPhotos.

@@ -2,212 +2,87 @@
 
 ## Status
 
-InProgress
+InReview
 
-## Objective
+## Outcome
 
-Establish a standard mechanism for sharing reusable runtime infrastructure
-between Glawster projects without introducing runtime dependencies between
-repositories.
+Applications use synchronised OMPR runtime helpers so that they can run without
+installing the organiseMyProjects development tools.
 
-The canonical implementation of shared runtime modules shall reside in the
-`organiseMyProjects` repository.
+## Context
 
-Each consuming project shall receive synchronised deployment copies of those
-modules within a reserved `omp` package.
+OMPR means organiseMyProjects. OMP means organiseMyPhotos. The consumer runtime
+package is `ompr`; `omp` is not a name for organiseMyProjects infrastructure.
+Canonical helpers remain in `organiseMyProjects/`, with no second runtime
+package in this repository.
 
-The name `omp` represents **organiseMyProjects**.
+## Scope
 
----
+- Deploy an explicit allowlist of self-contained runtime files to consumers'
+  `ompr/` packages through create, update and opt-in batch/repository sync.
+- Initially deploy Python logging, Bash logging, OMPR version metadata and a
+  minimal package initializer. Tooling, UI and application code are excluded.
+- Generate application imports using `ompr.logUtils` and package the runtime,
+  including shell resources, with new applications.
+- Include source repository, release and managed ownership in deployment headers.
+- Refresh managed copies even when locally modified; preserve executable bits,
+  support dry runs, avoid timestamp churn and keep repeated updates idempotent.
+- Refuse ambiguous ownership, symlinks and collisions before runtime deployment.
+- Preserve existing application code and packaging. Report legacy imports and
+  required packaging/dependency review rather than rewriting arbitrary projects.
+- Keep OMPR available as a development tool; it is not required at application
+  runtime once the consumer has completed the reported migration.
 
-## Motivation
+## Out of scope
 
-Many projects require common runtime functionality including:
+- Automatically rewriting arbitrary application imports or packaging metadata.
+- Synchronising business logic, UI, databases, project configuration or tests.
+- Inventing configuration/YAML/filesystem helpers without a concrete shared need.
+- Deploying runtime code to other repositories without an explicit confirmed sync.
 
-- logging
-- version reporting
-- configuration helpers
-- command-line helpers
-- YAML utilities
-- Git helpers
+## Acceptance criteria
 
-Maintaining separate implementations leads to divergence.
-
-Introducing `organiseMyProjects` as a runtime dependency would make deployment,
-distribution and packaging more complex.
-
-Synchronised deployment copies provide the benefits of a single canonical
-implementation while keeping every application self-contained.
-
----
-
-## Repository Layout
-
-The canonical repository shall contain:
-
-```text
-organiseMyProjects/
-├── omp/
-│   ├── __init__.py
-│   ├── logUtils.py
-│   ├── version.py
-│   ├── configUtils.py
-│   ├── yamlUtils.py
-│   └── ...
-```
-
-Each consuming project shall contain:
-
-```text
-project/
-├── omp/
-│   ├── __init__.py
-│   ├── logUtils.py
-│   ├── version.py
-│   └── ...
-```
-
-The internal structure should remain identical wherever practical.
-
----
-
-## Runtime Imports
-
-Applications shall import runtime infrastructure using:
-
-```python
-from omp.logUtils import getLogger
-```
-
-Applications shall not import runtime modules directly from
-`organiseMyProjects`.
-
----
-
-## Ownership
-
-Every module inside `omp` shall have one canonical owner:
-
-`Glawster/organiseMyProjects`
-
-Projects shall treat the local copy as generated deployment content.
-
-Behavioural changes shall always be made in the canonical repository before
-being synchronised into consuming repositories.
-
----
-
-## Synchronisation
-
-Synchronisation shall be performed by the standard project management tools.
-
-The synchronisation process shall:
-
-- deploy runtime modules
-- preserve executable permissions where required
-- overwrite locally modified managed files
-- include provenance information
-- support dry-run mode
-- support repository selection
-- support batch synchronisation
-
-Synchronised runtime modules shall use a standard deployment header indicating:
-
-- originating repository
-- release/version
-- warning against local modification
-
----
-
-## Package Contents
-
-Modules within `omp` shall contain only reusable runtime infrastructure.
-
-Typical examples include:
-
-- logging
-- version information
-- configuration helpers
-- filesystem helpers
-- CLI helpers
-- Git helpers
-- YAML helpers
-
----
-
-## Exclusions
-
-The `omp` package shall not contain:
-
-- application business logic
-- user interface code
-- OCR
-- databases
-- project-specific configuration
-- domain models
-- application requirements
-- tests specific to one application
-
----
-
-## Repository Standards
-
-The directory name `omp` is reserved across all Glawster repositories.
-
-Its meaning shall always be:
-
-> Local runtime infrastructure synchronised from
-> `organiseMyProjects`.
-
-Projects shall not use `omp` for unrelated code.
-
----
-
-## Deployment
-
-Projects shall remain fully deployable without requiring
-`organiseMyProjects` to be installed.
-
-Runtime dependencies on the canonical repository are explicitly prohibited.
-
----
-
-## Versioning
-
-The synchronisation process shall record the originating
-`organiseMyProjects` release.
-
-Future tooling may validate whether a consuming repository is using the latest
-approved runtime infrastructure.
-
----
-
-## Acceptance Criteria
-
-1. Every synchronised project contains an `omp` package.
-2. Runtime modules are imported exclusively through `omp`.
-3. Runtime dependencies on `organiseMyProjects` do not exist.
-4. Synchronised modules include provenance information.
-5. Synchronisation can update all managed runtime modules automatically.
-6. Only reusable infrastructure is stored within `omp`.
-7. Application-specific code is never synchronised into `omp`.
-8. Projects remain independently deployable.
-9. The repository standards document defines `omp` as a reserved package name.
-10. Future shared runtime modules can be added without changing consuming
-projects beyond synchronisation.
+1. New projects receive a managed `ompr` package containing only the approved
+   runtime subset, sourced from `organiseMyProjects/`.
+2. Generated application entry points import runtime helpers through `ompr`;
+   generated distributions include that package and its Bash resource.
+3. A generated application can import and use the helpers in an isolated Python
+   process without site packages, the OMPR checkout or organiseMyProjects imports.
+4. Each deployed file identifies the canonical repository, release and ownership.
+5. Create/update and opt-in repository/batch sync use the same runtime manifest.
+6. Updates replace locally changed managed helpers, preserve executable modes,
+   leave unchanged content untouched and produce no further changes on rerun.
+7. Dry runs report changes without writing runtime files, Git refs or API data.
+8. Unowned runtime paths and symlink destinations are preserved and reported;
+   application code and packaging remain unchanged during ordinary updates.
+9. Updates report detected legacy organiseMyProjects imports and the required
+   consumer packaging/dependency review. Migration instructions explain how to
+   verify an independent installation before removing the runtime dependency.
+10. Adding an approved self-contained helper to the manifest extends deployment
+    without consumer-specific changes to the synchronisation implementation.
+11. Guidelines distinguish OMPR/`ompr` from organiseMyPhotos/OMP, retain canonical
+    sources in `organiseMyProjects` and document consumer runtime imports.
 
 ## Dependencies and decisions
 
-- [ADR-002](../../adr/002-ompRuntimePackage.md) proposed a sibling `omp/`
-  package and was superseded: the canonical runtime package is
-  `organiseMyProjects`.
+- [ADR-005: Deployed OMPR runtime](../../adr/005-deployedOmprRuntime.md).
+- [ADR-001: File ownership](../../adr/001-fileOwnershipPolicies.md).
+- [ADR-002](../../adr/002-ompRuntimePackage.md) is superseded and must not be
+  used as an implementation instruction.
 
 ## Verification
 
-- Planned tests or review evidence.
+- `tests/test_runtimeDeployment.py`: clean-process runtime and application
+  import, wheel contents/install, managed overwrite, idempotence, permissions,
+  dry runs, collisions, source protection and migration reports.
+- Sync boundary tests cover Git tree payloads, ownership, mode preservation,
+  API failures, dry runs, idempotence and shared-manifest wiring.
+- Existing create/update/sync regressions and full suite in the `ompr` environment.
+- Black, Ruff, source/markup lint and `git diff --check`.
 
 ## Change history
 
-- 2026-08-31: a sibling `omp/` package was reverted; runtime remains in
-  `organiseMyProjects`.
-- 2026-10-22: status ToDo -> InProgress — myBoard.
+- 2026-08-31: original runtime proposal; sibling canonical package was reverted.
+- 2026-10-22: set InProgress through myBoard.
+- 2026-11-01: agreed canonical sources in organiseMyProjects and independent
+  consumer deployment; user clarified OMPR/ompr naming versus organiseMyPhotos.

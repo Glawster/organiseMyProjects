@@ -27,6 +27,12 @@ methods such as `Project.update()`, and rejected `_MAX_RETRIES`.
 
 - Changing widget prefix rules or Qt snake_case widget naming.
 
+## Dependencies and decisions
+
+- Depends on the existing AST-based method/function classification in guiNamingLinter.
+- Preserves module-level domainAction checks as the default rule.
+- No new architecture decision record is required.
+
 ## Acceptance criteria
 
 1. Given `class Project: def update(self)`, when the file is linted, then

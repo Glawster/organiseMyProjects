@@ -23,6 +23,8 @@ classifiers = [
 dev = [
     "black",
     "build",
+    "setuptools>=68",
+    "wheel",
     "pre-commit",
     "pytest",
     "pytest-cov",
@@ -74,4 +76,4 @@ filterwarnings = [
 ]
 
 [tool.setuptools.package-data]
-organiseMyProjects = ["*.css"]
+organiseMyProjects = ["*.css", "*.sh"]

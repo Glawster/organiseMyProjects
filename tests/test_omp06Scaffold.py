@@ -26,7 +26,7 @@ def testFootballVisionScaffoldUsesRootPackage(temp_dir):
         or "-e .[dev]" in (projectPath / "footballVisionEnvironment.yml").read_text()
     )
     pyproject = (projectPath / "pyproject.toml").read_text()
-    assert 'packages = ["footballVision"]' in pyproject
+    assert 'packages = ["footballVision", "ompr"]' in pyproject
     assert "[project.scripts]" not in pyproject
     assert (projectPath / "project" / "adr").is_dir()
     assert (projectPath / "project" / "requirements").is_dir()

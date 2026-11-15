@@ -14,6 +14,7 @@ an index, its filename is derived from the folder name as
 The living guides are:
 
 - [Developer Guide](documentation/developer.md)
+- [Deployed Runtime](documentation/runtimeDeployment.md)
 - [Git Guide](documentation/git.md)
 - [Release Guide](documentation/howToRelease.md)
 - [Release Notes](documentation/releaseNotes.md)
@@ -136,6 +137,23 @@ creating a second application-code ownership model.
 manageProject create --project myNewProject --ui --confirm
 manageProject create --project myNewProject -qt --confirm
 ```
+
+### Create a World of Warcraft addon
+
+`--wow-addon` creates a Lua addon instead of a Python project: the `.toc` and
+Lua sit at the repository root, with luacheck and StyLua pre-commit hooks, a
+`.pkgmeta` for release packaging and the shared agent and project files, but
+no Python package, `pyproject.toml` or `ompr/` runtime. `--flavour` (`retail`,
+`classic` or `forever`) sets the `.toc` Interface number.
+
+```bash
+manageProject create --project MyAddon --wow-addon --flavour forever --confirm
+```
+
+`update` recognises an addon by the `.toc` at its root and refreshes only the
+addon's managed files. `sync` sends `documentation/wowAddon.md` only to
+repositories with a root `.toc`. See
+[documentation/wowAddon.md](documentation/wowAddon.md) for the standard.
 
 ### Update an existing project
 
@@ -345,13 +363,16 @@ directly.
 
 ## Shared runtime infrastructure
 
-Runtime helpers such as logging live in the `organiseMyProjects` package.
-Applications import `from organiseMyProjects.logUtils import getLogger`.
+OMPR means organiseMyProjects; OMP means organiseMyPhotos. Canonical runtime
+helpers live in `organiseMyProjects/`. Consumer applications receive a managed
+`ompr/` package and import `from ompr.logUtils import getLogger`; OMPR tooling
+continues using its canonical package. See the
+[deployment and migration guide](documentation/runtimeDeployment.md).
 Call `logUtils.runStart()` once after `setApplication()` and before the header
 to mark a new run with a blank line, `>` plus 80 hyphens plus `<`, and another
 blank line. Bash scripts can call `runStart` and `line` from `logUtils.sh`.
 For a plain console separator, call `logUtils.line()` after
-`from organiseMyProjects import logUtils`. It prints 80 hyphens and a newline
+`from ompr import logUtils` in consumer applications. It prints 80 hyphens and a newline
 directly to standard output and appends it to today's application log file,
 without using logging or adding prefixes. Call `setApplication()` first. Use the separator after the complete command
 header and before any final summary.

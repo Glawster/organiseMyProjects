@@ -9,6 +9,11 @@ Completed — implemented for OMP 0.8.
 Reduce false-positive GUI naming linter findings while preserving the existing
 logging and domainAction conventions.
 
+## Context
+
+Existing managed projects include proper names, acronyms and framework-mandated
+method names that were being flagged as naming violations despite valid usage.
+
 ## Scope
 
 - Add an explicit whitelist for approved proper names and acronyms used in log
@@ -44,6 +49,12 @@ logging and domainAction conventions.
 - Document the framework/protocol exemption policy and the supported Textual
   patterns in the coding-standard/linter guidance distributed by OMP.
 
+## Out of scope
+
+- Weakening naming enforcement for arbitrary mixed-case or snake_case methods.
+- Changing logger interpolation API policy beyond existing rules.
+- Adding automatic source rewrites for naming violations.
+
 ## Acceptance criteria
 
 1. A logging message containing only permitted casing plus a whitelisted token,
@@ -71,6 +82,12 @@ logging and domainAction conventions.
     spelling, with Textual `action_*` and `on_*` documented as supported cases.
 12. Regression tests include representative Textual stubs/classes so future
     linter changes do not reintroduce these false positives.
+
+## Dependencies and decisions
+
+- Depends on the central guiNamingLinter naming-check pipeline and token parsing.
+- Keeps whitelist entries explicit and centrally maintained rather than pattern-based.
+- No new architecture decision record is required.
 
 ## Verification
 

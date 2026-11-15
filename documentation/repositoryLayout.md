@@ -92,6 +92,15 @@ The package directory is the primary home for project Python code. Individual
 `.py` files inside it are modules; the importable directory containing
 `__init__.py` is the Python package.
 
+## WoW addon layout
+
+A World of Warcraft addon repository (role `wow-addon`, detected by a `.toc`
+file at the repository root) is the addon folder itself: its `.toc` and Lua
+files sit at the root, and it has no Python package, `pyproject.toml` or
+`ompr/` runtime. The OMP `.github/`, `documentation/` and `project/` folders
+apply unchanged. `documentation/wowAddon.md`, deployed only to addon
+repositories, defines the addon standard.
+
 ## Top-level directories
 
 | Path | Purpose | Examples |
@@ -283,13 +292,18 @@ review. Dry-run reports intended operations without modifying files.
 
 ## Shared runtime infrastructure
 
-The canonical runtime package is `organiseMyProjects`. Logging and related
-helpers are imported from that package:
+OMPR means organiseMyProjects; OMP means organiseMyPhotos. Canonical runtime
+sources stay in `organiseMyProjects/`; do not add a sibling runtime package
+in the organiseMyProjects repository. OMPR tooling imports canonical helpers
+from that package.
+
+Consumer applications receive a managed `ompr/` package and import:
 
 ```python
-from organiseMyProjects.logUtils import getLogger, setApplication
+from ompr.logUtils import getLogger, setApplication
 ```
 
-Do not add a second runtime package named `omp` inside the
-`organiseMyProjects` repository. Project-specific application code belongs in
-the project's own package.
+Reserve `ompr/` for deployed runtime helpers. Include it and its shell resources
+in application distributions. Keep application code in its own package.
+Ordinary updates preserve existing code and packaging and report migration
+review; they do not prove an existing application is independently deployable.

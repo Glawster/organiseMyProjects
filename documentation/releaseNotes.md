@@ -1,10 +1,33 @@
 # Release notes
 
-## Unreleased
+## Unreleased — Deployed OMPR runtime
 
+- New projects receive a managed `ompr/` runtime package with Python and Bash
+  logging and source-release metadata. Generated entry points and packaging use
+  these copies, so applications can run without OMPR development tools.
+- Updates preserve application code and packaging, report migration work and
+  refuse unowned or symlink runtime destinations. Add `--runtime` to repository
+  or batch sync to include an atomic runtime update with explicit file modes.
+- OMPR/`ompr` means organiseMyProjects; OMP means organiseMyPhotos. Canonical
+  runtime sources remain inside `organiseMyProjects/`. See the
+  [deployment guide](runtimeDeployment.md).
+- The agent instructions add a Naming Standard: project-defined names and config
+  keys use camelCase unless an external package, protocol or format defines them.
 - `runLinter` accepts `API`, `IDs`, `TV` and `XML` in logging messages, so
   messages such as `skipping TV merge with conflicting provider IDs` no longer
   need the acronyms lowercased. See [Linter](linter.md).
+
+### WoW addon projects
+
+- New `wow-addon` project role. `manageProject create --wow-addon --flavour
+  retail|classic|forever` creates a Lua addon with its `.toc` and Lua at the
+  repository root, luacheck and StyLua pre-commit hooks, `.pkgmeta`, a `wow`
+  Conda environment file and the shared agent and project files, without the
+  Python package, `pyproject.toml` or `ompr/` runtime.
+- `manageProject update` detects an addon by the `.toc` at its root and
+  refreshes only the addon's managed files.
+- New managed guide `documentation/wowAddon.md`, which `sync` sends only to
+  repositories with a root `.toc`.
 
 ## 0.10a2 — 2026-10-31
 

@@ -25,8 +25,10 @@ import requests
 
 from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.managedContent import (
+    managedContentBody,
     managedContentBuild,
 )
+from organiseMyProjects.runtimeDeployment import runtimeFiles
 from organiseMyProjects.version import VERSION
 
 # ---------------------------------------------------------------------------
@@ -34,6 +36,13 @@ from organiseMyProjects.version import VERSION
 # ---------------------------------------------------------------------------
 
 SYNC_SPECS = [
+    {
+        "sourceFile": Path(__file__).resolve().parent
+        / "documentation"
+        / "runtimeDeployment.md",
+        "targetPath": "documentation/runtimeDeployment.md",
+        "commitMessage": "sync: update deployed runtime and migration guide",
+    },
     {
         "sourceFile": Path(__file__).resolve().parent
         / ".github"
@@ -92,6 +101,13 @@ SYNC_SPECS = [
         / "agentImplementationWorkflow.md",
         "targetPath": "documentation/agentImplementationWorkflow.md",
         "commitMessage": "sync: update agent implementation workflow guide",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent / "documentation" / "wowAddon.md",
+        "targetPath": "documentation/wowAddon.md",
+        "commitMessage": "sync: update WoW addon standard",
+        # Only repositories with this role receive the file.
+        "role": "wow-addon",
     },
 ]
 API_BASE = "https://api.github.com"
@@ -161,6 +177,22 @@ def getRemoteFile(
         return None
     response.raise_for_status()
     return response.json()
+
+
+def getRepoRole(repo: str, headers: dict) -> str:
+    """Return "wow-addon" when the repository has a .toc file at its root, else ""."""
+    url = f"{API_BASE}/repos/{repo}/contents/"
+    response = requests.get(url, headers=headers, timeout=15)
+    if response.status_code == 404:
+        return ""
+    response.raise_for_status()
+    entries = response.json()
+    if not isinstance(entries, list):
+        return ""
+    for entry in entries:
+        if entry.get("type") == "file" and entry.get("name", "").endswith(".toc"):
+            return "wow-addon"
+    return ""
 
 
 def getTargetRepos(headers: dict) -> list[str]:
@@ -370,6 +402,43 @@ def buildTargetContent(sourceContent: str, targetPath: str = "") -> str:
     return managedContentBuild(sourceContent, suffix=suffix, sync=True)
 
 
+def runtimeSyncRepo(
+    repo: str,
+    branch: str,
+    dryRun: bool,
+    headers: dict,
+    logger,
+    preparedBranches: set[str],
+) -> str:
+    """Deploy the runtime atomically with Git tree modes, preserving unowned files."""
+    try:
+        if repo.casefold() == SOURCE_REPO.casefold():
+            raise ValueError(
+                "canonical runtime sources must not receive a deployment copy"
+            )
+        revision, head, tree = _runtimeSnapshotLoad(repo, branch, headers)
+        updates = _runtimeUpdatesBuild(repo, head, tree, headers)
+        if not updates:
+            return "ready" if revision == branch else "skipped"
+        logger.action("deploy managed ompr runtime")
+        if dryRun:
+            return "updated"
+        if revision != branch:
+            createBranch(repo, branch, head, headers)
+            # Never overwrite a branch created concurrently with the snapshot.
+            if getBranchHeadSha(repo, branch, headers) != head:
+                raise ValueError("sync branch changed; retry after reviewing its files")
+        _runtimeCommitWrite(repo, branch, head, tree["sha"], updates, headers)
+        preparedBranches.add(repo)
+        logger.warning(
+            "runtime migration review: migrate legacy imports and include ompr and its shell helper in packaging"
+        )
+        return "updated"
+    except (requests.RequestException, OSError, ValueError, KeyError, TypeError) as exc:
+        logger.error(f"Runtime sync failed for {repo}: {exc}")
+        return "failed"
+
+
 def syncRepo(
     repo: str,
     targetPath: str,
@@ -461,6 +530,97 @@ def syncRepo(
         return "failed"
 
 
+def _runtimeCommitWrite(
+    repo: str, branch: str, head: str, tree: str, updates: list[dict], headers: dict
+) -> None:
+    """Create one complete runtime tree and advance the ref without force."""
+    response = requests.post(
+        f"{API_BASE}/repos/{repo}/git/trees",
+        json={"base_tree": tree, "tree": updates},
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    response = requests.post(
+        f"{API_BASE}/repos/{repo}/git/commits",
+        json={
+            "message": "sync: update managed ompr runtime",
+            "tree": response.json()["sha"],
+            "parents": [head],
+        },
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    response = requests.patch(
+        f"{API_BASE}/repos/{repo}/git/refs/heads/{branch}",
+        json={"sha": response.json()["sha"], "force": False},
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+
+
+def _runtimeSnapshotLoad(
+    repo: str, branch: str, headers: dict
+) -> tuple[str, str, dict]:
+    """Read an immutable snapshot, including existing sync branches on retries."""
+    revision = branch
+    try:
+        head = getBranchHeadSha(repo, branch, headers)
+    except requests.HTTPError as exc:
+        if exc.response is None or exc.response.status_code != 404:
+            raise
+        revision = getDefaultBranch(repo, headers)
+        head = getBranchHeadSha(repo, revision, headers)
+    response = requests.get(
+        f"{API_BASE}/repos/{repo}/git/trees/{head}",
+        params={"recursive": "1"},
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    tree = response.json()
+    if tree.get("truncated"):
+        raise ValueError("runtime ownership cannot be checked in a truncated tree")
+    return revision, head, tree
+
+
+def _runtimeUpdatesBuild(repo: str, head: str, tree: dict, headers: dict) -> list[dict]:
+    """Validate every destination before preparing changed contents and modes."""
+    entries = {entry["path"]: entry for entry in tree["tree"]}
+    if "ompr" in entries and entries["ompr"]["type"] != "tree":
+        raise ValueError("project-owned ompr path requires review")
+    if (
+        any(path.startswith("ompr/") for path in entries)
+        and "ompr/__init__.py" not in entries
+    ):
+        raise ValueError("project-owned ompr directory requires review")
+    updates = []
+    for source, relative in runtimeFiles():
+        path = relative.as_posix()
+        previous = ""
+        existing = entries.get(path)
+        if existing:
+            if existing["type"] != "blob" or existing["mode"] not in {
+                "100644",
+                "100755",
+            }:
+                raise ValueError(f"runtime destination requires review: {path}")
+            remote = getRemoteFile(repo, path, headers, ref=head)
+            previous = base64.b64decode(remote["content"]).decode("utf-8")
+            if not managedContentBody(previous)[1]:
+                raise ValueError(f"project-owned runtime file requires review: {path}")
+        content = buildTargetContent(source.read_text(encoding="utf-8"), path)
+        mode = "100755" if source.stat().st_mode & 0o111 else "100644"
+        oldBody, markers = managedContentBody(previous)
+        newBody, _ = managedContentBody(content)
+        if markers == 1 and oldBody == newBody and existing["mode"] == mode:
+            continue
+        updates.append({"path": path, "mode": mode, "type": "blob", "content": content})
+    return updates
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -476,6 +636,11 @@ def main() -> None:
         "--confirm",
         action="store_true",
         help="execute the sync (default is dry-run)",
+    )
+    parser.add_argument(
+        "--runtime",
+        action="store_true",
+        help="also deploy the managed ompr runtime (review application imports and packaging)",
     )
     parser.add_argument(
         "--merge",
@@ -569,12 +734,24 @@ def main() -> None:
                 "targetPath": spec["targetPath"],
                 "commitMessage": spec["commitMessage"],
                 "targetContent": buildTargetContent(sourceContent, spec["targetPath"]),
+                "role": spec.get("role"),
             }
         )
 
     for repo in targetRepos:
         logger.doing(f"syncing repository {repo}")
+        repoRole = None
+        if any(payload["role"] for payload in sourcePayloads):
+            try:
+                repoRole = getRepoRole(repo, headers)
+            except requests.RequestException as exc:
+                logger.warning(f"could not detect role of {repo}: {exc}")
+                repoRole = ""
+            if repoRole:
+                logger.value("role", repoRole)
         for payload in sourcePayloads:
+            if payload["role"] and payload["role"] != repoRole:
+                continue
             result = syncRepo(
                 repo,
                 payload["targetPath"],
@@ -586,6 +763,13 @@ def main() -> None:
                 args.verbose,
                 branch=syncBranch,
                 preparedBranches=preparedBranches,
+            )
+            counts[result] += 1
+            repoResults[repo].append(result)
+
+        if args.runtime:
+            result = runtimeSyncRepo(
+                repo, syncBranch, dryRun, headers, logger, preparedBranches
             )
             counts[result] += 1
             repoResults[repo].append(result)

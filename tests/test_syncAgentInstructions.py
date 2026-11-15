@@ -565,3 +565,70 @@ class TestSyncRepo:
         )
         assert preparedBranches == {"owner/repo"}
         assert logger.action.call_args_list.count((("prepare sync branch",), {})) == 1
+
+
+class TestRoleSpecificSync:
+    """Role-specific files reach only repositories of that role."""
+
+    @staticmethod
+    def _response(entries, status=200):
+        response = MagicMock()
+        response.status_code = status
+        response.json.return_value = entries
+        response.raise_for_status.return_value = None
+        return response
+
+    def testRootTocMakesWowAddon(self):
+        entries = [{"type": "file", "name": "Thing.toc"}, {"type": "dir", "name": "ui"}]
+        with patch(
+            "syncAgentInstructions.requests.get", return_value=self._response(entries)
+        ):
+            assert sci.getRepoRole("owner/Thing", {}) == "wow-addon"
+
+    def testNoTocMeansNoRole(self):
+        entries = [
+            {"type": "file", "name": "pyproject.toml"},
+            {"type": "dir", "name": "x.toc"},
+        ]
+        with patch(
+            "syncAgentInstructions.requests.get", return_value=self._response(entries)
+        ):
+            assert sci.getRepoRole("owner/Py", {}) == ""
+
+    def testEmptyRepositoryHasNoRole(self):
+        with patch(
+            "syncAgentInstructions.requests.get",
+            return_value=self._response({}, status=404),
+        ):
+            assert sci.getRepoRole("owner/Empty", {}) == ""
+
+    def testWowAddonSpecIsRoleRestricted(self):
+        specs = [
+            s for s in sci.SYNC_SPECS if s["targetPath"] == "documentation/wowAddon.md"
+        ]
+        assert len(specs) == 1 and specs[0]["role"] == "wow-addon"
+        assert specs[0]["sourceFile"].is_file()
+        assert all("role" not in s for s in sci.SYNC_SPECS if s is not specs[0])
+
+    @pytest.mark.parametrize(
+        "role,expectAddonGuide", [("wow-addon", True), ("", False)]
+    )
+    def testMainSkipsRoleFilesForOtherRepos(self, monkeypatch, role, expectAddonGuide):
+        monkeypatch.setattr(sys, "argv", ["syncAgentInstructions.py"])
+        monkeypatch.setenv("GITHUB_TOKEN", "t")
+        synced = []
+
+        def fakeSync(repo, targetPath, *args, **kwargs):
+            synced.append(targetPath)
+            return "skipped"
+
+        with (
+            patch.object(sci, "configSaveToken"),
+            patch.object(sci, "getTargetRepos", return_value=["owner/Repo"]),
+            patch.object(sci, "getRepoRole", return_value=role),
+            patch.object(sci, "syncRepo", side_effect=fakeSync),
+        ):
+            sci.main()
+
+        assert ("documentation/wowAddon.md" in synced) is expectAddonGuide
+        assert "AGENTS.md" in synced

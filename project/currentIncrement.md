@@ -25,7 +25,7 @@ persist explicit project choices and safely remove managed copies when disabled.
 
 ## Verification
 
-- Full regression: 730 passed, no skips, including installed application wheels
+- Full regression after 024 review: 734 passed, no skips, including installed application wheels
   in both modes and real Lua compilation for the addon regression suite.
 - Ruff, Black, source/markup lint and agent readiness passed; both toolkit
   distribution formats built successfully.
@@ -38,10 +38,14 @@ persist explicit project choices and safely remove managed copies when disabled.
   focused and 730 full-suite tests passing without skips. Existing-consumer
   migration guidance now explicitly requires an isolated installation check
   before removing the toolkit production dependency.
+- Requirement 024 is reviewed and complete: 44 board tests passed without skips,
+  including real Git/CLI/Textual parity and unreadable version handling. See its
+  [closeout review](reviews/024-myBoardBranchVersionsCloseout.md).
+- Requirements 002 and 024 are listed in the `0.10a5` release notes and included
+  in the current release PR.
 
 ## Remaining backlog
 
-- [024](requirements/features/024-myBoardBranchVersions.md): acceptance review.
 - [025](requirements/features/025-repositoryPortfolioBoard.md): portfolio board.
 - [027](requirements/features/027-listEditingInteractionStandard.md): list editing.
 - Requirement 029 is complete; evidence is in its

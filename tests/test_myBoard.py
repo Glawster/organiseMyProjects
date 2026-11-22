@@ -655,6 +655,117 @@ def testChangedFilesAreOnePerLine():
     assert "Changed files:\n  board.txt\n  notes.txt\n" in plain
 
 
+def _versionRepository(tmp_path: Path) -> Path:
+    """Build real refs with duplicates, a remote-only branch and absent metadata."""
+    root = boardFixture(tmp_path)
+
+    def git(*args, **kwargs):
+        return subprocess.run(
+            ["git", *args],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+            **kwargs,
+        ).stdout.strip()
+
+    git("init", "-b", "main")
+    git("config", "user.email", "board@example.com")
+    git("config", "user.name", "Board Test")
+    git("add", ".")
+    git("commit", "-m", "baseline")
+    git("checkout", "-b", "z-current")
+    version = root / "organiseMyProjects/version.py"
+    version.parent.mkdir()
+    version.write_text('VERSION = "0.10a5"\n')
+    git("add", ".")
+    git("commit", "-m", "branch version")
+    git("branch", "a-other")
+    for ref in ("origin/z-current", "origin/remote-only", "upstream/ignored"):
+        git("update-ref", "refs/remotes/" + ref, "HEAD")
+    empty = git("mktree", input="")
+    missing = git("commit-tree", empty, "-m", "no metadata")
+    git("update-ref", "refs/remotes/origin/no-metadata", missing)
+    return root
+
+
+def testOpenBranchVersionsAreCompleteUniqueAndReadOnly(tmp_path):
+    root = _versionRepository(tmp_path)
+    refs = subprocess.check_output(["git", "show-ref"], cwd=root)
+    head = subprocess.check_output(["git", "symbolic-ref", "HEAD"], cwd=root)
+    status = subprocess.check_output(["git", "status", "--porcelain"], cwd=root)
+    context = gitContextLoad(root)
+    assert [(item.name, item.version) for item in context.openBranches] == [
+        ("z-current", "0.10a5"),
+        ("a-other", "0.10a5"),
+        ("origin/no-metadata", None),
+        ("origin/remote-only", "0.10a5"),
+    ]
+    assert "Open: origin/no-metadata (version unavailable)" in context.summary()
+    assert subprocess.check_output(["git", "show-ref"], cwd=root) == refs
+    assert subprocess.check_output(["git", "symbolic-ref", "HEAD"], cwd=root) == head
+    assert subprocess.check_output(["git", "status", "--porcelain"], cwd=root) == status
+
+
+@pytest.mark.parametrize("committed", [False, True])
+def testUnreadableBranchVersionDoesNotBreakBoard(tmp_path, committed):
+    root = _versionRepository(tmp_path)
+    version = root / "organiseMyProjects/version.py"
+    version.write_bytes(b"\xff\xfe invalid version text\n")
+    if committed:
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "unreadable metadata"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "update-ref", "refs/heads/a-other", "HEAD"], cwd=root, check=True
+        )
+        version.write_text('VERSION = "0.10a5"\n')
+    context = gitContextLoad(root)
+    versions = {item.name: item.version for item in context.openBranches}
+    unavailable = "a-other" if committed else "z-current"
+    assert versions[unavailable] is None
+    assert f"Open: {unavailable} (version unavailable)" in context.summary()
+
+
+@REQUIRES_TEXTUAL
+def testCliAndTextualShowSameRealBranchVersions(tmp_path, capsys):
+    from textual.widgets import Static
+
+    from organiseMyProjects.myBoardTui import BoardApp
+
+    root = _versionRepository(tmp_path)
+    expected = [
+        line
+        for line in gitContextLines(gitContextLoad(root))
+        if line.startswith("Open:")
+    ]
+    assert main(["list", "--project", str(root)]) == 0
+    output = capsys.readouterr().out
+    for line in expected:
+        assert line in output
+
+    async def verify():
+        app = BoardApp(root)
+        async with app.run_test(size=(140, 36)) as pilot:
+            lines = []
+            for _attempt in range(30):
+                await pilot.pause()
+                lines = [
+                    widget.render().plain
+                    for widget in app.query("#status-panel .status-line")
+                    if isinstance(widget, Static)
+                ]
+                if all(line in lines for line in expected):
+                    break
+            assert [line for line in lines if line.startswith("Open:")] == expected
+
+    asyncio.run(verify())
+
+
 def testBranchFollowsAnUnmergedRequirementCommit(tmp_path: Path):
     root = tmp_path / "proj"
     root.mkdir()

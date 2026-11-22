@@ -2,6 +2,14 @@
 
 ## 0.10a5 — 2026-11-22
 
+- Requirement 002, runtime infrastructure synchronisation, is reviewed and
+  complete. Existing-consumer migration guidance now explicitly requires an
+  isolated installation check before removing the toolkit runtime dependency.
+- Requirement 024, requirement board branch versions, shows unmerged local and
+  remote-only `origin/*` branch/version pairs in both `myBoard list` and the
+  Textual Git panel, with the current branch first and duplicate refs hidden.
+  Missing or unreadable version metadata is shown as unavailable; discovery
+  leaves Git refs and the checkout unchanged.
 - Local `ompr/` deployment is now opt-in: create/update use saved `localRuntime`
   in `project/project.yaml`, defaulting to false. `--runtime` enables deployment;
   `--no-runtime` backs up and removes managed copies after migration checks.

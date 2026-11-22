@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from organiseMyProjects import wowAddon
 from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.managedContent import (
     POLICY_MANAGED_BLOCK_MERGE,
@@ -19,7 +20,6 @@ from organiseMyProjects.managedContent import (
 from organiseMyProjects.requirementLayout import layoutMigrate, legacyIndexFind
 from organiseMyProjects.requirementNaming import requirementNamesCorrect
 from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
-from organiseMyProjects import wowAddon
 from organiseMyProjects.runtimeDeployment import (
     runtimeDeploy,
     runtimeFiles,
@@ -1565,7 +1565,7 @@ def _wowAddonUpdate(basePath: Path, dryRun: bool = False) -> None:
     toc = wowAddon.addonTocFind(basePath)
     addonName = toc.stem if toc is not None else wowAddon.addonNameFor(basePath)
     logger.value("addon", addonName)
-    logger.info("wow addon: Python package, pyproject and ompr runtime are not added")
+    logger.info("wow addon: python package, pyproject and ompr runtime are not added")
 
     for destRel, content, blockInner, commentPrefix in _wowAddonManagedFiles(addonName):
         ownershipPolicy(destRel)

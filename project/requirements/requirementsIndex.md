@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 030
+Next available number: 031
 
 ## Requirement index
 
@@ -34,4 +34,5 @@ Next available number: 030
 | 026 | [Shared TUI style mockup](features/026-sharedTuiStyleMockup.md) | Generate a reproducible SVG showing shared Textual styles in regular use. | Completed | [Prompt](prompt/026-sharedTuiStyleMockup.md) | Not required |
 | 027 | [List editing interaction standard and enforcement](features/027-listEditingInteractionStandard.md) | Standardise list/table editing, deploy the guide through manageProject, make agents read it, validate managed copies and add only reliable static UI checks. | ToDo | [Prompt](prompt/027-listEditingInteractionStandard.md) | Not required unless implementation introduces a new ownership model |
 | 028 | [Agent usage availability](features/028-agentUsage.md) | Show comparable remaining availability for Claude, Codex, Grok and Copilot with `agentSessions --usage`. | Completed | [Prompt](prompt/028-agentUsage.md) | Not required |
-| 029 | [WoW addon project role](features/029-wowAddonProjectRole.md) | Add a dedicated WoW addon role for scaffold, update and metadata workflows without Python runtime/package scaffolding. | InProgress | [Prompt](prompt/029-wowAddonProjectRole.md) | Not required |
+| 029 | [WoW addon project role](features/029-wowAddonProjectRole.md) | Add a dedicated WoW addon role for scaffold, update and metadata workflows without Python runtime/package scaffolding. | Completed | [Prompt](prompt/029-wowAddonProjectRole.md) | Not required |
+| 030 | [Opt-in local runtime](features/030-optInLocalRuntime.md) | Default local ompr deployment to off, persist explicit opt-in, and safely remove managed runtime copies when disabled. | ToDo | [Prompt](prompt/030-optInLocalRuntime.md) | Pending; revises [ADR-005](../adr/005-deployedOmprRuntime.md) |

@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+Completed
 
 ## Outcome
 
@@ -41,7 +41,7 @@ addon metadata when a WoW addon is detected.
 2. Create supports flavour-specific `.toc` templates for `retail`, `classic`
    and `forever`.
 3. Addon scaffolding includes managed addon tooling/configuration files:
-   `.pre-commit-config.yaml`, `.luacheckrc`, `.stylua.toml`, `.pkgmeta`, and a
+   `.pre-commit-config.yaml`, `.luacheckrc`, `stylua.toml`, `.pkgmeta`, and a
    wow environment file.
 4. Addon create does not generate Python-application package/runtime files
    (`pyproject.toml`, `ompr/`, `src/`, Python UI templates).
@@ -83,3 +83,8 @@ addon metadata when a WoW addon is detected.
 
 - 2026-11-14: Added as the next `release/0.10` increment to integrate the
   `feature/wow-addon` implementation stream.
+- 2026-11-22: Completed: 189 focused tests passed with real Lua compilation;
+  source/markup lint, Ruff, Black and agent readiness passed. Corrected the
+  StyLua filename in criterion 3 to `stylua.toml`. See the
+  [closeout review](../../reviews/029-wowAddonCloseout.md) for criterion evidence
+  and the independently reproduced pre-existing runtime-sync regression.

@@ -53,6 +53,19 @@ def runtimeFiles() -> list[tuple[Path, Path]]:
     ]
 
 
+def runtimeManaged(content: str) -> bool:
+    """Recognise current or historical provenance after an optional shebang."""
+    if managedContentBody(content)[1]:
+        return True
+    lines = content.splitlines()
+    if lines and lines[0].startswith("#!"):
+        lines = lines[1:]
+    return bool(
+        lines
+        and lines[0].startswith("# OMPR-RUNTIME-MANAGED source=organiseMyProjects/")
+    )
+
+
 def runtimeMigrationReport(root: Path, logger: Any) -> None:
     """Report legacy imports and packaging review without editing application code."""
     # Scan application roots only, avoiding environments, caches and vendored
@@ -104,7 +117,7 @@ def runtimeValidate(root: Path) -> None:
         init = target / "__init__.py"
         if init.is_symlink() or not init.is_file():
             raise ValueError(f"project-owned ompr directory requires review: {target}")
-        if not managedContentBody(init.read_text(encoding="utf-8"))[1]:
+        if not runtimeManaged(init.read_text(encoding="utf-8")):
             raise ValueError(f"project-owned ompr package requires review: {target}")
     for source, relative in runtimeFiles():
         if not source.is_file():
@@ -114,8 +127,5 @@ def runtimeValidate(root: Path) -> None:
             raise ValueError(f"runtime destination requires review: {path}")
         if not path.resolve().is_relative_to(target.resolve()):
             raise ValueError(f"runtime destination escapes managed package: {path}")
-        if (
-            path.exists()
-            and not managedContentBody(path.read_text(encoding="utf-8"))[1]
-        ):
+        if path.exists() and not runtimeManaged(path.read_text(encoding="utf-8")):
             raise ValueError(f"project-owned runtime file requires review: {path}")

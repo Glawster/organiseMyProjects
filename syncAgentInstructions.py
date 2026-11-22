@@ -29,6 +29,15 @@ from organiseMyProjects.managedContent import (
     managedContentBuild,
 )
 from organiseMyProjects.runtimeDeployment import runtimeFiles
+from organiseMyProjects.runtimePreference import (
+    PREFERENCE_PATH,
+    SCAN_EXCLUDED,
+    SCAN_SUFFIXES,
+    preferenceContent,
+    preferenceRead,
+    runtimeManaged,
+    runtimeReconcile,
+)
 from organiseMyProjects.version import VERSION
 
 # ---------------------------------------------------------------------------
@@ -409,6 +418,7 @@ def runtimeSyncRepo(
     headers: dict,
     logger,
     preparedBranches: set[str],
+    enabled: bool = True,
 ) -> str:
     """Deploy the runtime atomically with Git tree modes, preserving unowned files."""
     try:
@@ -417,10 +427,19 @@ def runtimeSyncRepo(
                 "canonical runtime sources must not receive a deployment copy"
             )
         revision, head, tree = _runtimeSnapshotLoad(repo, branch, headers)
-        updates = _runtimeUpdatesBuild(repo, head, tree, headers)
+        if any(
+            "/" not in entry["path"]
+            and entry["path"].endswith(".toc")
+            and entry["type"] == "blob"
+            for entry in tree["tree"]
+        ):
+            if enabled:
+                raise ValueError("wow addons do not support runtime deployment")
+            return "skipped"
+        updates = _runtimeUpdatesBuild(repo, head, tree, headers, enabled=enabled)
         if not updates:
             return "ready" if revision == branch else "skipped"
-        logger.action("deploy managed ompr runtime")
+        logger.action(f"reconcile local runtime: {str(enabled).lower()}")
         if dryRun:
             return "updated"
         if revision != branch:
@@ -586,9 +605,27 @@ def _runtimeSnapshotLoad(
     return revision, head, tree
 
 
-def _runtimeUpdatesBuild(repo: str, head: str, tree: dict, headers: dict) -> list[dict]:
+def _runtimeUpdatesBuild(
+    repo: str, head: str, tree: dict, headers: dict, *, enabled: bool = True
+) -> list[dict]:
     """Validate every destination before preparing changed contents and modes."""
     entries = {entry["path"]: entry for entry in tree["tree"]}
+    protectedPaths = {"project": "tree", PREFERENCE_PATH.as_posix(): "blob"}
+    if not enabled:
+        protectedPaths.update({"output": "tree", "output/omprRuntimeBackups": "tree"})
+    for path, expectedType in protectedPaths.items():
+        entry = entries.get(path)
+        if entry and (entry["mode"] == "120000" or entry["type"] != expectedType):
+            raise ValueError(f"runtime configuration requires review: {path}")
+    configPath = PREFERENCE_PATH.as_posix()
+    config = ""
+    if configPath in entries:
+        config = base64.b64decode(
+            getRemoteFile(repo, configPath, headers, ref=head)["content"]
+        ).decode("utf-8")
+    preferenceRead(config)
+    if not enabled:
+        return _runtimeRemovalUpdatesBuild(repo, head, entries, headers)
     if "ompr" in entries and entries["ompr"]["type"] != "tree":
         raise ValueError("project-owned ompr path requires review")
     if (
@@ -609,7 +646,7 @@ def _runtimeUpdatesBuild(repo: str, head: str, tree: dict, headers: dict) -> lis
                 raise ValueError(f"runtime destination requires review: {path}")
             remote = getRemoteFile(repo, path, headers, ref=head)
             previous = base64.b64decode(remote["content"]).decode("utf-8")
-            if not managedContentBody(previous)[1]:
+            if not runtimeManaged(previous):
                 raise ValueError(f"project-owned runtime file requires review: {path}")
         content = buildTargetContent(source.read_text(encoding="utf-8"), path)
         mode = "100755" if source.stat().st_mode & 0o111 else "100644"
@@ -618,7 +655,91 @@ def _runtimeUpdatesBuild(repo: str, head: str, tree: dict, headers: dict) -> lis
         if markers == 1 and oldBody == newBody and existing["mode"] == mode:
             continue
         updates.append({"path": path, "mode": mode, "type": "blob", "content": content})
+    updatedConfig = preferenceContent(config, True)
+    if updatedConfig != config:
+        updates.append(
+            {
+                "path": configPath,
+                "mode": entries.get(configPath, {}).get("mode", "100644"),
+                "type": "blob",
+                "content": updatedConfig,
+            }
+        )
     return updates
+
+
+def _runtimeRemovalUpdatesBuild(
+    repo: str, head: str, entries: dict, headers: dict
+) -> list[dict]:
+    """Use the local cleanup validator on immutable tracked remote evidence."""
+    import logging
+    import tempfile
+    from types import SimpleNamespace
+
+    # Materialise only relevant text and runtime paths; unrelated blobs stay in
+    # the base Git tree. Refuse links rather than following targets remotely.
+    with tempfile.TemporaryDirectory(prefix="ompr-runtime-") as directory:
+        root = Path(directory)
+        previous = {}
+        for name, entry in entries.items():
+            path = Path(name)
+            if path.is_absolute() or ".." in path.parts:
+                raise ValueError(f"invalid runtime snapshot path: {name}")
+            if entry["type"] == "tree":
+                continue
+            runtimePath = path.parts[0] == "ompr"
+            if not runtimePath and any(
+                part in SCAN_EXCLUDED for part in path.parts[:-1]
+            ):
+                continue
+            if (
+                not runtimePath
+                and path.suffix not in SCAN_SUFFIXES
+                and path.name not in {"Dockerfile", "Makefile"}
+            ):
+                continue
+            if entry["mode"] not in {"100644", "100755"}:
+                raise ValueError(f"runtime migration snapshot requires review: {name}")
+            content = base64.b64decode(
+                getRemoteFile(repo, name, headers, ref=head)["content"]
+            )
+            destination = root / path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(content)
+            destination.chmod(int(entry["mode"], 8) & 0o777)
+            previous[name] = content
+        logger = logging.getLogger(__name__)
+        reporter = SimpleNamespace(
+            info=logger.info, action=logger.info, warning=logger.warning
+        )
+        runtimeReconcile(root, False, dryRun=False, logger=reporter)
+        updates = []
+        for name, content in previous.items():
+            path = root / name
+            if not path.exists():
+                updates.append(
+                    {
+                        "path": name,
+                        "mode": entries[name]["mode"],
+                        "type": "blob",
+                        "sha": None,
+                    }
+                )
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            name = path.relative_to(root).as_posix()
+            content = path.read_bytes()
+            if previous.get(name) != content:
+                updates.append(
+                    {
+                        "path": name,
+                        "mode": "100755" if path.stat().st_mode & 0o111 else "100644",
+                        "type": "blob",
+                        "content": content.decode("utf-8"),
+                    }
+                )
+        return updates
 
 
 # ---------------------------------------------------------------------------
@@ -637,10 +758,19 @@ def main() -> None:
         action="store_true",
         help="execute the sync (default is dry-run)",
     )
-    parser.add_argument(
+    runtimeGroup = parser.add_mutually_exclusive_group()
+    runtimeGroup.add_argument(
         "--runtime",
+        dest="localRuntime",
         action="store_true",
-        help="also deploy the managed ompr runtime (review application imports and packaging)",
+        default=None,
+        help="enable runtime deployment and save localRuntime: true",
+    )
+    runtimeGroup.add_argument(
+        "--no-runtime",
+        dest="localRuntime",
+        action="store_false",
+        help="disable runtime and save localRuntime: false after migration checks",
     )
     parser.add_argument(
         "--merge",
@@ -740,6 +870,21 @@ def main() -> None:
 
     for repo in targetRepos:
         logger.doing(f"syncing repository {repo}")
+        # Validate runtime intent before any instruction writes for this repo.
+        if args.localRuntime is not None:
+            result = runtimeSyncRepo(
+                repo,
+                syncBranch,
+                dryRun,
+                headers,
+                logger,
+                preparedBranches,
+                enabled=args.localRuntime,
+            )
+            counts[result] += 1
+            repoResults[repo].append(result)
+            if result == "failed":
+                continue
         repoRole = None
         if any(payload["role"] for payload in sourcePayloads):
             try:
@@ -763,13 +908,6 @@ def main() -> None:
                 args.verbose,
                 branch=syncBranch,
                 preparedBranches=preparedBranches,
-            )
-            counts[result] += 1
-            repoResults[repo].append(result)
-
-        if args.runtime:
-            result = runtimeSyncRepo(
-                repo, syncBranch, dryRun, headers, logger, preparedBranches
             )
             counts[result] += 1
             repoResults[repo].append(result)

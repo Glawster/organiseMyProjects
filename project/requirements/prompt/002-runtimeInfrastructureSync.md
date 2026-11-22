@@ -7,6 +7,12 @@ using [ADR-005](../../adr/005-deployedOmprRuntime.md). Canonical sources remain
 in `organiseMyProjects/`; consumers receive a managed `ompr/` runtime subset.
 OMP means organiseMyPhotos, not organiseMyProjects.
 
+Apply the subsequent opt-in policy from
+[requirement 030](../features/030-optInLocalRuntime.md) and
+[ADR-006](../../adr/006-optInLocalRuntime.md): review this requirement's deployed
+runtime capability with local runtime enabled; do not restore unconditional
+deployment to new or existing projects.
+
 ## Boundaries
 
 Keep application code and packaging project-owned on update. Report migration

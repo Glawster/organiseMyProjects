@@ -297,13 +297,16 @@ sources stay in `organiseMyProjects/`; do not add a sibling runtime package
 in the organiseMyProjects repository. OMPR tooling imports canonical helpers
 from that package.
 
-Consumer applications receive a managed `ompr/` package and import:
+Consumer applications normally use the installed `organiseMyProjects` package.
+Explicit `--runtime` opt-in deploys a managed `ompr/` package and uses:
 
 ```python
 from ompr.logUtils import getLogger, setApplication
 ```
 
-Reserve `ompr/` for deployed runtime helpers. Include it and its shell resources
+The saved `localRuntime` boolean in `project/project.yaml` defaults to false.
+See [Optional OMPR runtime](runtimeDeployment.md) for enable/disable and cleanup.
+Reserve `ompr/` for opted-in runtime helpers. Include it and its shell resources
 in application distributions. Keep application code in its own package.
 Ordinary updates preserve existing code and packaging and report migration
 review; they do not prove an existing application is independently deployable.

@@ -2,7 +2,7 @@
 
 ## Status
 
-InReview
+Completed
 
 ## Outcome
 
@@ -15,6 +15,13 @@ OMPR means organiseMyProjects. OMP means organiseMyPhotos. The consumer runtime
 package is `ompr`; `omp` is not a name for organiseMyProjects infrastructure.
 Canonical helpers remain in `organiseMyProjects/`, with no second runtime
 package in this repository.
+
+[Requirement 030](030-optInLocalRuntime.md) and
+[ADR-006](../../adr/006-optInLocalRuntime.md) subsequently made deployment
+explicitly opt-in. References below to new projects, generated runtime imports
+and runtime updates apply when local runtime is enabled. Default absence,
+saved preferences and disable/cleanup behaviour belong to requirement 030;
+002 continues to define the independent deployed runtime capability.
 
 ## Scope
 
@@ -67,6 +74,8 @@ package in this repository.
 
 - [ADR-005: Deployed OMPR runtime](../../adr/005-deployedOmprRuntime.md).
 - [ADR-001: File ownership](../../adr/001-fileOwnershipPolicies.md).
+- [Requirement 030](030-optInLocalRuntime.md) and
+  [ADR-006](../../adr/006-optInLocalRuntime.md): subsequent opt-in policy.
 - [ADR-002](../../adr/002-ompRuntimePackage.md) is superseded and must not be
   used as an implementation instruction.
 
@@ -86,3 +95,7 @@ package in this repository.
 - 2026-10-22: set InProgress through myBoard.
 - 2026-11-01: agreed canonical sources in organiseMyProjects and independent
   consumer deployment; user clarified OMPR/ompr naming versus organiseMyPhotos.
+- 2026-11-22: reviewed and completed under requirement 030's subsequent opt-in
+  policy; clarified existing-consumer migration instructions. All eleven
+  criteria have evidence; 124 focused and 730 full-suite tests passed without
+  skips. See the [closeout review](../../reviews/002-runtimeInfrastructureCloseout.md).

@@ -120,7 +120,7 @@ class TestCreateProject:
             sample_project_name
         )
         assert (
-            f'packages = ["{sample_project_name}", "ompr"]'
+            f'packages = ["{sample_project_name}"]'
             in (projectPath / "pyproject.toml").read_text()
         )
         assert (
@@ -992,6 +992,7 @@ class TestCliFlags:
             dryRun=False,
             includeUi=True,
             includeQt=True,
+            localRuntime=None,
         )
 
     def testMainPassesQtFlagToUpdateProject(self):
@@ -1007,6 +1008,7 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=True,
+            localRuntime=None,
         )
 
     def testMainTreatsUpdateWordAsUpdateCommand(self):
@@ -1024,6 +1026,7 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=False,
+            localRuntime=None,
         )
 
     def testMainTreatsCreateWordAsCreateCommand(self):
@@ -1039,6 +1042,7 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=False,
+            localRuntime=None,
         )
 
     def testMainPassesLegacyProjectFlagToCreateProject(self):
@@ -1054,6 +1058,7 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=False,
+            localRuntime=None,
         )
 
     def testCreateProjectEntryPointInjectsCreateCommand(self):
@@ -1069,6 +1074,7 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=False,
+            localRuntime=None,
         )
 
     def testMainPassesLegacyProjectFlagToUpdateProject(self):
@@ -1084,6 +1090,7 @@ class TestCliFlags:
             dryRun=False,
             includeUi=False,
             includeQt=False,
+            localRuntime=None,
         )
 
     def testMainPassesSyncFlagsToSyncModule(self):
@@ -1151,9 +1158,9 @@ class TestOwnershipPolicy:
         for name in QT_TEMPLATE_FILES:
             assert f"qt/{name}" in declared
 
-    def testGeneratedMainImportsDeployedRuntimeLogging(self):
+    def testGeneratedMainImportsInstalledRuntimeLogging(self):
         assert (
-            "from ompr.logUtils import getLogger, line, runStart, setApplication"
+            "from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication"
             in MAIN_PY_CONTENT
         )
         assert 'runStart()\n    logger.doing("main")\n    line()' in MAIN_PY_CONTENT

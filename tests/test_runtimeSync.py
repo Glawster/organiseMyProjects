@@ -81,7 +81,9 @@ def testManifestAndShellPermissions(tmp_path: Path):
     assert script.read_text().startswith("#!/usr/bin/env bash\n" + sync.MARKER)
     assert script.stat().st_mode & stat.S_IXUSR
     assert "version=" in script.read_text()
-    assert 'packages = ["example", "ompr"]' in _pyprojectContentBuild("example")
+    assert 'packages = ["example", "ompr"]' in _pyprojectContentBuild(
+        "example", localRuntime=True
+    )
 
 
 def testConsumerImportsWithoutInstalledToolkit(tmp_path: Path):
@@ -132,7 +134,7 @@ def testUpdateProjectDeploysRuntime(tmp_path: Path):
 
     root = tmp_path / "consumer"
     root.mkdir()
-    updateProject(root, dryRun=True)
+    updateProject(root, dryRun=True, localRuntime=True)
     assert not (root / "ompr").exists()
-    updateProject(root, dryRun=False)
+    updateProject(root, dryRun=False, localRuntime=True)
     assert (root / "ompr" / "logUtils.py").is_file()

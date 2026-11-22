@@ -143,6 +143,7 @@ def testCreateAcceptsProjectFlag(monkeypatch, tmp_path: Path):
         dryRun=False,
         includeUi=False,
         includeQt=False,
+        localRuntime=None,
     )
 
 

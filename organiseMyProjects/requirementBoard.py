@@ -725,7 +725,12 @@ def _branchNames(root: Path) -> list[str]:
     """Return local branch names, plus a remote only when it has no local branch."""
     listed = _gitRun(
         root,
-        ["for-each-ref", "--format=%(refname:short)", "refs/heads", "refs/remotes"],
+        [
+            "for-each-ref",
+            "--format=%(refname:short)",
+            "refs/heads",
+            "refs/remotes/origin",
+        ],
     )
     if listed is None or listed.returncode != 0:
         return []
@@ -746,10 +751,17 @@ def _branchVersion(root: Path, branch: str, current: str) -> str | None:
     if branch == current:
         try:
             shown = path.read_text(encoding="utf-8")
-        except OSError:
+        except (OSError, UnicodeError):
             return None
     else:
-        completed = _gitRun(root, ["show", f"{branch}:organiseMyProjects/version.py"])
+        try:
+            completed = _gitRun(
+                root, ["show", f"{branch}:organiseMyProjects/version.py"]
+            )
+        except UnicodeError:
+            # Git succeeded but the metadata is not readable text. Keep the
+            # branch visible and report its version as unavailable.
+            return None
         if completed is None or completed.returncode != 0:
             return None
         shown = completed.stdout

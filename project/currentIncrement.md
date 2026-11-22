@@ -16,7 +16,7 @@ persist explicit project choices and safely remove managed copies when disabled.
 
 ## Implementation
 
-- Branch: `feature/030-opt-in-runtime`, version `0.10a4`.
+- Branch: `feature/030-opt-in-runtime`, version `0.10a5`.
 - Shared preference resolution and recoverable cleanup for create/update/local
   runtime sync; matching atomic remote runtime preference and cleanup updates.
 - Mode-appropriate generated imports, dependencies and package resources.

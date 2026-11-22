@@ -1,6 +1,6 @@
 # Release notes
 
-## Unreleased — Deployed OMPR runtime
+## 0.10a5 — 2026-11-22
 
 - Local `ompr/` deployment is now opt-in: create/update use saved `localRuntime`
   in `project/project.yaml`, defaulting to false. `--runtime` enables deployment;

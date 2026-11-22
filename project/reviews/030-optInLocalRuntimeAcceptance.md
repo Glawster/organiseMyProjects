@@ -41,6 +41,10 @@ the previously skipped distribution evidence now runs. Local runtime sync now
 uses the supported shared reconciliation path, also resolving the previously
 failing `sync --runtime --project` regression from 029 closeout.
 
+For the PR to `release/0.10`, bumped the shared development build to `0.10a5`.
+Repeated full verification: 730 tests passed with no skips; package metadata
+reports `0.10a5`, and both source and wheel distributions built successfully.
+
 ## Review and limits
 
 Cleanup validates the entire reference/ownership plan before touching runtime

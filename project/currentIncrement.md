@@ -33,6 +33,11 @@ persist explicit project choices and safely remove managed copies when disabled.
   criteria and records migration limits and suite impact.
 - The earlier runtime-sync CLI failure and packaging dependency skip recorded
   during 029 closeout are resolved in this branch.
+- Requirement 002 is reviewed and complete: all eleven criteria mapped in its
+  [closeout review](reviews/002-runtimeInfrastructureCloseout.md), with 124
+  focused and 730 full-suite tests passing without skips. Existing-consumer
+  migration guidance now explicitly requires an isolated installation check
+  before removing the toolkit production dependency.
 
 ## Remaining backlog
 

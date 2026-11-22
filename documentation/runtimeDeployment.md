@@ -67,6 +67,28 @@ release, not the application's version. Bash scripts use application-relative
 paths to `ompr/logUtils.sh`. Managed copies may be refreshed on update;
 implement shared helper changes in the canonical source.
 
+### Migrate an existing application to bundled helpers
+
+1. Preview `manageProject update --runtime`, then deploy with `--confirm`.
+   Existing application imports and packaging remain project-owned.
+2. Change runtime logging imports from `organiseMyProjects.logUtils` to
+   `ompr.logUtils`. Review other toolkit imports individually: development
+   tools still use the installed canonical package.
+3. Include `ompr` in package discovery or explicit package lists, preserve the
+   application's other packages, and include `ompr/logUtils.sh` as package
+   data. Update Bash source paths and deployment manifests for the installed
+   application layout.
+4. Build the application's distribution and install it in a clean environment
+   without the OMPR toolkit or its checkout. Exercise the installed entry point,
+   Python logging and Bash helper resources wherever the application uses them.
+5. Remove `organiseMyProjects` from production dependencies only after that
+   isolated verification succeeds. Retain it in the development environment
+   for project management and linting.
+
+Import scanning during update covers root Python files, the project-named
+package, `src/` and `scripts/`. It is a migration aid; dynamic imports, custom
+source roots and Bash consumers still need explicit review.
+
 ## Disable and remove existing copies
 
 An unconfigured legacy project now defaults to disabled. To retain existing

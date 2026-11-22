@@ -2,9 +2,11 @@
 
 ## Unreleased — Deployed OMPR runtime
 
-- New projects receive a managed `ompr/` runtime package with Python and Bash
-  logging and source-release metadata. Generated entry points and packaging use
-  these copies, so applications can run without OMPR development tools.
+- Local `ompr/` deployment is now opt-in: create/update use saved `localRuntime`
+  in `project/project.yaml`, defaulting to false. `--runtime` enables deployment;
+  `--no-runtime` backs up and removes managed copies after migration checks.
+  Default scaffolds use the installed canonical toolkit dependency. Opted-in
+  scaffolds bundle Python/Bash logging and source-release metadata instead.
 - Updates preserve application code and packaging, report migration work and
   refuse unowned or symlink runtime destinations. Add `--runtime` to repository
   or batch sync to include an atomic runtime update with explicit file modes.

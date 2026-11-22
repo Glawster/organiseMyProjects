@@ -365,15 +365,20 @@ directly.
 ## Shared runtime infrastructure
 
 OMPR means organiseMyProjects; OMP means organiseMyPhotos. Canonical runtime
-helpers live in `organiseMyProjects/`. Consumer applications receive a managed
-`ompr/` package and import `from ompr.logUtils import getLogger`; OMPR tooling
-continues using its canonical package. See the
+helpers live in `organiseMyProjects/`. Default scaffolds use that installed
+package and declare it as a dependency. Add `--runtime` to create/update to
+deploy a managed `ompr/` copy instead; `--no-runtime` safely removes managed
+copies after migration checks. The choice is saved as `localRuntime` in
+`project/project.yaml` and defaults to false. Opted-in consumers import
+`from ompr.logUtils import getLogger`; default consumers import
+`from organiseMyProjects.logUtils import getLogger`. See the
 [deployment and migration guide](documentation/runtimeDeployment.md).
 Call `logUtils.runStart()` once after `setApplication()` and before the header
 to mark a new run with a blank line, `>` plus 80 hyphens plus `<`, and another
 blank line. Bash scripts can call `runStart` and `line` from `logUtils.sh`.
 For a plain console separator, call `logUtils.line()` after
-`from ompr import logUtils` in consumer applications. It prints 80 hyphens and a newline
+`from organiseMyProjects import logUtils` (or `from ompr import logUtils`
+with local runtime enabled). It prints 80 hyphens and a newline
 directly to standard output and appends it to today's application log file,
 without using logging or adding prefixes. Call `setApplication()` first. Use the separator after the complete command
 header and before any final summary.

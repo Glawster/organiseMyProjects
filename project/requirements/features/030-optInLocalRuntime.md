@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo
+Completed
 
 ## Outcome
 
@@ -87,6 +87,8 @@ changing deployment alone would leave broken applications.
 - [ADR-005](../../adr/005-deployedOmprRuntime.md): a new ADR must revise its
   unconditional local deployment decision while retaining explicit opt-in use.
 - [Requirement 001](001-projectRoleAwareUpdates.md): preserve ownership rules.
+- [ADR-006](../../adr/006-optInLocalRuntime.md): accepted preference, precedence,
+  cleanup and remote sync contract.
 - Proposed CLI and configuration spellings above are the implementation design
   to refine; explicit opt-in, default absence and safe removal are the outcomes.
 
@@ -106,3 +108,5 @@ changing deployment alone would leave broken applications.
 
 - 2026-11-22: created from the user's request to make local runtime deployment
   opt-in and remove copies when no longer needed.
+- 2026-11-22: implemented and verified; 730 tests passed with no skips. See
+  [acceptance evidence](../../reviews/030-optInLocalRuntimeAcceptance.md).

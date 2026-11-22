@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Next available number: 006
+Next available number: 007
 
 ## Decision index
 
@@ -11,3 +11,4 @@ Next available number: 006
 | 003 | [Root-level project Python package](003-rootPackageScaffold.md) | Accepted | 2026-08-31 |
 | 004 | [GitHub portfolio discovery](004-githubPortfolioDiscovery.md) | Accepted | 2026-10-25 |
 | 005 | [Deployed OMPR runtime](005-deployedOmprRuntime.md) | Accepted | 2026-11-01 |
+| 006 | [Opt-in local runtime](006-optInLocalRuntime.md) | Accepted | 2026-11-22 |

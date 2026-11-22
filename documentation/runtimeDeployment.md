@@ -1,81 +1,134 @@
-# Deployed OMPR runtime
+# Optional OMPR runtime
 
-OMPR means organiseMyProjects. OMP means organiseMyPhotos. Applications receive
-shared runtime helpers in a managed `ompr/` package so they can run without the
-OMPR development tools installed. Canonical sources remain in
-`organiseMyProjects/`; that repository has no sibling runtime package.
+OMPR means organiseMyProjects. OMP means organiseMyPhotos. Canonical runtime
+helpers live in `organiseMyProjects/`. Projects normally use the installed
+package; local `ompr/` deployment is an explicit opt-in.
 
-## New applications
+## Choose and save the mode
 
-`manageProject create myApplication --confirm` deploys Python and Bash logging,
-OMPR version metadata and a minimal package initializer. Generated UI entry
-points use:
+```bash
+manageProject create --project myApplication --confirm
+manageProject create --project portableApplication --runtime --confirm
+manageProject update --runtime --confirm
+manageProject update --no-runtime --confirm
+```
+
+The saved choice is a top-level boolean in `project/project.yaml`:
+
+```yaml
+localRuntime: false
+```
+
+`--runtime` saves true and installs or refreshes the manifest. `--no-runtime`
+saves false and removes recognised managed copies after migration checks.
+Neither flag means use the saved choice, defaulting to false when absent.
+Existing folders do not imply opt-in. Duplicate or invalid settings fail before
+changes, even with an explicit override. Use unquoted `true` or `false` on its
+own top-level line. Other project metadata and comments are preserved.
+
+Without `--confirm` all commands preview their changes. Conflicting runtime
+flags are rejected. WoW addons and the canonical OMPR repository do not receive
+runtime copies. Update does not rewrite project-owned application code or
+packaging when switching modes.
+
+## Default applications
+
+New default scaffolds contain no `ompr/`, import installed canonical helpers,
+and declare `organiseMyProjects` as a production dependency:
+
+```python
+from organiseMyProjects.logUtils import getLogger, setApplication
+```
+
+Install the project in its Conda environment using `pip install -e .`. For Bash,
+locate the installed resource in the application's environment:
+
+```bash
+runtimeRoot="$(python -c 'from importlib.resources import files; print(files("organiseMyProjects"))')"
+source "${runtimeRoot}/logUtils.sh"
+setApplication "myApplication"
+```
+
+This requires the declared toolkit dependency to be installed; no helper is
+automatically installed at application startup.
+
+## Opted-in applications
+
+`--runtime` deploys a minimal initializer, Python and Bash logging, and OMPR
+source-release metadata from the shared manifest. Generated entry points use:
 
 ```python
 from ompr.logUtils import getLogger, setApplication
 ```
 
-The generated packaging includes `ompr` and its shell resources. OMPR's
-`version.py` identifies the helper source release, not the application version.
-Use application-relative paths to source Bash helpers:
+Generated packaging includes `ompr` and its shell resources, without a runtime
+dependency on the toolkit. `ompr/version.py` identifies the helper source
+release, not the application's version. Bash scripts use application-relative
+paths to `ompr/logUtils.sh`. Managed copies may be refreshed on update;
+implement shared helper changes in the canonical source.
+
+## Disable and remove existing copies
+
+An unconfigured legacy project now defaults to disabled. To retain existing
+local helpers, run `manageProject update --runtime --confirm` before relying
+on future updates. To remove them:
+
+1. Migrate application imports from `ompr` to `organiseMyProjects` and declare
+   that distribution as a production dependency where logging helpers are used.
+2. Remove explicit `ompr` package lists and shell package-data entries from
+   application packaging. Update Bash source paths and deployment manifests.
+3. Verify the application with the installed dependency, then preview
+   `manageProject update --no-runtime` and apply with `--confirm`.
+
+Cleanup scans Python imports and literal dynamic references, shell paths,
+packaging and deployment text throughout the project. It excludes version
+control, environments, caches and generated output. Unknown dynamic references,
+custom file formats and excluded locations require maintainer review. Known
+references, unreadable source and symlinks in source paths block cleanup with
+file-level guidance; the runtime and saved choice remain untouched.
+
+Only recognised manifest files with current provenance or historical
+`OMPR-RUNTIME-MANAGED` headers are removed. Every removed file is first backed
+up, including local modifications and executable modes, under
+`output/omprRuntimeBackups/<unique-id>/`. Keep those backups until migration is
+verified. New scaffolds ignore `output/`; existing projects should keep local
+backup output out of their distributions and version control.
+
+Unowned packages, unknown files and symlink runtime paths are preserved and
+reported. The directory is removed only when empty; preserved content, including
+unowned caches, can leave an `ompr/` directory requiring manual review. Repeated
+updates do not recreate disabled managed helpers or duplicate successful backups.
+
+## Local and remote sync
+
+Local runtime-only reconciliation uses the same saved preference:
 
 ```bash
-source "${applicationRoot}/ompr/logUtils.sh"
-setApplication "myApplication"
+manageProject sync --project ~/Source/myApplication --runtime
+manageProject sync --project ~/Source/myApplication --runtime --confirm
+manageProject sync --project ~/Source/myApplication --no-runtime --confirm
 ```
 
-The application establishes `applicationRoot` from its own installed layout.
-OMPR tooling itself continues importing `organiseMyProjects.logUtils`.
-
-## Existing applications
-
-Preview `manageProject update` and apply with `--confirm`. Managed runtime
-copies are refreshed, including locally modified managed helpers. Unmarked
-packages/files and symlink destinations require review and are preserved.
-Unchanged files retain their timestamps and original provenance release.
-
-Ordinary updates preserve application code and packaging. They report detected
-legacy imports in root Python files, the project-named package, `src/` and
-`scripts/`, and always report the packaging review. This is a bounded aid,
-not a complete analysis of dynamic imports, custom source roots or Bash scripts.
-
-Complete consumer migration explicitly:
-
-1. Change application runtime imports to `ompr.logUtils`. Review other imports
-   individually; development tools still belong to `organiseMyProjects`.
-2. Include `ompr` in package discovery or explicit package lists and include
-   `ompr/logUtils.sh` as package data. Preserve the application's other packages.
-3. Update Bash source paths and deployment manifests for the installed layout.
-4. Build and install the application in a clean environment without OMPR and
-   exercise its actual entry point, logging and resources.
-5. Remove OMPR from production dependencies only after that verification. Keep
-   it available in the development environment for linting and management tools.
-
-An existing user-owned `ompr/` package is never adopted automatically. Resolve
-that namespace collision manually before running deployment again. Do not
-rename or modify an organiseMyPhotos `omp/` package as part of this migration.
-
-## Repository and batch sync
-
-Instruction-only sync remains the default. Add `--runtime` to include runtime
-helpers in a selected repository or the eligible repository batch:
+Remote sync stays instruction-only unless a runtime flag is supplied, even for
+saved-enabled projects:
 
 ```bash
 manageProject sync --repo Glawster/myApplication --runtime
 manageProject sync --repo Glawster/myApplication --runtime --confirm
-manageProject sync --runtime
+manageProject sync --repo Glawster/myApplication --no-runtime --confirm
 ```
 
-Without `--confirm`, no API writes or runtime changes are made. Remote runtime
-updates validate ownership before an atomic Git tree commit, preserve executable
-modes and keep unrelated files. Existing application imports and packaging are
-not rewritten. Review the generated branch before opting into `--merge`.
-Runtime errors prevent automatic merging of that repository's sync branch.
+Remote explicit flags save the corresponding preference and reconcile runtime
+files in one atomic Git tree commit. Disabling checks tracked source and
+configuration from the same immutable snapshot and commits recovery backups
+alongside deletions. Unknown runtime paths and unsupported symlinks require
+review. Runtime errors prevent automatic merging of that repository's sync
+branch. Review generated branches before requesting `--merge`; application
+imports and packaging are never rewritten automatically.
 
-## Extending the runtime
+## Extend the manifest
 
 `organiseMyProjects/runtimeDeployment.py` declares the shared manifest. Add only
-self-contained helpers or include their complete dependency closure. Never add
-the tooling initializer, application logic, UI or project configuration. Add
-isolated deployment tests for new helpers; create, update and runtime sync then
-use the same manifest without consumer-specific synchronisation code.
+self-contained helpers or their complete dependency closure. Never add tooling
+initializers, UI, application logic or project configuration. Add isolated
+runtime and reconciliation tests when extending the manifest.

@@ -21,11 +21,10 @@ from organiseMyProjects.requirementLayout import layoutMigrate, legacyIndexFind
 from organiseMyProjects.requirementNaming import requirementNamesCorrect
 from organiseMyProjects.requirementsPromptIndex import promptIndexEnsure
 from organiseMyProjects.runtimeDeployment import (
-    runtimeDeploy,
     runtimeFiles,
     runtimeMigrationReport,
-    runtimeValidate,
 )
+from organiseMyProjects.runtimePreference import runtimeReconcile
 from organiseMyProjects.version import VERSION
 
 
@@ -58,7 +57,7 @@ class _ImportSafeLogger:
 logger = _ImportSafeLogger()
 
 # text templates used when creating or updating projects
-GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\n"
+GITIGNORE_CONTENT = "__pycache__/\nlogs/\n*.log\n*.pyc\noutput/\n"
 REQUIREMENTS_CONTENT = (
     "# OMP-MANAGED-BEGIN\n"
     "# Production dependencies belong to the project. OMP does not add any.\n"
@@ -78,7 +77,7 @@ REQUIREMENTS_MANAGED_BLOCK = (
 DEV_REQUIREMENTS_MANAGED_BLOCK = "black\npytest\npre-commit\nruff"
 PACKAGE_MAIN_CONTENT = """from pathlib import Path
 
-from ompr.logUtils import getLogger, line, runStart, setApplication
+from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 
 thisApplication = Path(__file__).resolve().parent.name
 setApplication(thisApplication)
@@ -224,10 +223,15 @@ def _pyprojectContentBuild(
     projectName: str,
     includeUi: bool = False,
     includeQt: bool = False,
+    localRuntime: bool = False,
 ) -> str:
     """Return project-neutral Python package and tool metadata."""
     packageName = _packageNameFor(projectName)
-    packages = [packageName, "ompr"]
+    packages = [packageName] + (["ompr"] if localRuntime else [])
+    dependencies = "[]" if localRuntime else '["organiseMyProjects"]'
+    packageData = (
+        '\n[tool.setuptools.package-data]\nompr = ["*.sh"]\n' if localRuntime else ""
+    )
     if includeUi:
         packages.append(f"{packageName}.ui")
     if includeQt:
@@ -247,7 +251,7 @@ build-backend = "setuptools.build_meta"
 name = "{packageName}"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = {dependencies}
 
 [project.optional-dependencies]
 dev = ["black", "pre-commit", "pytest", "ruff"]
@@ -255,8 +259,7 @@ dev = ["black", "pre-commit", "pytest", "ruff"]
 [tool.setuptools]
 packages = [{packageList}]
 
-[tool.setuptools.package-data]
-ompr = ["*.sh"]
+{packageData}
 
 [tool.black]
 target-version = ["py310"]
@@ -506,17 +509,24 @@ Next available number: 001
 """
 
 
-def _readmeContentBuild(projectName: str) -> str:
+def _readmeContentBuild(projectName: str, localRuntime: bool = False) -> str:
     packageName = _packageNameFor(projectName)
+    runtimeModule = "ompr" if localRuntime else "organiseMyProjects"
+    runtimeDescription = (
+        "Logging uses the deployed `ompr.logUtils`; applications do not need OMPR installed.\n"
+        "The managed `ompr/` package is reserved for organiseMyProjects runtime helpers."
+        if localRuntime
+        else "Logging uses the installed `organiseMyProjects.logUtils` dependency.\n"
+        "Local runtime deployment is disabled; enable it explicitly with `--runtime`."
+    )
     return f"""# {packageName}
 
 Project scaffold created by manageProject.py.
 
 The importable Python package is `{packageName}/`. Install the project with
 `pip install -e .` from the Conda environment defined in
-`{packageName}Environment.yml`. Logging uses the deployed `ompr.logUtils`; applications do not need OMPR installed.
-The managed `ompr/` package is reserved for organiseMyProjects runtime helpers.
-Use `from ompr.logUtils import getLogger, setApplication` in application code.
+`{packageName}Environment.yml`. {runtimeDescription}
+Use `from {runtimeModule}.logUtils import getLogger, setApplication` in application code.
 
 ## Documentation
 
@@ -902,6 +912,7 @@ def createProject(
     dryRun: bool = False,
     includeUi: bool = False,
     includeQt: bool = False,
+    localRuntime: bool | None = None,
 ):
 
     basePath = Path(projectName)
@@ -916,6 +927,9 @@ def createProject(
         )
     logger.doing(f"creating project at {basePath}")
     logger.value("package name", packageName)
+    if localRuntime is not None and not isinstance(localRuntime, bool):
+        raise ValueError("runtime choice must be true or false")
+    localRuntime = bool(localRuntime)
 
     # Create folders
     logger.action("creating directories")
@@ -956,10 +970,15 @@ def createProject(
         )
         (basePath / "pyproject.toml").write_text(
             _pyprojectContentBuild(
-                str(projectName), includeUi=includeUi, includeQt=includeQt
+                str(projectName),
+                includeUi=includeUi,
+                includeQt=includeQt,
+                localRuntime=localRuntime,
             )
         )
-        (basePath / "README.md").write_text(_readmeContentBuild(projectName))
+        (basePath / "README.md").write_text(
+            _readmeContentBuild(projectName, localRuntime)
+        )
         (basePath / "documentation" / "architecture.md").write_text(
             ARCHITECTURE_CONTENT
         )
@@ -1074,7 +1093,7 @@ def createProject(
         _managedCopyUpdate(
             runtimeGuide, basePath / "documentation" / "runtimeDeployment.md", dryRun
         )
-    runtimeDeploy(basePath, dryRun=dryRun, logger=logger)
+    runtimeReconcile(basePath, localRuntime, dryRun=dryRun, logger=logger)
 
     # Copy template modules into the new project
     logger.action("copying template modules")
@@ -1087,7 +1106,12 @@ def createProject(
     if includeUi or includeQt:
         logger.action("writing package entry point")
         if not dryRun:
-            (basePath / packageName / "__main__.py").write_text(PACKAGE_MAIN_CONTENT)
+            content = PACKAGE_MAIN_CONTENT
+            if localRuntime:
+                content = content.replace(
+                    "from organiseMyProjects.logUtils", "from ompr.logUtils"
+                )
+            (basePath / packageName / "__main__.py").write_text(content)
 
     # Create .pre-commit-config.yaml
     logger.action("writing .pre-commit-config.yaml")
@@ -1451,6 +1475,7 @@ def updateProject(
     dryRun: bool = False,
     includeUi: bool = False,
     includeQt: bool = False,
+    localRuntime: bool | None = None,
 ):
     """Refresh managed project files while preserving project-owned scaffolds."""
 
@@ -1459,7 +1484,6 @@ def updateProject(
         logger.info(f"project '{projectName}' does not exist")
         return
 
-    _obsoleteLintersRemove(basePath, dryRun)
     logger.doing(f"updating project at {basePath}")
     detectedRole = _projectRoleDetect(basePath)
     logger.value("detected role", detectedRole)
@@ -1475,14 +1499,17 @@ def updateProject(
         return
 
     if detectedRole == wowAddon.ROLE:
+        if localRuntime:
+            raise ValueError("wow addons do not support --runtime")
         _wowAddonUpdate(basePath, dryRun)
         logger.done("project updated")
         if dryRun:
             logger.info("update simulation complete: no changes were applied")
         return
 
-    # Validate runtime ownership before deploying managed content.
-    runtimeValidate(basePath)
+    # Reconcile before unrelated scaffold mutations: blockers preserve the project.
+    enabled = runtimeReconcile(basePath, localRuntime, dryRun=dryRun, logger=logger)
+    _obsoleteLintersRemove(basePath, dryRun)
 
     applicationRoles = {"standalone-application"}
     if detectedRole not in applicationRoles:
@@ -1514,8 +1541,8 @@ def updateProject(
     _sharedStylesDeploy(basePath, dryRun)
     _onboardingScaffoldEnsure(basePath, dryRun)
     _requirementLayoutMaintain(basePath, dryRun)
-    runtimeDeploy(basePath, dryRun=dryRun, logger=logger)
-    runtimeMigrationReport(basePath, logger)
+    if enabled:
+        runtimeMigrationReport(basePath, logger)
 
     logger.done("project updated")
     if dryRun:
@@ -1857,6 +1884,10 @@ def _parserBuild() -> argparse.ArgumentParser:
         "sync",
         help="sync shared instruction files to downstream repositories",
     )
+    _projectOptionAdd(
+        syncParser,
+        helpText="Reconcile runtime in a local project instead of remote sync",
+    )
     syncParser.add_argument(
         "-y",
         "--confirm",
@@ -1864,11 +1895,21 @@ def _parserBuild() -> argparse.ArgumentParser:
         action="store_true",
         help=confirmHelp,
     )
-    syncParser.add_argument(
-        "--runtime",
-        action="store_true",
-        help="also deploy the managed ompr runtime package",
-    )
+    for runtimeParser in (createParser, updateParser, syncParser):
+        runtimeGroup = runtimeParser.add_mutually_exclusive_group()
+        runtimeGroup.add_argument(
+            "--runtime",
+            dest="localRuntime",
+            action="store_true",
+            default=None,
+            help="enable and save local ompr runtime deployment",
+        )
+        runtimeGroup.add_argument(
+            "--no-runtime",
+            dest="localRuntime",
+            action="store_false",
+            help="disable and save local runtime; remove managed copies after migration checks",
+        )
     syncParser.add_argument(
         "--merge",
         action="store_true",
@@ -1961,6 +2002,22 @@ def main(argv: list[str] | None = None):
     line()
 
     if args.command == "sync":
+        if projectPath is not None:
+            if args.repo is not None or args.merge:
+                parser.error(
+                    "local sync --project cannot be combined with --repo or --merge"
+                )
+            target = Path(projectPath)
+            if not target.is_dir():
+                parser.error(
+                    "local runtime sync requires an existing project directory"
+                )
+            if _projectIsCanonicalOmp(target) or wowAddon.isWowAddon(target):
+                if args.localRuntime:
+                    parser.error("this project role does not support --runtime")
+                return 0
+            runtimeReconcile(target, args.localRuntime, dryRun=dryRun, logger=logger)
+            return 0
         syncAgentInstructions = _loadSyncModule()
 
         syncArgv = ["syncAgentInstructions.py"]
@@ -1968,8 +2025,10 @@ def main(argv: list[str] | None = None):
             syncArgv.append("--confirm")
         if args.merge:
             syncArgv.append("--merge")
-        if args.runtime:
+        if args.localRuntime is True:
             syncArgv.append("--runtime")
+        elif args.localRuntime is False:
+            syncArgv.append("--no-runtime")
         if args.repo is not None:
             syncArgv.append("--repo")
             if args.repo:
@@ -1997,12 +2056,15 @@ def main(argv: list[str] | None = None):
             dryRun=dryRun,
             includeUi=bool(getattr(args, "ui", False)),
             includeQt=bool(getattr(args, "qt", False)),
+            localRuntime=args.localRuntime,
         )
         return
 
     if projectPath is None:
         parser.error("the following arguments are required: project")
     if getattr(args, "wowAddon", False):
+        if args.localRuntime:
+            parser.error("--wow-addon cannot be combined with --runtime")
         if getattr(args, "ui", False) or getattr(args, "qt", False):
             parser.error("--wow-addon cannot be combined with --ui or --qt")
         createWowAddon(projectPath, flavour=args.flavour, dryRun=dryRun)
@@ -2012,6 +2074,7 @@ def main(argv: list[str] | None = None):
         dryRun=dryRun,
         includeUi=bool(getattr(args, "ui", False)),
         includeQt=bool(getattr(args, "qt", False)),
+        localRuntime=args.localRuntime,
     )
 
 

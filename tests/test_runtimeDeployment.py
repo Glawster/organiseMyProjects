@@ -26,9 +26,13 @@ def application(tmp_path):
     """Create a real scaffold while suppressing Git/pre-commit side effects."""
     root = tmp_path / "sampleApp"
     with patch.object(manageProject.subprocess, "run"):
-        manageProject.createProject(root)
+        manageProject.createProject(root, localRuntime=True)
     # Exercise the actual generated entry-point template without optional UI.
-    (root / "sampleApp" / "__main__.py").write_text(manageProject.PACKAGE_MAIN_CONTENT)
+    (root / "sampleApp" / "__main__.py").write_text(
+        manageProject.PACKAGE_MAIN_CONTENT.replace(
+            "from organiseMyProjects.logUtils", "from ompr.logUtils"
+        )
+    )
     return root
 
 
@@ -292,10 +296,13 @@ def testRuntimeSyncAtomicTreeAndModes(monkeypatch, tmp_path):
     assert payload["base_tree"] == "tree"
     assert {entry["path"] for entry in payload["tree"]} == {
         path.as_posix() for _, path in runtimeFiles()
-    }
+    } | {"project/project.yaml"}
     for entry in payload["tree"]:
         assert entry["mode"] in {"100644", "100755"}
-        assert "# synced from Glawster/organiseMyProjects release" in entry["content"]
+        if entry["path"] != "project/project.yaml":
+            assert (
+                "# synced from Glawster/organiseMyProjects release" in entry["content"]
+            )
         if entry["path"].endswith(".sh"):
             assert entry["content"].startswith("#!/usr/bin/env bash\n# synced")
     assert len(post.call_args_list) == 2
@@ -324,6 +331,8 @@ def testRuntimeSyncDryRunIdempotenceAndOwnership(monkeypatch):
                 "mode": "100755" if source.stat().st_mode & 0o111 else "100644",
             }
         )
+    contents["project/project.yaml"] = "localRuntime: true\n"
+    entries.append({"path": "project/project.yaml", "type": "blob", "mode": "100644"})
     _get, post, patchRef = _syncFixture(monkeypatch, entries, contents)
     assert (
         sync.runtimeSyncRepo("owner/app", "sync/test", False, {}, MagicMock(), set())
@@ -425,7 +434,7 @@ def testRuntimeCliForwardingAndUiPackaging(monkeypatch):
     manageProject.main(["sync", "--repo", "owner/app", "--runtime"])
     assert observed == ["syncAgentInstructions.py", "--runtime", "--repo", "owner/app"]
     metadata = manageProject._pyprojectContentBuild(
-        "app", includeUi=True, includeQt=True
+        "app", includeUi=True, includeQt=True, localRuntime=True
     )
     assert 'packages = ["app", "ompr", "app.ui", "app.qt"]' in metadata
     assert 'ompr = ["*.sh"]' in metadata
@@ -498,6 +507,8 @@ def testManagedRemoteModificationRefreshesOnlyChangedFile(monkeypatch):
             }
         )
     contents["ompr/logUtils.py"] += "\n# modified deployed logger\n"
+    contents["project/project.yaml"] = "localRuntime: true\n"
+    entries.append({"path": "project/project.yaml", "type": "blob", "mode": "100644"})
     _get, post, _patchRef = _syncFixture(monkeypatch, entries, contents)
     assert (
         sync.runtimeSyncRepo("owner/app", "sync/test", False, {}, MagicMock(), set())

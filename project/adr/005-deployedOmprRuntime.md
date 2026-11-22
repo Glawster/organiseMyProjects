@@ -5,6 +5,10 @@
 Accepted — 2026-11-01. Replaces the runtime deployment proposal in superseded
 [ADR-002](002-ompRuntimePackage.md).
 
+The unconditional local deployment policy is revised by
+[ADR-006](006-optInLocalRuntime.md): local copies are now explicitly opted in
+and default to absent. The canonical-source and manifest decisions remain.
+
 ## Context
 
 [Requirement 002](../requirements/features/002-runtimeInfrastructureSync.md)

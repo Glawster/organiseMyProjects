@@ -227,8 +227,11 @@ organiseMyProjects/
 ## Runtime deployment
 
 OMPR means organiseMyProjects; OMP means organiseMyPhotos. Keep canonical
-helpers inside `organiseMyProjects/`. Consumer applications use deployed
-`ompr/` copies selected by `runtimeDeployment.py`; never deploy this package's
+helpers inside `organiseMyProjects/`. Consumer applications normally import the
+installed canonical package. Explicit `--runtime` opt-in saves `localRuntime`
+in `project/project.yaml` and deploys `ompr/` copies selected by
+`runtimeDeployment.py`; `--no-runtime` safely removes managed copies after
+migration checks. Never deploy this package's
 tooling initializer. See [Deployed runtime](../documentation/runtimeDeployment.md)
 and [ADR-005](../project/adr/005-deployedOmprRuntime.md).
 

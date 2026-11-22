@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "requests",
+    "pyte>=0.8.2,<0.9",
     "pywin32; sys_platform == 'win32'",
 ]
 classifiers = [
@@ -22,6 +23,8 @@ classifiers = [
 dev = [
     "black",
     "build",
+    "setuptools>=68",
+    "wheel",
     "pre-commit",
     "pytest",
     "pytest-cov",
@@ -73,4 +76,4 @@ filterwarnings = [
 ]
 
 [tool.setuptools.package-data]
-organiseMyProjects = ["*.css"]
+organiseMyProjects = ["*.css", "*.sh"]

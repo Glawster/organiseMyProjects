@@ -6,6 +6,7 @@ include documentation/requirementsManagement.md
 include documentation/howToRelease.md
 include documentation/testingProcess.md
 include documentation/agentImplementationWorkflow.md
+include documentation/wowAddon.md
 include documentation/releaseNotes.md
 include pyproject.toml
 include organiseMyProjectsEnvironment.yml
@@ -14,3 +15,4 @@ include organiseMyProjects/myStyles.css
 recursive-include organiseMyProjects/ui *.py
 recursive-include organiseMyProjects/qt *.py
 include documentation/tuiStyling.md
+include documentation/runtimeDeployment.md

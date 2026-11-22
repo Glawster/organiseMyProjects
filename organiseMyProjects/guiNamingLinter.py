@@ -62,14 +62,18 @@ LOGGING_METHODS = {
 # messages. Additions need an explicit change and regression test.
 LOGGING_CASE_WHITELIST = frozenset(
     {
+        "API",
         "DJI",
         "Firefox",
         "GoPro",
         "Grok",
+        "IDs",
         "MCM",
         "SQLite",
+        "TV",
         "TVDB",
         "X.ai",
+        "XML",
     }
 )
 

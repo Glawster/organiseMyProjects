@@ -133,9 +133,9 @@ organiseMyProjects/
 
 ### File Categories
 
-**[PACKAGE]** - Package utilities that remain in organiseMyProjects and are NOT copied to new projects:
+**[PACKAGE]** - Canonical package utilities (only the runtime manifest is deployed to consumers):
 - `manageProject.py` - The scaffolding tool itself
-- `logUtils.py` - Centralized logging utility
+- `logUtils.py` - Canonical logging source, also deployed into consumers' managed `ompr/` packages
 - `HELP.md` - Documentation
 - `guiNamingLinter.py` - Naming linter used by this repo and by installed downstream projects
 
@@ -201,7 +201,7 @@ organiseMyProjects/
 
 ### logUtils.py
 - **Purpose**: Package-level logging utility
-- **Type**: PACKAGE UTILITY (NOT copied to new projects; accessible via package import)
+- **Type**: CANONICAL RUNTIME (deployed to consumer `ompr/`; tooling imports from this package)
 - **Key Functions**:
   - `setApplication(name, logDir=None)` - Set the active application context and create the log directory (`~/.local/state/<name>/` by default)
   - `getApplication()` - Return the active application name (raises `RuntimeError` if not set)
@@ -224,6 +224,17 @@ organiseMyProjects/
 - **Type**: TEMPLATE (copied to new projects' src/ directory)
 - **Note**: Projects should customize these constants for their specific needs
 
+## Runtime deployment
+
+OMPR means organiseMyProjects; OMP means organiseMyPhotos. Keep canonical
+helpers inside `organiseMyProjects/`. Consumer applications normally import the
+installed canonical package. Explicit `--runtime` opt-in saves `localRuntime`
+in `project/project.yaml` and deploys `ompr/` copies selected by
+`runtimeDeployment.py`; `--no-runtime` safely removes managed copies after
+migration checks. Never deploy this package's
+tooling initializer. See [Deployed runtime](../documentation/runtimeDeployment.md)
+and [ADR-005](../project/adr/005-deployedOmprRuntime.md).
+
 ## Package Distribution
 
 ### Distribution Strategy
@@ -233,7 +244,7 @@ The package contains two types of files:
 1. **Package Utilities** - Stay in the organiseMyProjects package:
    - `manageProject.py` - The tool that creates/updates projects
    - `guiNamingLinter.py` - Naming checker
-   - `logUtils.py` - Package-level logging
+   - `logUtils.py` - Canonical logging, deployed through the runtime manifest
 
 2. **Template Files** - Copied to new projects via `createProject`:
    - `.github/agent-instructions.md` - Master Agent guidelines copied to the generated project's `.github/` directory

@@ -10,6 +10,11 @@ Make the installed `organiseMyProjects` package the single authoritative source
 for OMP linting behaviour and remove duplicated linter implementations from
 managed projects.
 
+## Context
+
+Managed repositories carried copied linter implementations that could drift from
+the installed package version and create inconsistent behaviour across projects.
+
 ## Problem
 
 OMP previously installed linter functionality as part of the Python package while
@@ -56,6 +61,12 @@ which linter implementation was authoritative.
 - Ensure linter version/behaviour therefore follows the installed OMP package
   version consistently across projects.
 
+## Out of scope
+
+- Changing lint rules unrelated to migration from copied implementations.
+- Introducing a separate migration command outside manageProject update.
+- Removing user-owned files where OMP ownership cannot be established safely.
+
 ## Acceptance criteria
 
 1. A newly created OMP project does not contain a duplicated linter
@@ -82,6 +93,12 @@ which linter implementation was authoritative.
 12. Migration behaviour is tested for unmodified OMP-managed copies, modified
     project-local copies, ambiguous ownership, and projects that never contained
     the old files.
+
+## Dependencies and decisions
+
+- Depends on OMP-managed file ownership detection used during update operations.
+- Uses manageProject update as the migration path instead of adding a new command.
+- No new architecture decision record is required.
 
 ## Verification
 

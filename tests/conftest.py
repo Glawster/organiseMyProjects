@@ -3,6 +3,7 @@ Test configuration and fixtures for organiseMyProjects.
 """
 
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -13,11 +14,34 @@ from organiseMyProjects.logUtils import getLogger, setApplication
 
 
 @pytest.fixture(autouse=True)
-def configureOmpLogging(tmp_path_factory):
+def configureOmpLogging(tmp_path_factory, monkeypatch):
     """Give manageProject a real logger without touching the user's log dir."""
     logDir = tmp_path_factory.mktemp("omp-logs")
     setApplication("testOmp", logDir=logDir)
     manageProjectModule.logger = getLogger(includeConsole=False)
+
+    # Entry points reset the application context. Keep those real log writes
+    # inside the fixture too, instead of touching the developer's home directory.
+    def applicationSet(name, logDir=None):
+        # Tests that explicitly supply a temporary home still exercise the real
+        # default-path contract; only the unmodified developer home is redirected.
+        if logDir is None and Path.home() == developerHome:
+            logDir = fixtureLogDir
+        setApplication(name, logDir=logDir)
+
+    fixtureLogDir = logDir
+    developerHome = Path.home()
+    for name in (
+        "organiseMyProjects.agentCheck",
+        "organiseMyProjects.agentSessions",
+        "organiseMyProjects.manageProject",
+        "organiseMyProjects.myBoard",
+        "organiseMyProjects.runLinter",
+        "syncAgentInstructions",
+    ):
+        module = sys.modules.get(name)
+        if module is not None and hasattr(module, "setApplication"):
+            monkeypatch.setattr(module, "setApplication", applicationSet)
 
 
 @pytest.fixture

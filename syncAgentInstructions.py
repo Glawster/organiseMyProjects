@@ -25,7 +25,18 @@ import requests
 
 from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.managedContent import (
+    managedContentBody,
     managedContentBuild,
+)
+from organiseMyProjects.runtimeDeployment import runtimeFiles
+from organiseMyProjects.runtimePreference import (
+    PREFERENCE_PATH,
+    SCAN_EXCLUDED,
+    SCAN_SUFFIXES,
+    preferenceContent,
+    preferenceRead,
+    runtimeManaged,
+    runtimeReconcile,
 )
 from organiseMyProjects.version import VERSION
 
@@ -34,6 +45,13 @@ from organiseMyProjects.version import VERSION
 # ---------------------------------------------------------------------------
 
 SYNC_SPECS = [
+    {
+        "sourceFile": Path(__file__).resolve().parent
+        / "documentation"
+        / "runtimeDeployment.md",
+        "targetPath": "documentation/runtimeDeployment.md",
+        "commitMessage": "sync: update deployed runtime and migration guide",
+    },
     {
         "sourceFile": Path(__file__).resolve().parent
         / ".github"
@@ -92,6 +110,13 @@ SYNC_SPECS = [
         / "agentImplementationWorkflow.md",
         "targetPath": "documentation/agentImplementationWorkflow.md",
         "commitMessage": "sync: update agent implementation workflow guide",
+    },
+    {
+        "sourceFile": Path(__file__).resolve().parent / "documentation" / "wowAddon.md",
+        "targetPath": "documentation/wowAddon.md",
+        "commitMessage": "sync: update WoW addon standard",
+        # Only repositories with this role receive the file.
+        "role": "wow-addon",
     },
 ]
 API_BASE = "https://api.github.com"
@@ -161,6 +186,22 @@ def getRemoteFile(
         return None
     response.raise_for_status()
     return response.json()
+
+
+def getRepoRole(repo: str, headers: dict) -> str:
+    """Return "wow-addon" when the repository has a .toc file at its root, else ""."""
+    url = f"{API_BASE}/repos/{repo}/contents/"
+    response = requests.get(url, headers=headers, timeout=15)
+    if response.status_code == 404:
+        return ""
+    response.raise_for_status()
+    entries = response.json()
+    if not isinstance(entries, list):
+        return ""
+    for entry in entries:
+        if entry.get("type") == "file" and entry.get("name", "").endswith(".toc"):
+            return "wow-addon"
+    return ""
 
 
 def getTargetRepos(headers: dict) -> list[str]:
@@ -370,6 +411,53 @@ def buildTargetContent(sourceContent: str, targetPath: str = "") -> str:
     return managedContentBuild(sourceContent, suffix=suffix, sync=True)
 
 
+def runtimeSyncRepo(
+    repo: str,
+    branch: str,
+    dryRun: bool,
+    headers: dict,
+    logger,
+    preparedBranches: set[str],
+    enabled: bool = True,
+) -> str:
+    """Deploy the runtime atomically with Git tree modes, preserving unowned files."""
+    try:
+        if repo.casefold() == SOURCE_REPO.casefold():
+            raise ValueError(
+                "canonical runtime sources must not receive a deployment copy"
+            )
+        revision, head, tree = _runtimeSnapshotLoad(repo, branch, headers)
+        if any(
+            "/" not in entry["path"]
+            and entry["path"].endswith(".toc")
+            and entry["type"] == "blob"
+            for entry in tree["tree"]
+        ):
+            if enabled:
+                raise ValueError("wow addons do not support runtime deployment")
+            return "skipped"
+        updates = _runtimeUpdatesBuild(repo, head, tree, headers, enabled=enabled)
+        if not updates:
+            return "ready" if revision == branch else "skipped"
+        logger.action(f"reconcile local runtime: {str(enabled).lower()}")
+        if dryRun:
+            return "updated"
+        if revision != branch:
+            createBranch(repo, branch, head, headers)
+            # Never overwrite a branch created concurrently with the snapshot.
+            if getBranchHeadSha(repo, branch, headers) != head:
+                raise ValueError("sync branch changed; retry after reviewing its files")
+        _runtimeCommitWrite(repo, branch, head, tree["sha"], updates, headers)
+        preparedBranches.add(repo)
+        logger.warning(
+            "runtime migration review: migrate legacy imports and include ompr and its shell helper in packaging"
+        )
+        return "updated"
+    except (requests.RequestException, OSError, ValueError, KeyError, TypeError) as exc:
+        logger.error(f"Runtime sync failed for {repo}: {exc}")
+        return "failed"
+
+
 def syncRepo(
     repo: str,
     targetPath: str,
@@ -461,6 +549,199 @@ def syncRepo(
         return "failed"
 
 
+def _runtimeCommitWrite(
+    repo: str, branch: str, head: str, tree: str, updates: list[dict], headers: dict
+) -> None:
+    """Create one complete runtime tree and advance the ref without force."""
+    response = requests.post(
+        f"{API_BASE}/repos/{repo}/git/trees",
+        json={"base_tree": tree, "tree": updates},
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    response = requests.post(
+        f"{API_BASE}/repos/{repo}/git/commits",
+        json={
+            "message": "sync: update managed ompr runtime",
+            "tree": response.json()["sha"],
+            "parents": [head],
+        },
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    response = requests.patch(
+        f"{API_BASE}/repos/{repo}/git/refs/heads/{branch}",
+        json={"sha": response.json()["sha"], "force": False},
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+
+
+def _runtimeSnapshotLoad(
+    repo: str, branch: str, headers: dict
+) -> tuple[str, str, dict]:
+    """Read an immutable snapshot, including existing sync branches on retries."""
+    revision = branch
+    try:
+        head = getBranchHeadSha(repo, branch, headers)
+    except requests.HTTPError as exc:
+        if exc.response is None or exc.response.status_code != 404:
+            raise
+        revision = getDefaultBranch(repo, headers)
+        head = getBranchHeadSha(repo, revision, headers)
+    response = requests.get(
+        f"{API_BASE}/repos/{repo}/git/trees/{head}",
+        params={"recursive": "1"},
+        headers=headers,
+        timeout=15,
+    )
+    response.raise_for_status()
+    tree = response.json()
+    if tree.get("truncated"):
+        raise ValueError("runtime ownership cannot be checked in a truncated tree")
+    return revision, head, tree
+
+
+def _runtimeUpdatesBuild(
+    repo: str, head: str, tree: dict, headers: dict, *, enabled: bool = True
+) -> list[dict]:
+    """Validate every destination before preparing changed contents and modes."""
+    entries = {entry["path"]: entry for entry in tree["tree"]}
+    protectedPaths = {"project": "tree", PREFERENCE_PATH.as_posix(): "blob"}
+    if not enabled:
+        protectedPaths.update({"output": "tree", "output/omprRuntimeBackups": "tree"})
+    for path, expectedType in protectedPaths.items():
+        entry = entries.get(path)
+        if entry and (entry["mode"] == "120000" or entry["type"] != expectedType):
+            raise ValueError(f"runtime configuration requires review: {path}")
+    configPath = PREFERENCE_PATH.as_posix()
+    config = ""
+    if configPath in entries:
+        config = base64.b64decode(
+            getRemoteFile(repo, configPath, headers, ref=head)["content"]
+        ).decode("utf-8")
+    preferenceRead(config)
+    if not enabled:
+        return _runtimeRemovalUpdatesBuild(repo, head, entries, headers)
+    if "ompr" in entries and entries["ompr"]["type"] != "tree":
+        raise ValueError("project-owned ompr path requires review")
+    if (
+        any(path.startswith("ompr/") for path in entries)
+        and "ompr/__init__.py" not in entries
+    ):
+        raise ValueError("project-owned ompr directory requires review")
+    updates = []
+    for source, relative in runtimeFiles():
+        path = relative.as_posix()
+        previous = ""
+        existing = entries.get(path)
+        if existing:
+            if existing["type"] != "blob" or existing["mode"] not in {
+                "100644",
+                "100755",
+            }:
+                raise ValueError(f"runtime destination requires review: {path}")
+            remote = getRemoteFile(repo, path, headers, ref=head)
+            previous = base64.b64decode(remote["content"]).decode("utf-8")
+            if not runtimeManaged(previous):
+                raise ValueError(f"project-owned runtime file requires review: {path}")
+        content = buildTargetContent(source.read_text(encoding="utf-8"), path)
+        mode = "100755" if source.stat().st_mode & 0o111 else "100644"
+        oldBody, markers = managedContentBody(previous)
+        newBody, _ = managedContentBody(content)
+        if markers == 1 and oldBody == newBody and existing["mode"] == mode:
+            continue
+        updates.append({"path": path, "mode": mode, "type": "blob", "content": content})
+    updatedConfig = preferenceContent(config, True)
+    if updatedConfig != config:
+        updates.append(
+            {
+                "path": configPath,
+                "mode": entries.get(configPath, {}).get("mode", "100644"),
+                "type": "blob",
+                "content": updatedConfig,
+            }
+        )
+    return updates
+
+
+def _runtimeRemovalUpdatesBuild(
+    repo: str, head: str, entries: dict, headers: dict
+) -> list[dict]:
+    """Use the local cleanup validator on immutable tracked remote evidence."""
+    import logging
+    import tempfile
+    from types import SimpleNamespace
+
+    # Materialise only relevant text and runtime paths; unrelated blobs stay in
+    # the base Git tree. Refuse links rather than following targets remotely.
+    with tempfile.TemporaryDirectory(prefix="ompr-runtime-") as directory:
+        root = Path(directory)
+        previous = {}
+        for name, entry in entries.items():
+            path = Path(name)
+            if path.is_absolute() or ".." in path.parts:
+                raise ValueError(f"invalid runtime snapshot path: {name}")
+            if entry["type"] == "tree":
+                continue
+            runtimePath = path.parts[0] == "ompr"
+            if not runtimePath and any(
+                part in SCAN_EXCLUDED for part in path.parts[:-1]
+            ):
+                continue
+            if (
+                not runtimePath
+                and path.suffix not in SCAN_SUFFIXES
+                and path.name not in {"Dockerfile", "Makefile"}
+            ):
+                continue
+            if entry["mode"] not in {"100644", "100755"}:
+                raise ValueError(f"runtime migration snapshot requires review: {name}")
+            content = base64.b64decode(
+                getRemoteFile(repo, name, headers, ref=head)["content"]
+            )
+            destination = root / path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(content)
+            destination.chmod(int(entry["mode"], 8) & 0o777)
+            previous[name] = content
+        logger = logging.getLogger(__name__)
+        reporter = SimpleNamespace(
+            info=logger.info, action=logger.info, warning=logger.warning
+        )
+        runtimeReconcile(root, False, dryRun=False, logger=reporter)
+        updates = []
+        for name, content in previous.items():
+            path = root / name
+            if not path.exists():
+                updates.append(
+                    {
+                        "path": name,
+                        "mode": entries[name]["mode"],
+                        "type": "blob",
+                        "sha": None,
+                    }
+                )
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            name = path.relative_to(root).as_posix()
+            content = path.read_bytes()
+            if previous.get(name) != content:
+                updates.append(
+                    {
+                        "path": name,
+                        "mode": "100755" if path.stat().st_mode & 0o111 else "100644",
+                        "type": "blob",
+                        "content": content.decode("utf-8"),
+                    }
+                )
+        return updates
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -476,6 +757,20 @@ def main() -> None:
         "--confirm",
         action="store_true",
         help="execute the sync (default is dry-run)",
+    )
+    runtimeGroup = parser.add_mutually_exclusive_group()
+    runtimeGroup.add_argument(
+        "--runtime",
+        dest="localRuntime",
+        action="store_true",
+        default=None,
+        help="enable runtime deployment and save localRuntime: true",
+    )
+    runtimeGroup.add_argument(
+        "--no-runtime",
+        dest="localRuntime",
+        action="store_false",
+        help="disable runtime and save localRuntime: false after migration checks",
     )
     parser.add_argument(
         "--merge",
@@ -569,12 +864,39 @@ def main() -> None:
                 "targetPath": spec["targetPath"],
                 "commitMessage": spec["commitMessage"],
                 "targetContent": buildTargetContent(sourceContent, spec["targetPath"]),
+                "role": spec.get("role"),
             }
         )
 
     for repo in targetRepos:
         logger.doing(f"syncing repository {repo}")
+        # Validate runtime intent before any instruction writes for this repo.
+        if args.localRuntime is not None:
+            result = runtimeSyncRepo(
+                repo,
+                syncBranch,
+                dryRun,
+                headers,
+                logger,
+                preparedBranches,
+                enabled=args.localRuntime,
+            )
+            counts[result] += 1
+            repoResults[repo].append(result)
+            if result == "failed":
+                continue
+        repoRole = None
+        if any(payload["role"] for payload in sourcePayloads):
+            try:
+                repoRole = getRepoRole(repo, headers)
+            except requests.RequestException as exc:
+                logger.warning(f"could not detect role of {repo}: {exc}")
+                repoRole = ""
+            if repoRole:
+                logger.value("role", repoRole)
         for payload in sourcePayloads:
+            if payload["role"] and payload["role"] != repoRole:
+                continue
             result = syncRepo(
                 repo,
                 payload["targetPath"],

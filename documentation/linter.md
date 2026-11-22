@@ -69,14 +69,18 @@ invalid.
 tokens may retain their spelling without weakening the rest of the message.
 The centrally maintained approved set is:
 
+- `API`
 - `DJI`
 - `Firefox`
 - `GoPro`
 - `Grok`
+- `IDs`
 - `MCM`
 - `SQLite`
+- `TV`
 - `TVDB`
 - `X.ai`
+- `XML`
 
 Mixed-case tokens outside that list are still reported. Additions therefore
 require an explicit OMP change and regression test rather than silently

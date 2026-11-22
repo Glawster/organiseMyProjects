@@ -10,6 +10,11 @@ runLinter reports missing run markers and section separators in conventional
 Python application entry points so existing projects can adopt the shared output
 convention.
 
+## Context
+
+Existing projects produced inconsistent run output structure, making logs harder
+to scan and reducing the value of shared diagnostics conventions.
+
 ## Scope
 
 Check runStart before logger headers, line after headers, and line before summary

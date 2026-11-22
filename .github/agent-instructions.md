@@ -255,6 +255,26 @@ When adding new functionality:
 Avoid creating "God classes" that combine views, widgets, styling, sample data,
 business logic and persistence.
 
+### Naming Standard
+
+Use camelCase for every name a project defines: functions, methods, variables,
+parameters, attributes, and keys in config, state and other data files the project
+owns.
+
+The only exceptions are:
+
+- Classes use PascalCase and constants use UPPER_CASE_WITH_UNDERSCORES.
+- Public CLI flags use hyphens, such as `--dry-run`. Give any argparse option that
+  would generate a snake_case attribute an explicit camelCase `dest`.
+- A name keeps its spelling when an external package, protocol or format already
+  defines it and depends on that exact spelling, such as `__init__`, sqlite3's
+  `row_factory`, Textual's `on_click` or a provider's `api_key` field. Keep such
+  names at the boundary and use camelCase for the project's own values, for example
+  `imdbId = data.get("imdb_id")`.
+
+When renaming a persisted key, keep reading the old key as a fallback, prefer the
+camelCase key when both exist, and write only the camelCase key.
+
 ### Code Organisation & Function Naming Pattern
 
 - Group functions by domain or purpose.
@@ -360,13 +380,20 @@ Rules:
 
 ### Shared Runtime Modules
 
-The canonical runtime package is `organiseMyProjects`. Import logging and
-related helpers from that package:
+OMPR means organiseMyProjects; OMP means organiseMyPhotos. Canonical runtime
+sources stay in `organiseMyProjects/`; do not create a sibling runtime package
+in that repository. OMPR tooling imports `organiseMyProjects.logUtils`.
 
-    from organiseMyProjects.logUtils import getLogger, setApplication
+Consumer applications use the managed `ompr/` package deployed by create/update
+or explicitly selected runtime sync:
 
-Do not add a second runtime package named `omp` inside the
-`organiseMyProjects` repository. That name already refers to this project.
+    from ompr.logUtils import getLogger, setApplication
+
+Reserve consumer `ompr/` for OMPR runtime helpers. Keep business logic and UI in
+the application package. Include the runtime package and shell resources in
+application distributions. Existing applications must migrate their imports
+and verify an isolated installation before removing OMPR from runtime
+requirements; ordinary updates report this work rather than changing their code.
 
 ## CLI Design Standards
 
@@ -525,7 +552,8 @@ All CLI applications should:
 
 ### Logging Pattern (logUtils)
 
-All projects must use centralized logging from `organiseMyProjects.logUtils`.
+Consumer applications use centralised logging from deployed `ompr.logUtils`;
+OMPR tooling uses its canonical `organiseMyProjects.logUtils`.
 Do not include "..." manually in log messages. logUtils owns prefixes/suffixes.
 
 #### Application context
@@ -537,7 +565,7 @@ Each project sets its application context once in the root entry point:
 Use the project folder name unless there is a deliberate reason to override it:
 
     from pathlib import Path
-    from organiseMyProjects.logUtils import getLogger, setApplication
+    from ompr.logUtils import getLogger, setApplication
 
     thisApplication = Path(__file__).parent.name
     setApplication(thisApplication)
@@ -556,7 +584,7 @@ Helper modules must not import `thisApplication` from `main.py` and must not red
 
 Use this pattern everywhere outside the entry point:
 
-    from organiseMyProjects.logUtils import getLogger
+    from ompr.logUtils import getLogger
 
     logger = getLogger()
 
@@ -568,7 +596,7 @@ Initialise the application context before importing modules that rely on logging
 
 ``` python
 from pathlib import Path
-from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
+from ompr.logUtils import getLogger, line, runStart, setApplication
 
 thisApplication = Path(__file__).parent.name
 setApplication(thisApplication)
@@ -610,7 +638,7 @@ def main() -> None:
 Use this in helper modules (do not use `setApplication()` in helper modules):
 
 ``` python
-from organiseMyProjects.logUtils import getLogger
+from ompr.logUtils import getLogger
 
 logger = getLogger()
 ```
@@ -643,7 +671,7 @@ The public `line()` helper is an explicit exception to module-level domainAction
 naming. Only entry points establish application context; helpers reuse it.
 
 ```python
-from organiseMyProjects import logUtils
+from ompr import logUtils
 
 logUtils.setApplication("example")
 logger = logUtils.getLogger(includeConsole=True)
@@ -739,7 +767,7 @@ External dependencies must fail fast. Never silently replace `logUtils`:
 ``` python
 # Do not do this
 try:
-    from organiseMyProjects.logUtils import getLogger, setApplication
+    from ompr.logUtils import getLogger, setApplication
 except Exception:
     import logging
 ```
@@ -747,7 +775,7 @@ except Exception:
 Use this instead:
 
 ``` python
-from organiseMyProjects.logUtils import getLogger
+from ompr.logUtils import getLogger
 ```
 
 If `setApplication()` has not been called before `getLogger()` is used without an explicit name, the program must raise a `RuntimeError`. This is intentional.
@@ -757,7 +785,7 @@ Do not call `logging.basicConfig()` in application modules.
 #### `drawBox()` for prominent log entries
 
 ``` python
-from organiseMyProjects.logUtils import drawBox
+from ompr.logUtils import drawBox
 
 drawBox("Sync complete\n3 updated, 0 failed", logger=logger)
 ```
@@ -769,7 +797,7 @@ Bash scripts must source `logUtils.sh` from the `organiseMyProjects` package.
 ##### Sourcing and initialisation
 
 ``` bash
-source "$(python3 -c 'import organiseMyProjects, os; print(os.path.dirname(organiseMyProjects.__file__))')/logUtils.sh"
+source "${applicationRoot}/ompr/logUtils.sh"
 setApplication "myScript"
 ```
 
@@ -857,7 +885,7 @@ Rules:
 
 - Use JSON objects, not `key=value` files\
 - Preserve existing and unknown keys when updating config\
-- Use clear, stable key names such as `source`, `month`, or `groupName`\
+- Use clear, stable camelCase key names such as `source`, `month`, or `groupName`\
 - Validate config values before using them\
 - Create the config directory only when writing config\
 - Preference updates, such as saving a `--source` override, may be written even during dry-run\

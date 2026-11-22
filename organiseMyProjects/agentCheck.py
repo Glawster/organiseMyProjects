@@ -13,6 +13,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+from organiseMyProjects import wowAddon
 from organiseMyProjects.logUtils import getLogger, line, runStart, setApplication
 from organiseMyProjects.requirementLayout import (
     pathGenerated,
@@ -313,13 +314,14 @@ class AgentCheckValidator:
             devDocs.append(devGuide)
 
         hasTestCommand = False
+        testCommands = ("pytest", "python -m unittest", "pytest tests")
+        if wowAddon.isWowAddon(self.rootPath):
+            # Lua addons are checked by their lint hooks, not a Python runner.
+            testCommands += ("pre-commit run", "luacheck")
         for f in devDocs:
             try:
                 txt = f.read_text(encoding="utf-8")
-                if any(
-                    cmd in txt
-                    for cmd in ("pytest", "python -m unittest", "pytest tests")
-                ):
+                if any(cmd in txt for cmd in testCommands):
                     hasTestCommand = True
                     break
             except OSError:

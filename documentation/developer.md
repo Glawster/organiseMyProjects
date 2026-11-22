@@ -94,6 +94,8 @@ Ambiguous or colliding names are reported and left unchanged.
 #### `logUtils.py`
 
 Centralised logging utilities shared across organiseMyProjects tooling.
+Consumer applications use deployed `ompr.logUtils`; see
+[Deployed runtime](runtimeDeployment.md) for deployment and migration.
 Import them as `from organiseMyProjects.logUtils import getLogger, setApplication`.
 
 Log records use a fixed four-character severity (`INFO`, `WARN`, `ERRO`,
@@ -461,10 +463,14 @@ with no dependency-related skips.
 
 #### Naming Conventions
 
-- Functions and variables: `camelCase`
+- Functions, variables, parameters, attributes and project-owned config or data
+  keys: `camelCase`
 - Classes: `PascalCase`
 - Constants: `UPPER_CASE_WITH_UNDERSCORES`
 - Private members: `_leadingUnderscore`
+- Public CLI flags: hyphenated, with an explicit camelCase argparse `dest`
+- Names an external package, protocol or format defines keep their spelling. See
+  the Naming Standard in `.github/agent-instructions.md`.
 
 #### Documentation
 

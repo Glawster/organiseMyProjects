@@ -1,5 +1,73 @@
 # Release notes
 
+## 0.10 — 2026-11-22
+
+- Final release incorporating the validated 0.10 development builds, including
+  agent account availability, runtime infrastructure, branch/version reporting,
+  WoW addon projects and optional local runtime deployment.
+- Requirements 025 (repository portfolio) and 027 (list editing standard) remain
+  ToDo and are planned for 0.11; they are not claimed as delivered in 0.10.
+
+- Requirement 002, runtime infrastructure synchronisation, is reviewed and
+  complete. Existing-consumer migration guidance now explicitly requires an
+  isolated installation check before removing the toolkit runtime dependency.
+- Requirement 024, requirement board branch versions, shows unmerged local and
+  remote-only `origin/*` branch/version pairs in both `myBoard list` and the
+  Textual Git panel, with the current branch first and duplicate refs hidden.
+  Missing or unreadable version metadata is shown as unavailable; discovery
+  leaves Git refs and the checkout unchanged.
+- Local `ompr/` deployment is now opt-in: create/update use saved `localRuntime`
+  in `project/project.yaml`, defaulting to false. `--runtime` enables deployment;
+  `--no-runtime` backs up and removes managed copies after migration checks.
+  Default scaffolds use the installed canonical toolkit dependency. Opted-in
+  scaffolds bundle Python/Bash logging and source-release metadata instead.
+- Updates preserve application code and packaging, report migration work and
+  refuse unowned or symlink runtime destinations. Add `--runtime` to repository
+  or batch sync to include an atomic runtime update with explicit file modes.
+- OMPR/`ompr` means organiseMyProjects; OMP means organiseMyPhotos. Canonical
+  runtime sources remain inside `organiseMyProjects/`. See the
+  [deployment guide](runtimeDeployment.md).
+- The agent instructions add a Naming Standard: project-defined names and config
+  keys use camelCase unless an external package, protocol or format defines them.
+- `runLinter` accepts `API`, `IDs`, `TV` and `XML` in logging messages, so
+  messages such as `skipping TV merge with conflicting provider IDs` no longer
+  need the acronyms lowercased. See [Linter](linter.md).
+
+### WoW addon projects
+
+- New `wow-addon` project role. `manageProject create --wow-addon --flavour
+  retail|classic|forever` creates a Lua addon with its `.toc` and Lua at the
+  repository root, luacheck and StyLua pre-commit hooks, `.pkgmeta`, a `wow`
+  Conda environment file and the shared agent and project files, without the
+  Python package, `pyproject.toml` or `ompr/` runtime.
+- `manageProject update` detects an addon by the `.toc` at its root and
+  refreshes only the addon's managed files.
+- New managed guide `documentation/wowAddon.md`, which `sync` sends only to
+  repositories with a root `.toc`.
+
+## 0.10a2 — 2026-10-31
+
+### Agent account availability
+
+- `agentSessions --usage` displays remaining account capacity for Claude, Codex,
+  Grok and Copilot, grouped by agent with separate quota windows and local reset
+  times. Missing data, missing CLIs and unauthenticated accounts have distinct
+  statuses. Provider failures do not hide the other accounts.
+- Claude availability uses its built-in `/usage` terminal display; unsupported
+  or ambiguous displays remain unknown. Codex, Grok and Copilot use their CLI
+  account protocols without model requests or direct credential extraction.
+- Copilot premium interactions appear first. Unlimited chat and completions show
+  `UNLIMITED` instead of a misleading `100%` beside exhausted premium capacity.
+
+### Session resumption
+
+- Resume commands use Codex `--ask-for-approval never`, Claude
+  `--permission-mode auto`, Grok `--permission-mode dontAsk`, and
+  Copilot `--allow-all-tools`. Grok denies actions that would need approval;
+  Codex retains its configured sandbox. Copilot path/URL permissions still apply.
+- Help and manual resume examples include the same flags.
+- See [Agent sessions](agentSessions.md) for provider details and limitations.
+
 ## 0.9.1 — 2026-10-26
 
 Bug-fix release for 0.9's project scaffold.

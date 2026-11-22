@@ -30,6 +30,12 @@ projects keep the package at the repository root.
 - Changing markup-mode target handling beyond using the same explicit
   targets already supplied.
 
+## Dependencies and decisions
+
+- Relies on package-location metadata already present in pyproject.toml.
+- Keeps explicit CLI target behaviour as the authoritative override.
+- No new architecture decision record is required.
+
 ## Acceptance criteria
 
 1. Given a conventional `src/` layout, when `runLinter` has no targets, then

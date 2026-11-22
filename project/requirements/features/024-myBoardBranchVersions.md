@@ -2,7 +2,7 @@
 
 ## Status
 
-InProgress
+Completed
 
 ## Outcome
 
@@ -48,10 +48,19 @@ version each branch reports.
 
 ## Verification
 
-- pytest tests/test_myBoard.py
-- runLinter on organiseMyProjects/requirementBoard.py
-- myBoard list in a repository with unmerged local and remote-only branches
+- Code review on 2026-11-06 confirms `gitContextLoad`, `_openBranches`, `_branchNames` and `_branchVersion` provide the specified read-only behaviour.
+- Existing `testGitLinksTheRequirementId` exercises local, remote-only and current-branch versions, plus unavailable release metadata and presentation via `gitContextLines`.
+- Closeout verification: 44 board tests and all 734 tests passed without skips
+  in `ompr`; source/markup lint, Ruff, Black and whitespace checks passed.
+  CLI output was compared with independently enumerated actual Git refs and
+  version assignments, and a Textual integration test confirms display parity.
+- See the [closeout review](../../reviews/024-myBoardBranchVersionsCloseout.md)
+  for criterion mapping, findings and release evidence.
 
 ## Change history
 
 - 2026-10-25: created — show open branches and versions in myBoard.
+- 2026-11-06: reviewed existing implementation and tests; moved to InReview pending final runtime verification.
+- 2026-11-22: completed review and runtime verification for `0.10a5`; fixed
+  unreadable-version handling, restricted remote discovery to origin and added
+  real Git/CLI/Textual acceptance coverage.

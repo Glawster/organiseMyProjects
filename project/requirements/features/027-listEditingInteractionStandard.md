@@ -2,7 +2,7 @@
 
 ## Status
 
-ToDo — planned for OMP 0.9.
+ToDo
 
 ## Outcome
 
@@ -13,6 +13,9 @@ Define, distribute and enforce a consistent interaction model for list- and tabl
 mailAgent exposed a recurring usability problem in Textual/TUI list editing: large permanent forms reduced table space, peer buttons had inconsistent widths, long values could bleed into adjacent areas, known values were retyped instead of selected, and common edit actions were not consistently exposed through single-key controls.
 
 The interaction model is intended to become a shared OMP standard rather than remain a project-specific fix.
+
+Planned for OMPR 0.11 following the user's decision to close the delivered 0.10
+scope. This requirement remains unfinished and is not part of the 0.10 release.
 
 ## Scope
 
@@ -133,3 +136,5 @@ Do not claim a verification step has passed unless it was actually run.
 
 - 2026-10-07: created from mailAgent filing-panel UX review and the decision to standardise list editing, agent discovery, manageProject distribution/checking and derivable lint rules across OMP-managed projects.
 - 2026-10-26: renumbered from 010 (taken by the linter centralisation requirement) to 027 and retargeted to 0.9 when carried onto `release/0.9`.
+- 2026-11-22: carried forward to 0.11 when the user closed the delivered 0.10
+  scope; acceptance criteria and ToDo lifecycle state remain unchanged.

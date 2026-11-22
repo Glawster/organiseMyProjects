@@ -2,51 +2,40 @@
 
 ## Increment
 
-0.10 — Requirement 030: Opt-in local runtime
+0.10 — Release closeout
 
 ## Status
 
-Completed — requirement 030. Release 0.10 still has outstanding backlog.
+Completed — delivered 0.10 scope. Publication is tracked by the release PR
+and final Git tag.
 
-## Objective
+## Outcome
 
-Deliver [030](requirements/features/030-optInLocalRuntime.md) using
-[ADR-006](adr/006-optInLocalRuntime.md): default runtime deployment to off,
-persist explicit project choices and safely remove managed copies when disabled.
+Final version `0.10` includes the reviewed runtime infrastructure (002), board
+branch/version reporting (024), WoW addon project role (029) and opt-in local
+runtime (030), plus the earlier 0.10 board, style and account-availability work.
+See [release notes](../documentation/releaseNotes.md).
 
-## Implementation
+## Acceptance evidence
 
-- Branch: `feature/030-opt-in-runtime`, version `0.10a5`.
-- Shared preference resolution and recoverable cleanup for create/update/local
-  runtime sync; matching atomic remote runtime preference and cleanup updates.
-- Mode-appropriate generated imports, dependencies and package resources.
-- Focused tests cover saved choices, legacy copies, backups, blockers, symlinks
-  and dry runs; distribution evidence covers both application modes.
+- [002 runtime infrastructure review](reviews/002-runtimeInfrastructureCloseout.md).
+- [024 branch versions review](reviews/024-myBoardBranchVersionsCloseout.md).
+- [029 addon role review](reviews/029-wowAddonCloseout.md).
+- [030 optional runtime review](reviews/030-optInLocalRuntimeAcceptance.md).
 
-## Verification
+## Release verification
 
-- Full regression after 024 review: 734 passed, no skips, including installed application wheels
-  in both modes and real Lua compilation for the addon regression suite.
-- Ruff, Black, source/markup lint and agent readiness passed; both toolkit
-  distribution formats built successfully.
-- [Acceptance review](reviews/030-optInLocalRuntimeAcceptance.md) maps all ten
-  criteria and records migration limits and suite impact.
-- The earlier runtime-sync CLI failure and packaging dependency skip recorded
-  during 029 closeout are resolved in this branch.
-- Requirement 002 is reviewed and complete: all eleven criteria mapped in its
-  [closeout review](reviews/002-runtimeInfrastructureCloseout.md), with 124
-  focused and 730 full-suite tests passing without skips. Existing-consumer
-  migration guidance now explicitly requires an isolated installation check
-  before removing the toolkit production dependency.
-- Requirement 024 is reviewed and complete: 44 board tests passed without skips,
-  including real Git/CLI/Textual parity and unreadable version handling. See its
-  [closeout review](reviews/024-myBoardBranchVersionsCloseout.md).
-- Requirements 002 and 024 are listed in the `0.10a5` release notes and included
-  in the current release PR.
+Final version `0.10` passed all 734 tests without skips in the `ompr`
+environment with `wow` Lua tools available. Source/markup lint, Ruff, Black,
+readiness and distribution builds passed. Source, package metadata and CLI
+report the same final version. See the
+[release closeout review](reviews/release010Closeout.md).
 
-## Remaining backlog
+## Next-release backlog
 
-- [025](requirements/features/025-repositoryPortfolioBoard.md): portfolio board.
-- [027](requirements/features/027-listEditingInteractionStandard.md): list editing.
-- Requirement 029 is complete; evidence is in its
-  [closeout review](reviews/029-wowAddonCloseout.md).
+- [025](requirements/features/025-repositoryPortfolioBoard.md): repository
+  portfolio, already planned for 0.11.
+- [027](requirements/features/027-listEditingInteractionStandard.md): list editing
+  standard, carried forward to 0.11. It remains ToDo and is not delivered in 0.10.
+- Other ToDo requirements remain in the requirements index; closing 0.10 does
+  not mark them completed.

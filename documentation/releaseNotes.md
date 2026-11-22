@@ -1,6 +1,12 @@
 # Release notes
 
-## 0.10a5 — 2026-11-22
+## 0.10 — 2026-11-22
+
+- Final release incorporating the validated 0.10 development builds, including
+  agent account availability, runtime infrastructure, branch/version reporting,
+  WoW addon projects and optional local runtime deployment.
+- Requirements 025 (repository portfolio) and 027 (list editing standard) remain
+  ToDo and are planned for 0.11; they are not claimed as delivered in 0.10.
 
 - Requirement 002, runtime infrastructure synchronisation, is reviewed and
   complete. Existing-consumer migration guidance now explicitly requires an

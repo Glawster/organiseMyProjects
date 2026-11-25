@@ -37,5 +37,22 @@ report the same final version. See the
   portfolio, already planned for 0.11.
 - [027](requirements/features/027-listEditingInteractionStandard.md): list editing
   standard, carried forward to 0.11. It remains ToDo and is not delivered in 0.10.
+- [031](requirements/features/031-installedManagedContentParity.md): installed
+  wheel managed-content parity for update/check and sync/update deployment sets.
+- [032](requirements/features/032-environmentPythonPinPreservation.md): preserve
+  stricter project Python pins during environment merge.
+- [033](requirements/features/033-obsoleteLinterCopyEnforcement.md): enforce
+  removal/migration of obsolete local linter wrappers and copies.
+- [034](requirements/features/034-roleAwareOnboardingContextSeeding.md): align
+  migrate/update role detection and onboarding context seeding.
+- [035](requirements/features/035-projectNeutralReleaseGuidance.md): deploy
+  project-neutral managed release guidance for consumer repositories.
+- [036](requirements/features/036-checkAlignedSetupReminders.md): align update
+  setup reminders with `DOC-003` check conditions.
+- [037](requirements/features/037-standaloneBashLogUtilsSourcing.md): standalone
+  Bash scripts source `logUtils.sh` independent of directory and fail loudly.
 - Other ToDo requirements remain in the requirements index; closing 0.10 does
   not mark them completed.
+
+Backlog items 031-036 are derived from the OMPR 0.10 alignment review in
+`organiseMyConda/project/reviews/2026-11-25-ompr010Alignment.md`.

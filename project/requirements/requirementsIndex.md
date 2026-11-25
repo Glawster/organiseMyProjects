@@ -1,6 +1,6 @@
 # Requirements
 
-Next available number: 031
+Next available number: 038
 
 ## Requirement index
 
@@ -36,3 +36,10 @@ Next available number: 031
 | 028 | [Agent usage availability](features/028-agentUsage.md) | Show comparable remaining availability for Claude, Codex, Grok and Copilot with `agentSessions --usage`. | Completed | [Prompt](prompt/028-agentUsage.md) | Not required |
 | 029 | [WoW addon project role](features/029-wowAddonProjectRole.md) | Add a dedicated WoW addon role for scaffold, update and metadata workflows without Python runtime/package scaffolding. | Completed | [Prompt](prompt/029-wowAddonProjectRole.md) | Not required |
 | 030 | [Opt-in local runtime](features/030-optInLocalRuntime.md) | Default local ompr deployment to off, persist explicit opt-in, and safely remove managed runtime copies when disabled. | Completed | [Prompt](prompt/030-optInLocalRuntime.md) | [ADR-006](../adr/006-optInLocalRuntime.md) |
+| 031 | [Installed managed-content parity](features/031-installedManagedContentParity.md) | Make installed-wheel update/sync deploy the same managed files as source checkout update, including agent entry points and docs, so update and check stay consistent. | ToDo | [Prompt](prompt/031-installedManagedContentParity.md) | Not required |
+| 032 | [Environment Python pin preservation](features/032-environmentPythonPinPreservation.md) | Preserve stricter project Python pins during managed environment merge and keep repeated updates idempotent. | ToDo | [Prompt](prompt/032-environmentPythonPinPreservation.md) | Not required |
+| 033 | [Obsolete local linter copy enforcement](features/033-obsoleteLinterCopyEnforcement.md) | Detect and resolve legacy local linter wrappers/copies so requirement 010 outcomes are enforced by check/update. | ToDo | [Prompt](prompt/033-obsoleteLinterCopyEnforcement.md) | Not required |
+| 034 | [Role-aware onboarding context seeding](features/034-roleAwareOnboardingContextSeeding.md) | Keep migrate/update role detection and onboarding context seeding coherent and idempotent for existing repositories. | ToDo | [Prompt](prompt/034-roleAwareOnboardingContextSeeding.md) | Not required |
+| 035 | [Project-neutral release guidance deployment](features/035-projectNeutralReleaseGuidance.md) | Deploy release guidance that remains consumer-project neutral rather than embedding organiseMyProjects-specific release history. | ToDo | [Prompt](prompt/035-projectNeutralReleaseGuidance.md) | Not required |
+| 036 | [Check-aligned setup reminders](features/036-checkAlignedSetupReminders.md) | Emit update setup-command reminders only when check would report the corresponding `DOC-003` deficiency. | ToDo | [Prompt](prompt/036-checkAlignedSetupReminders.md) | Not required |
+| 037 | [Standalone Bash logUtils sourcing](features/037-standaloneBashLogUtilsSourcing.md) | Document directory-independent, fail-fast `logUtils.sh` sourcing for standalone Bash scripts alongside the project-runtime form. | ToDo | [Prompt](prompt/037-standaloneBashLogUtilsSourcing.md) | Pending |
